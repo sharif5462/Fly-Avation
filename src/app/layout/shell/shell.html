@@ -1,0 +1,16 @@
+<div class="shell" [class.shell--sidebar-open]="sidebarOpen()">
+  <div class="shell__backdrop" (click)="closeSidebar()"></div>
+
+  <app-sidebar class="shell__sidebar" />
+
+  <div class="shell__main">
+    <app-topbar (menuToggle)="toggleSidebar()" />
+    <main class="shell__content">
+      <app-breadcrumb />
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+<p-toast position="top-right" />
+<p-confirmdialog />

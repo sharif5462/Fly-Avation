@@ -1,0 +1,94 @@
+<div class="page-container">
+  <app-page-header icon="pi-users" title="User Roles" description="Manage who can sign in and which modules each account can reach.">
+    <p-button label="Add User" icon="pi pi-plus" (onClick)="openNew()" />
+  </app-page-header>
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-users" [value]="stats().total" label="Total Users" />
+    <app-stat-card icon="pi-shield" [value]="stats().admins" label="Admins" iconBg="color-mix(in srgb, var(--p-purple-500) 15%, transparent)" iconColor="var(--p-purple-500)" />
+    <app-stat-card icon="pi-sitemap" [value]="stats().distinctRoles" label="Distinct Roles In Use" iconBg="color-mix(in srgb, var(--p-blue-500) 15%, transparent)" iconColor="var(--p-blue-500)" />
+  </div>
+
+  <div class="surface-card">
+    <p-table #dt [value]="users()" [loading]="loading()" [paginator]="true" [rows]="10" dataKey="id" [rowHover]="true" [stripedRows]="true" [globalFilterFields]="['fullName', 'username', 'email', 'jobTitle']" responsiveLayout="scroll">
+      <ng-template #caption>
+        <div class="table-toolbar">
+          <p-iconfield iconPosition="left" class="table-toolbar__search">
+            <p-inputicon class="pi pi-search" />
+            <input pInputText type="text" placeholder="Search users…" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+          </p-iconfield>
+          <span class="text-muted table-toolbar__count">{{ users().length }} user{{ users().length === 1 ? '' : 's' }}</span>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th>User</th>
+          <th>Username</th>
+          <th>Job Title</th>
+          <th>Roles</th>
+          <th style="width: 6.5rem">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-user>
+        <tr>
+          <td>
+            <div class="user-cell">
+              <p-avatar [label]="user.initials" shape="circle" [style]="{ 'background-color': user.avatarColor, color: '#fff' }" />
+              <div>
+                <strong>{{ user.fullName }}</strong>
+                <div class="text-muted" style="font-size: 0.75rem">{{ user.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td>{{ user.username }}</td>
+          <td>{{ user.jobTitle }}</td>
+          <td>
+            <div class="role-tags">
+              @for (role of user.roles; track role) {
+                <p-tag [value]="roleLabel(role)" severity="info" />
+              }
+            </div>
+          </td>
+          <td>
+            <div class="row-actions">
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(user)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(user)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="5" class="table-empty">No users yet.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [header]="editingUser() ? 'Edit User' : 'Add User'" [style]="{ width: '30rem' }" [draggable]="false" [dismissableMask]="true">
+  <form [formGroup]="form" class="entity-form">
+    <div class="entity-form__field entity-form__field--full">
+      <label for="fullName">Full Name</label>
+      <input pInputText id="fullName" formControlName="fullName" placeholder="Jane Cooper" />
+    </div>
+    <div class="entity-form__field">
+      <label for="username">Username</label>
+      <input pInputText id="username" formControlName="username" placeholder="jane.cooper" />
+    </div>
+    <div class="entity-form__field">
+      <label for="email">Email</label>
+      <input pInputText id="email" type="email" formControlName="email" placeholder="jane@aviation-erp.test" />
+    </div>
+    <div class="entity-form__field entity-form__field--full">
+      <label for="jobTitle">Job Title</label>
+      <input pInputText id="jobTitle" formControlName="jobTitle" placeholder="Ground Operations Lead" />
+    </div>
+    <div class="entity-form__field entity-form__field--full">
+      <label for="roles">Roles</label>
+      <p-multiselect inputId="roles" formControlName="roles" [options]="roleOptions" optionLabel="label" optionValue="value" placeholder="Select roles" display="chip" appendTo="body" />
+    </div>
+  </form>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button [label]="editingUser() ? 'Save Changes' : 'Add User'" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
+  </ng-template>
+</p-dialog>

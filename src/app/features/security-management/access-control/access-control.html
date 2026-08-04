@@ -1,0 +1,50 @@
+<div class="page-container">
+  <app-page-header icon="pi-key" title="Access Control" description="Each module has one owning role by default; grant extra cross-module access here.">
+  </app-page-header>
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-sitemap" [value]="stats().totalRoles" label="Roles" />
+    <app-stat-card icon="pi-key" [value]="stats().customized" label="Roles With Extra Access" iconBg="color-mix(in srgb, var(--p-blue-500) 15%, transparent)" iconColor="var(--p-blue-500)" />
+    <app-stat-card icon="pi-shield" value="2" label="SuperAdmin / Admin — Full Access" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+  </div>
+
+  <div class="surface-card">
+    <p-table [value]="rows()" [loading]="loading()" dataKey="role" [rowHover]="true" [stripedRows]="true" responsiveLayout="scroll">
+      <ng-template #header>
+        <tr>
+          <th style="width: 16rem">Role</th>
+          <th>Owned Modules</th>
+          <th style="width: 22rem">Extra Access</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-row>
+        <tr>
+          <td><strong>{{ row.label }}</strong></td>
+          <td>
+            <div class="owned-tags">
+              @for (mod of row.ownedModules; track mod) {
+                <p-tag [value]="mod" severity="secondary" />
+              } @empty {
+                <span class="text-muted">No dedicated module</span>
+              }
+            </div>
+          </td>
+          <td>
+            <p-multiselect
+              [options]="moduleOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="row.extraModules"
+              (ngModelChange)="onExtraModulesChange(row, $event)"
+              [disabled]="savingRole() === row.role"
+              placeholder="No extra access"
+              display="chip"
+              appendTo="body"
+              [style]="{ width: '100%' }"
+            />
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

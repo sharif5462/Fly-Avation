@@ -1,0 +1,38 @@
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.error-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 26rem;
+}
+
+.error-page__code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--p-primary-color) 12%, transparent);
+  color: var(--p-primary-color);
+  font-size: 1.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.error-page h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.375rem;
+}
+
+.error-page p {
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
+}

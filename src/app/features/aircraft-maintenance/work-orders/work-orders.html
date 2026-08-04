@@ -1,0 +1,103 @@
+<div class="page-container">
+  <app-page-header icon="pi-clipboard" title="Maintenance Work Orders" description="Track corrective and scheduled maintenance work across the fleet.">
+    <p-button label="New Work Order" icon="pi pi-plus" (onClick)="openNew()" />
+  </app-page-header>
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-clipboard" [value]="stats().total" label="Total Work Orders" />
+    <app-stat-card icon="pi-spinner" [value]="stats().open" label="Open / In Progress" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+    <app-stat-card icon="pi-exclamation-triangle" [value]="stats().critical" label="Critical Priority" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+    <app-stat-card icon="pi-check-circle" [value]="stats().completed" label="Completed / Closed" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+  </div>
+
+  <div class="surface-card">
+    <p-table #dt [value]="workOrders()" [loading]="loading()" [paginator]="true" [rows]="10" dataKey="id" [rowHover]="true" [stripedRows]="true" [globalFilterFields]="['woNumber', 'aircraftReg', 'assignedTechnician', 'status', 'priority']" responsiveLayout="scroll">
+      <ng-template #caption>
+        <div class="table-toolbar">
+          <p-iconfield iconPosition="left" class="table-toolbar__search">
+            <p-inputicon class="pi pi-search" />
+            <input pInputText type="text" placeholder="Search work orders…" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+          </p-iconfield>
+          <span class="text-muted table-toolbar__count">{{ workOrders().length }} work order{{ workOrders().length === 1 ? '' : 's' }}</span>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="woNumber">WO No. <p-sortIcon field="woNumber" /></th>
+          <th pSortableColumn="aircraftReg">Aircraft <p-sortIcon field="aircraftReg" /></th>
+          <th>Type</th>
+          <th pSortableColumn="priority">Priority <p-sortIcon field="priority" /></th>
+          <th>Technician</th>
+          <th pSortableColumn="dueDate">Due Date <p-sortIcon field="dueDate" /></th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status" /></th>
+          <th style="width: 6.5rem">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-order>
+        <tr>
+          <td><strong>{{ order.woNumber }}</strong></td>
+          <td>{{ order.aircraftReg }}</td>
+          <td>{{ order.maintenanceType }}</td>
+          <td><p-tag [value]="order.priority" [severity]="prioritySeverity(order.priority)" /></td>
+          <td>{{ order.assignedTechnician }}</td>
+          <td>{{ order.dueDate | date: 'MMM d, y' }}</td>
+          <td><p-tag [value]="order.status" [severity]="statusSeverity(order.status)" /></td>
+          <td>
+            <div class="row-actions">
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(order)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(order)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="8" class="table-empty">No work orders yet.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [header]="editingOrder() ? 'Edit Work Order' : 'New Work Order'" [style]="{ width: '34rem' }" [draggable]="false" [dismissableMask]="true">
+  <form [formGroup]="form" class="entity-form">
+    <div class="entity-form__field">
+      <label for="woNumber">WO Number</label>
+      <input pInputText id="woNumber" formControlName="woNumber" placeholder="WO-2401" />
+    </div>
+    <div class="entity-form__field">
+      <label for="aircraftReg">Aircraft Reg.</label>
+      <input pInputText id="aircraftReg" formControlName="aircraftReg" placeholder="N101AV" />
+    </div>
+    <div class="entity-form__field">
+      <label for="maintenanceType">Maintenance Type</label>
+      <p-select inputId="maintenanceType" formControlName="maintenanceType" [options]="types" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="priority">Priority</label>
+      <p-select inputId="priority" formControlName="priority" [options]="priorities" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="assignedTechnician">Assigned Technician</label>
+      <input pInputText id="assignedTechnician" formControlName="assignedTechnician" placeholder="R. Alvarez" />
+    </div>
+    <div class="entity-form__field">
+      <label for="status">Status</label>
+      <p-select inputId="status" formControlName="status" [options]="statuses" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="openedDate">Opened Date</label>
+      <p-datepicker inputId="openedDate" formControlName="openedDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="dueDate">Due Date</label>
+      <p-datepicker inputId="dueDate" formControlName="dueDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+    </div>
+    <div class="entity-form__field entity-form__field--full">
+      <label for="description">Description</label>
+      <textarea pTextarea id="description" formControlName="description" rows="3"></textarea>
+    </div>
+  </form>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button [label]="editingOrder() ? 'Save Changes' : 'Create'" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
+  </ng-template>
+</p-dialog>

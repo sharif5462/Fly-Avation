@@ -1,0 +1,35 @@
+<aside class="sidebar">
+  <a class="sidebar__brand" routerLink="/dashboard">
+    <span class="sidebar__brand-icon pi pi-send"></span>
+    <span class="sidebar__brand-text">
+      <strong>Aviation ERP</strong>
+      <small>Operations Console</small>
+    </span>
+  </a>
+
+  <a
+    class="sidebar__pinned-link"
+    routerLink="/dashboard"
+    routerLinkActive="sidebar__pinned-link--active"
+  >
+    <span class="pi pi-th-large"></span>
+    Dashboard
+  </a>
+
+  <div class="sidebar__search">
+    <p-iconfield iconPosition="left">
+      <p-inputicon class="pi pi-search" />
+      <input
+        pInputText
+        type="text"
+        placeholder="Find a module…"
+        [value]="filterText()"
+        (input)="onFilterInput($any($event.target).value)"
+      />
+    </p-iconfield>
+  </div>
+
+  <nav class="sidebar__menu">
+    <p-panelMenu [model]="menuItems()" [multiple]="true" />
+  </nav>
+</aside>

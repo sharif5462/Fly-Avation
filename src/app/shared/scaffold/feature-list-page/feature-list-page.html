@@ -1,0 +1,117 @@
+@if (!config(); as noConfig) {
+  <div class="page-container">
+    <p class="text-muted">No entity configuration found for "{{ entityKey() }}".</p>
+  </div>
+} @else {
+  <div class="page-container">
+    <app-page-header [icon]="config()!.icon" [title]="config()!.pluralLabel" [description]="config()!.description">
+      <p-button [label]="'New ' + config()!.label" icon="pi pi-plus" (onClick)="openNew()" />
+    </app-page-header>
+
+    <div class="surface-card">
+      <p-table
+        #dt
+        [value]="rows()"
+        [loading]="loading()"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [globalFilterFields]="filterFieldKeys()"
+        dataKey="id"
+        [rowHover]="true"
+        [stripedRows]="true"
+        responsiveLayout="scroll"
+      >
+        <ng-template #caption>
+          <div class="table-toolbar">
+            <p-iconfield iconPosition="left" class="table-toolbar__search">
+              <p-inputicon class="pi pi-search" />
+              <input pInputText type="text" placeholder="Search…" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+            </p-iconfield>
+            <span class="text-muted table-toolbar__count">{{ rows().length }} record{{ rows().length === 1 ? '' : 's' }}</span>
+          </div>
+        </ng-template>
+
+        <ng-template #header>
+          <tr>
+            @for (field of tableFields(); track field.key) {
+              <th [pSortableColumn]="field.key">
+                {{ field.label }}
+                <p-sortIcon [field]="field.key" />
+              </th>
+            }
+            <th style="width: 6.5rem">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-row>
+          <tr>
+            @for (field of tableFields(); track field.key) {
+              <td>
+                @if (field.badge) {
+                  <p-tag [value]="displayValue(field, row)" [severity]="severityFor(field, row[field.key])" />
+                } @else {
+                  {{ displayValue(field, row) }}
+                }
+              </td>
+            }
+            <td>
+              <div class="row-actions">
+                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" pTooltip="Edit" tooltipPosition="top" (click)="openEdit(row)"></button>
+                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" pTooltip="Delete" tooltipPosition="top" (click)="confirmDelete(row)"></button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td [attr.colspan]="tableFields().length + 1" class="table-empty">
+              No records yet. Click "New {{ config()!.label }}" to add one.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+
+  <p-dialog [(visible)]="dialogVisible" [modal]="true" [header]="(editingRow() ? 'Edit ' : 'New ') + config()!.label" [style]="{ width: '32rem' }" [draggable]="false" [dismissableMask]="true">
+    <form [formGroup]="form" class="entity-form">
+      @for (field of formFields(); track field.key) {
+        <div class="entity-form__field" [class.entity-form__field--full]="field.type === 'textarea'">
+          <label [for]="field.key">{{ field.label }}</label>
+          @switch (field.type) {
+            @case ('select') {
+              <p-select [inputId]="field.key" [formControlName]="field.key" [options]="field.options" optionLabel="label" optionValue="value" [placeholder]="'Select ' + field.label" appendTo="body" />
+            }
+            @case ('boolean') {
+              <p-checkbox [inputId]="field.key" [formControlName]="field.key" [binary]="true" />
+            }
+            @case ('date') {
+              <p-datepicker [inputId]="field.key" [formControlName]="field.key" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            }
+            @case ('datetime') {
+              <p-datepicker [inputId]="field.key" [formControlName]="field.key" [showTime]="true" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            }
+            @case ('number') {
+              <p-inputnumber [inputId]="field.key" [formControlName]="field.key" [prefix]="field.prefix" [suffix]="field.suffix" [min]="field.min ?? null" [max]="field.max ?? null" mode="decimal" [minFractionDigits]="field.prefix === '$' ? 2 : 0" />
+            }
+            @case ('textarea') {
+              <textarea pTextarea [id]="field.key" [formControlName]="field.key" rows="3"></textarea>
+            }
+            @default {
+              <input pInputText [id]="field.key" [formControlName]="field.key" [type]="field.type === 'email' ? 'email' : 'text'" />
+            }
+          }
+          @if (form.get(field.key)?.invalid && form.get(field.key)?.touched) {
+            <small class="entity-form__error">{{ field.label }} is required.</small>
+          }
+        </div>
+      }
+    </form>
+    <ng-template #footer>
+      <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
+      <p-button [label]="editingRow() ? 'Save Changes' : 'Create'" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
+    </ng-template>
+  </p-dialog>
+}

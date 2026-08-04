@@ -1,0 +1,103 @@
+<div class="page-container">
+  <app-page-header icon="pi-calendar" title="Flight Scheduling" description="Build and manage the flight schedule across the fleet.">
+    <p-button label="New Flight" icon="pi pi-plus" (onClick)="openNew()" />
+  </app-page-header>
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-send" [value]="stats().total" label="Scheduled Flights" />
+    <app-stat-card icon="pi-play" [value]="stats().active" label="Active Now" iconBg="color-mix(in srgb, var(--p-blue-500) 15%, transparent)" iconColor="var(--p-blue-500)" />
+    <app-stat-card icon="pi-clock" [value]="stats().delayed" label="Delayed" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+    <app-stat-card icon="pi-times-circle" [value]="stats().cancelled" label="Cancelled" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+  </div>
+
+  <div class="surface-card">
+    <p-table #dt [value]="flights()" [loading]="loading()" [paginator]="true" [rows]="10" dataKey="id" [rowHover]="true" [stripedRows]="true" [globalFilterFields]="['flightNo', 'origin', 'destination', 'aircraftReg', 'status']" responsiveLayout="scroll">
+      <ng-template #caption>
+        <div class="table-toolbar">
+          <p-iconfield iconPosition="left" class="table-toolbar__search">
+            <p-inputicon class="pi pi-search" />
+            <input pInputText type="text" placeholder="Search flights…" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+          </p-iconfield>
+          <span class="text-muted table-toolbar__count">{{ flights().length }} flight{{ flights().length === 1 ? '' : 's' }}</span>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="flightNo">Flight No. <p-sortIcon field="flightNo" /></th>
+          <th>Route</th>
+          <th pSortableColumn="aircraftReg">Aircraft <p-sortIcon field="aircraftReg" /></th>
+          <th pSortableColumn="departureTime">Departure <p-sortIcon field="departureTime" /></th>
+          <th pSortableColumn="arrivalTime">Arrival <p-sortIcon field="arrivalTime" /></th>
+          <th>Gate</th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status" /></th>
+          <th style="width: 6.5rem">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-flight>
+        <tr>
+          <td><strong>{{ flight.flightNo }}</strong></td>
+          <td>{{ flight.origin }} <span class="pi pi-arrow-right text-muted" style="font-size: 0.7rem"></span> {{ flight.destination }}</td>
+          <td>{{ flight.aircraftReg }}</td>
+          <td>{{ flight.departureTime | date: 'MMM d, HH:mm' }}</td>
+          <td>{{ flight.arrivalTime | date: 'MMM d, HH:mm' }}</td>
+          <td>{{ flight.gate || '—' }}</td>
+          <td><p-tag [value]="flight.status" [severity]="severity(flight.status)" /></td>
+          <td>
+            <div class="row-actions">
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(flight)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(flight)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="8" class="table-empty">No flights scheduled yet.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [header]="editingFlight() ? 'Edit Flight' : 'New Flight'" [style]="{ width: '34rem' }" [draggable]="false" [dismissableMask]="true">
+  <form [formGroup]="form" class="entity-form">
+    <div class="entity-form__field">
+      <label for="flightNo">Flight No.</label>
+      <input pInputText id="flightNo" formControlName="flightNo" placeholder="AV123" />
+    </div>
+    <div class="entity-form__field">
+      <label for="aircraftReg">Aircraft Reg.</label>
+      <input pInputText id="aircraftReg" formControlName="aircraftReg" placeholder="N101AV" />
+    </div>
+    <div class="entity-form__field">
+      <label for="origin">Origin</label>
+      <input pInputText id="origin" formControlName="origin" placeholder="JFK" />
+    </div>
+    <div class="entity-form__field">
+      <label for="destination">Destination</label>
+      <input pInputText id="destination" formControlName="destination" placeholder="LHR" />
+    </div>
+    <div class="entity-form__field">
+      <label for="departureTime">Departure</label>
+      <p-datepicker inputId="departureTime" formControlName="departureTime" [showTime]="true" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="arrivalTime">Arrival</label>
+      <p-datepicker inputId="arrivalTime" formControlName="arrivalTime" [showTime]="true" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="gate">Gate</label>
+      <input pInputText id="gate" formControlName="gate" placeholder="A12" />
+    </div>
+    <div class="entity-form__field">
+      <label for="status">Status</label>
+      <p-select inputId="status" formControlName="status" [options]="statuses" appendTo="body" />
+    </div>
+    <div class="entity-form__field entity-form__field--full">
+      <label for="remarks">Remarks</label>
+      <textarea pTextarea id="remarks" formControlName="remarks" rows="2"></textarea>
+    </div>
+  </form>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button [label]="editingFlight() ? 'Save Changes' : 'Create'" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
+  </ng-template>
+</p-dialog>

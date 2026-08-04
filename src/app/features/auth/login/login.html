@@ -1,0 +1,97 @@
+<div class="login">
+  <section class="login__hero">
+    <div class="login__hero-brand">
+      <span class="pi pi-send"></span>
+      Aviation ERP
+    </div>
+    <h1>One console for the whole operation.</h1>
+    <p>
+      Flight ops, MRO, fleet, crew, procurement, cargo, finance and 13 more
+      departments — a single Angular front end talking to your .NET Web API
+      and Oracle backend.
+    </p>
+    <ul class="login__hero-points">
+      <li><span class="pi pi-check"></span> Role-based access across 19 modules</li>
+      <li><span class="pi pi-check"></span> JWT authentication, ready for your API</li>
+      <li><span class="pi pi-check"></span> 128 operational screens, live today on mock data</li>
+    </ul>
+  </section>
+
+  <section class="login__form-panel">
+    <div class="login__card">
+      <h2>Sign in</h2>
+      <p class="text-muted">Use your ERP credentials to continue.</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="login__form">
+        @if (errorMessage()) {
+          <p-message severity="error" [text]="errorMessage()" styleClass="w-full" />
+        }
+
+        <div class="login__field">
+          <label for="username">Username</label>
+          <input pInputText id="username" formControlName="username" autocomplete="username" placeholder="e.g. ops.manager" />
+        </div>
+
+        <div class="login__field">
+          <div class="login__field-row">
+            <label for="password">Password</label>
+            <button type="button" class="login__forgot-link" (click)="openForgotPassword()">Forgot password?</button>
+          </div>
+          <p-password
+            inputId="password"
+            formControlName="password"
+            [feedback]="false"
+            [toggleMask]="true"
+            autocomplete="current-password"
+            placeholder="••••••••"
+          />
+        </div>
+
+        <p-button type="submit" label="Sign In" icon="pi pi-sign-in" [loading]="loading()" styleClass="w-full" />
+      </form>
+
+      <div class="login__demo">
+        <p class="text-muted">Demo accounts — click to fill, then Sign In</p>
+        <div class="login__demo-grid">
+          @for (account of demoAccounts; track account.username) {
+            <button type="button" class="login__demo-chip" (click)="quickFill(account.username, account.password)">
+              <span class="login__demo-avatar" [style.background-color]="account.avatarColor">{{ account.initials }}</span>
+              <span class="login__demo-text">
+                <strong>{{ account.fullName }}</strong>
+                <small>{{ account.jobTitle }}</small>
+              </span>
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<p-dialog [(visible)]="forgotDialogVisible" [modal]="true" header="Reset your password" [style]="{ width: '26rem' }" [draggable]="false" [dismissableMask]="true">
+  @if (!forgotSubmitted()) {
+    <form [formGroup]="forgotForm" (ngSubmit)="submitForgotPassword()" class="forgot-form">
+      <p class="text-muted">Enter the email on your account and we'll send you a link to reset your password.</p>
+      <div class="login__field">
+        <label for="forgotEmail">Email</label>
+        <input pInputText id="forgotEmail" type="email" formControlName="email" placeholder="you@aviation-erp.test" autocomplete="email" />
+        @if (forgotForm.get('email')?.invalid && forgotForm.get('email')?.touched) {
+          <small class="entity-form__error">Enter a valid email address.</small>
+        }
+      </div>
+    </form>
+  } @else {
+    <div class="forgot-success">
+      <span class="pi pi-check-circle forgot-success__icon"></span>
+      <p>If an account matches <strong>{{ forgotForm.value.email }}</strong>, a reset link is on its way. Check your inbox.</p>
+    </div>
+  }
+  <ng-template #footer>
+    @if (!forgotSubmitted()) {
+      <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="forgotDialogVisible.set(false)" />
+      <p-button label="Send Reset Link" icon="pi pi-send" [loading]="forgotSubmitting()" (onClick)="submitForgotPassword()" />
+    } @else {
+      <p-button label="Back to Sign In" (onClick)="forgotDialogVisible.set(false)" />
+    }
+  </ng-template>
+</p-dialog>

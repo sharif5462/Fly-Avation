@@ -1,0 +1,73 @@
+<div class="page-container">
+  <app-page-header icon="pi-th-large" [title]="'Welcome back' + (user()?.fullName ? ', ' + user()!.fullName.split(' ')[0] : '')" description="Here's what's happening across the operation right now." />
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-send" [value]="stats().activeFlights" label="Flights Active Now" />
+    <app-stat-card icon="pi-check-circle" [value]="stats().fleetAvailability + '%'" label="Fleet Availability" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+    <app-stat-card icon="pi-clipboard" [value]="stats().openWorkOrders" label="Open Work Orders" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+    <app-stat-card icon="pi-box" [value]="stats().attentionParts" label="Parts Needing Attention" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="surface-card dashboard-panel">
+      <h3>Fleet Status</h3>
+      @if (fleetChartData) {
+        <p-chart type="doughnut" [data]="fleetChartData" [options]="doughnutOptions" [style]="{ height: '16rem' }" />
+      }
+    </div>
+
+    <div class="surface-card dashboard-panel">
+      <h3>Flight Status Breakdown</h3>
+      @if (flightChartData) {
+        <p-chart type="bar" [data]="flightChartData" [options]="barOptions" [style]="{ height: '16rem' }" />
+      }
+    </div>
+
+    <div class="surface-card dashboard-panel">
+      <h3>Work Orders by Priority</h3>
+      @if (workOrderChartData) {
+        <p-chart type="bar" [data]="workOrderChartData" [options]="barOptions" [style]="{ height: '16rem' }" />
+      }
+    </div>
+
+    <div class="surface-card dashboard-panel">
+      <h3>Quick Links</h3>
+      <div class="quick-links">
+        @for (link of quickLinks; track link.label) {
+          <a class="quick-link" [routerLink]="link.route">
+            <span class="quick-link__icon pi {{ link.icon }}"></span>
+            {{ link.label }}
+            <span class="pi pi-arrow-right quick-link__arrow"></span>
+          </a>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="surface-card dashboard-panel" style="margin-top: 1.25rem">
+    <h3>Recent Purchase Orders</h3>
+    <p-table [value]="recentOrders()" [loading]="loading()" responsiveLayout="scroll">
+      <ng-template #header>
+        <tr>
+          <th>PO No.</th>
+          <th>Vendor</th>
+          <th>Order Date</th>
+          <th>Total</th>
+          <th>Status</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-order>
+        <tr>
+          <td><strong>{{ order.poNumber }}</strong></td>
+          <td>{{ order.vendor }}</td>
+          <td>{{ order.orderDate | date: 'MMM d, y' }}</td>
+          <td>{{ order.totalAmount | currency }}</td>
+          <td><p-tag [value]="order.status" [severity]="poSeverity(order.status)" /></td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="5" class="table-empty">No purchase orders yet.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

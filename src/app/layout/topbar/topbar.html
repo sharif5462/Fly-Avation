@@ -1,0 +1,51 @@
+<header class="topbar">
+  <button
+    pButton
+    type="button"
+    icon="pi pi-bars"
+    class="p-button-text p-button-plain topbar__menu-btn"
+    (click)="menuToggle.emit()"
+  ></button>
+
+  <div class="topbar__spacer"></div>
+
+  <button
+    pButton
+    type="button"
+    [icon]="darkMode() ? 'pi pi-sun' : 'pi pi-moon'"
+    class="p-button-text p-button-plain topbar__icon-btn"
+    pTooltip="Toggle theme"
+    tooltipPosition="bottom"
+    (click)="toggleDarkMode()"
+  ></button>
+
+  <a
+    routerLink="/notification-system/push-notifications"
+    class="topbar__icon-btn topbar__bell"
+    pTooltip="Notifications"
+    tooltipPosition="bottom"
+  >
+    <span class="pi pi-bell"></span>
+    <p-badge value="3" severity="danger" />
+  </a>
+
+  <button class="topbar__user" type="button" (click)="userMenu.toggle($event)">
+    <p-avatar [label]="user()?.initials" shape="circle" styleClass="topbar__avatar" [style]="{ 'background-color': user()?.avatarColor, color: '#fff' }" />
+    <span class="topbar__user-text">
+      <strong>{{ user()?.fullName }}</strong>
+      <small>{{ roleLabel() }}</small>
+    </span>
+    <span class="pi pi-angle-down"></span>
+  </button>
+  <p-menu #userMenu [model]="userMenuItems" [popup]="true" />
+
+  <button
+    pButton
+    type="button"
+    icon="pi pi-sign-out"
+    class="p-button-text p-button-plain topbar__icon-btn topbar__logout"
+    pTooltip="Sign out"
+    tooltipPosition="bottom"
+    (click)="logout()"
+  ></button>
+</header>
