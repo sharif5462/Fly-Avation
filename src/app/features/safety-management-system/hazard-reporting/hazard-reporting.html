@@ -1,0 +1,216 @@
+<div class="page-container">
+  <app-page-header icon="pi-exclamation-circle" title="Hazard Reporting" description="Identify hazards, assess risk, and track mitigation to closure across the safety risk management cycle.">
+    <p-button label="Report Hazard" icon="pi pi-plus" (onClick)="openNew()" />
+  </app-page-header>
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-list" [value]="stats().total" label="Total Hazards" />
+    <app-stat-card icon="pi-exclamation-circle" [value]="stats().open" label="Open" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+    <app-stat-card icon="pi-exclamation-triangle" [value]="stats().unacceptable" label="Unacceptable Risk" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+    <app-stat-card icon="pi-check-circle" [value]="stats().closed" label="Closed" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+  </div>
+
+  <div class="surface-card">
+    <p-table #dt [value]="hazards()" [loading]="loading()" [paginator]="true" [rows]="10" dataKey="id" [rowHover]="true" [stripedRows]="true" [globalFilterFields]="['hazardNo', 'hazardTitle', 'hazardCategory', 'affectedArea', 'department']" responsiveLayout="scroll">
+      <ng-template #caption>
+        <div class="table-toolbar">
+          <p-iconfield iconPosition="left" class="table-toolbar__search">
+            <p-inputicon class="pi pi-search" />
+            <input pInputText type="text" placeholder="Search hazards…" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+          </p-iconfield>
+          <span class="text-muted table-toolbar__count">{{ hazards().length }} hazards</span>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="hazardNo">Hazard No. <p-sortIcon field="hazardNo" /></th>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Affected Area</th>
+          <th pSortableColumn="riskTolerability">Tolerability <p-sortIcon field="riskTolerability" /></th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status" /></th>
+          <th style="width: 6.5rem">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-hazard>
+        <tr>
+          <td><strong>{{ hazard.hazardNo }}</strong></td>
+          <td>{{ hazard.hazardTitle }}</td>
+          <td>{{ hazard.hazardCategory }}</td>
+          <td>{{ hazard.affectedArea }}</td>
+          <td><p-tag [value]="hazard.riskTolerability" [severity]="tolerabilitySeverity(hazard.riskTolerability)" /></td>
+          <td><p-tag [value]="hazard.status" [severity]="statusSeverity(hazard.status)" /></td>
+          <td>
+            <div class="row-actions">
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(hazard)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(hazard)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="7" class="table-empty">No hazards reported yet.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [header]="editing() ? 'Edit Hazard — ' + editing()?.hazardNo : 'Report Hazard'"
+  [style]="{ width: '50rem' }"
+  [draggable]="false"
+  [dismissableMask]="true"
+>
+  <form [formGroup]="form">
+    <p-tabs [value]="activeTab()" (valueChange)="activeTab.set($any($event))" [scrollable]="true">
+      <p-tablist>
+        <p-tab value="0">Hazard Details</p-tab>
+        <p-tab value="1">Classification</p-tab>
+        <p-tab value="2">Risk Assessment</p-tab>
+        <p-tab value="3">Mitigation</p-tab>
+        <p-tab value="4">Status & Closure</p-tab>
+      </p-tablist>
+      <p-tabpanels>
+        <!-- Hazard Details -->
+        <p-tabpanel value="0">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="hazardNo">Hazard No.</label>
+              <input pInputText id="hazardNo" formControlName="hazardNo" placeholder="HAZ-00123" />
+            </div>
+            <div class="entity-form__field">
+              <label for="hazardTitle">Hazard Title</label>
+              <input pInputText id="hazardTitle" formControlName="hazardTitle" />
+            </div>
+            <div class="entity-form__field">
+              <label for="dateIdentified">Date Identified</label>
+              <p-datepicker inputId="dateIdentified" formControlName="dateIdentified" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="source">Source</label>
+              <p-select inputId="source" formControlName="source" [options]="hazardSources" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="reportedBy">Reported By</label>
+              <input pInputText id="reportedBy" formControlName="reportedBy" />
+            </div>
+            <div class="entity-form__field">
+              <label for="department">Department</label>
+              <input pInputText id="department" formControlName="department" />
+            </div>
+            <div class="entity-form__field">
+              <label for="location">Location</label>
+              <input pInputText id="location" formControlName="location" />
+            </div>
+            <div class="entity-form__field entity-form__field--full">
+              <label for="description">Description</label>
+              <textarea pTextarea id="description" formControlName="description" rows="3"></textarea>
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- Classification -->
+        <p-tabpanel value="1">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="hazardCategory">Hazard Category</label>
+              <p-select inputId="hazardCategory" formControlName="hazardCategory" [options]="hazardCategories" [editable]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="affectedArea">Affected Area</label>
+              <p-select inputId="affectedArea" formControlName="affectedArea" [options]="affectedAreas" [editable]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="aircraftReg">Aircraft Reg. (if applicable)</label>
+              <input pInputText id="aircraftReg" formControlName="aircraftReg" />
+            </div>
+            <div class="entity-form__field">
+              <label for="flightPhase">Flight Phase</label>
+              <p-select inputId="flightPhase" formControlName="flightPhase" [options]="flightPhases" appendTo="body" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- Risk Assessment -->
+        <p-tabpanel value="2">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="initialLikelihood">Initial Likelihood</label>
+              <p-select inputId="initialLikelihood" formControlName="initialLikelihood" [options]="likelihoodLevels" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="initialSeverity">Initial Severity</label>
+              <p-select inputId="initialSeverity" formControlName="initialSeverity" [options]="severityLevels" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="initialRiskScore">Initial Risk Score</label>
+              <p-inputnumber inputId="initialRiskScore" formControlName="initialRiskScore" [min]="1" [max]="25" />
+            </div>
+            <div class="entity-form__field">
+              <label for="riskTolerability">Risk Tolerability</label>
+              <p-select inputId="riskTolerability" formControlName="riskTolerability" [options]="tolerabilityLevels" appendTo="body" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- Mitigation -->
+        <p-tabpanel value="3">
+          <div class="entity-form">
+            <div class="entity-form__field entity-form__field--full">
+              <label for="mitigationActions">Mitigation Actions</label>
+              <textarea pTextarea id="mitigationActions" formControlName="mitigationActions" rows="3"></textarea>
+            </div>
+            <div class="entity-form__field">
+              <label for="responsiblePerson">Responsible Person</label>
+              <input pInputText id="responsiblePerson" formControlName="responsiblePerson" />
+            </div>
+            <div class="entity-form__field">
+              <label for="targetCompletionDate">Target Completion Date</label>
+              <p-datepicker inputId="targetCompletionDate" formControlName="targetCompletionDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="residualLikelihood">Residual Likelihood</label>
+              <p-select inputId="residualLikelihood" formControlName="residualLikelihood" [options]="likelihoodLevels" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="residualSeverity">Residual Severity</label>
+              <p-select inputId="residualSeverity" formControlName="residualSeverity" [options]="severityLevels" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="residualRiskScore">Residual Risk Score</label>
+              <p-inputnumber inputId="residualRiskScore" formControlName="residualRiskScore" [min]="1" [max]="25" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- Status & Closure -->
+        <p-tabpanel value="4">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="status">Status</label>
+              <p-select inputId="status" formControlName="status" [options]="statuses" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="closedDate">Closed Date</label>
+              <p-datepicker inputId="closedDate" formControlName="closedDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="closedBy">Closed By</label>
+              <input pInputText id="closedBy" formControlName="closedBy" />
+            </div>
+            <div class="entity-form__field">
+              <label for="verifiedEffective">Mitigation Verified Effective</label>
+              <p-checkbox inputId="verifiedEffective" formControlName="verifiedEffective" [binary]="true" />
+            </div>
+          </div>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  </form>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button [label]="editing() ? 'Save Changes' : 'Report Hazard'" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
+  </ng-template>
+</p-dialog>

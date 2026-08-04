@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -19,10 +19,13 @@ import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 
 export type FlightStatus = 'Scheduled' | 'Boarding' | 'Departed' | 'In Air' | 'Landed' | 'Delayed' | 'Cancelled';
+export type FlightType = 'Passenger' | 'Cargo' | 'Charter' | 'Private';
 
 export interface Flight {
   id: string;
   flightNo: string;
+  airline: string;
+  flightType: FlightType;
   origin: string;
   destination: string;
   aircraftReg: string;
@@ -45,10 +48,43 @@ const STATUS_SEVERITY: Record<FlightStatus, TagSeverity> = {
   Cancelled: 'danger'
 };
 
+const FLIGHT_TYPES: FlightType[] = ['Passenger', 'Cargo', 'Charter', 'Private'];
+const FLIGHT_TYPE_SEVERITY: Record<FlightType, TagSeverity> = {
+  Passenger: 'info',
+  Cargo: 'warn',
+  Charter: 'success',
+  Private: 'secondary'
+};
+const AIRLINES = [
+  'Biman Bangladesh Airlines',
+  'US-Bangla Airlines',
+  'Novoair',
+  'Emirates',
+  'Qatar Airways',
+  'Singapore Airlines',
+  'British Airways',
+  'Turkish Airlines',
+  'Etihad Airways',
+  'Cathay Pacific'
+];
+
+function startOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
 @Component({
   selector: 'app-flight-scheduling',
   imports: [
     DatePipe,
+    FormsModule,
     ReactiveFormsModule,
     ButtonModule,
     TableModule,
@@ -63,7 +99,8 @@ const STATUS_SEVERITY: Record<FlightStatus, TagSeverity> = {
     PageHeader,
     StatCard
   ],
-  templateUrl: './flight-scheduling.html'
+  templateUrl: './flight-scheduling.html',
+  styleUrl: './flight-scheduling.scss'
 })
 export class FlightSchedulingPage implements OnInit {
   private readonly api = inject(ApiService);
@@ -72,12 +109,49 @@ export class FlightSchedulingPage implements OnInit {
   private readonly messages = inject(MessageService);
 
   readonly statuses = STATUSES;
+  readonly flightTypes = FLIGHT_TYPES;
+  readonly airlines = AIRLINES;
 
   flights = signal<Flight[]>([]);
   loading = signal(true);
   dialogVisible = signal(false);
   editingFlight = signal<Flight | null>(null);
   saving = signal(false);
+
+  // Data-grid filters — independent of the create/edit form above.
+  filterFromDate = signal<Date | null>(null);
+  filterToDate = signal<Date | null>(null);
+  filterFlightType = signal<FlightType | null>(null);
+  filterAirline = signal<string | null>(null);
+  filterFlightNo = signal('');
+
+  hasActiveFilters = computed(
+    () =>
+      !!this.filterFromDate() ||
+      !!this.filterToDate() ||
+      !!this.filterFlightType() ||
+      !!this.filterAirline() ||
+      this.filterFlightNo().trim().length > 0
+  );
+
+  filteredFlights = computed(() => {
+    const rows = this.flights();
+    const from = this.filterFromDate();
+    const to = this.filterToDate();
+    const flightType = this.filterFlightType();
+    const airline = this.filterAirline();
+    const flightNo = this.filterFlightNo().trim().toLowerCase();
+
+    return rows.filter((flight) => {
+      const departure = new Date(flight.departureTime);
+      if (from && departure < startOfDay(from)) return false;
+      if (to && departure > endOfDay(to)) return false;
+      if (flightType && flight.flightType !== flightType) return false;
+      if (airline && flight.airline !== airline) return false;
+      if (flightNo && !flight.flightNo.toLowerCase().includes(flightNo)) return false;
+      return true;
+    });
+  });
 
   stats = computed(() => {
     const rows = this.flights();
@@ -91,6 +165,8 @@ export class FlightSchedulingPage implements OnInit {
 
   form = this.fb.nonNullable.group({
     flightNo: ['', Validators.required],
+    airline: this.fb.control<string>(AIRLINES[0], { nonNullable: true, validators: Validators.required }),
+    flightType: this.fb.control<FlightType>('Passenger', { nonNullable: true, validators: Validators.required }),
     origin: ['', Validators.required],
     destination: ['', Validators.required],
     aircraftReg: ['', Validators.required],
@@ -109,9 +185,45 @@ export class FlightSchedulingPage implements OnInit {
     return STATUS_SEVERITY[status];
   }
 
+  typeSeverity(type: FlightType): TagSeverity {
+    return FLIGHT_TYPE_SEVERITY[type];
+  }
+
+  clearFilters(): void {
+    this.filterFromDate.set(null);
+    this.filterToDate.set(null);
+    this.filterFlightType.set(null);
+    this.filterAirline.set(null);
+    this.filterFlightNo.set('');
+  }
+
+  /**
+   * No clear ("x") icon on the filter dropdowns — Backspace empties the
+   * selection instead. With appendTo="body" the open panel's own filter
+   * input lives outside this element's DOM subtree, so this only ever
+   * fires for Backspace on the closed, focused dropdown — typing in the
+   * Airline search box to narrow results is unaffected.
+   */
+  clearOnBackspace(event: KeyboardEvent, filter: { set(value: null): void }): void {
+    if (event.key === 'Backspace') {
+      event.preventDefault();
+      filter.set(null);
+    }
+  }
+
   openNew(): void {
     this.editingFlight.set(null);
-    this.form.reset({ status: 'Scheduled', gate: '', remarks: '', flightNo: '', origin: '', destination: '', aircraftReg: '' });
+    this.form.reset({
+      status: 'Scheduled',
+      flightType: 'Passenger',
+      airline: AIRLINES[0],
+      gate: '',
+      remarks: '',
+      flightNo: '',
+      origin: '',
+      destination: '',
+      aircraftReg: ''
+    });
     this.dialogVisible.set(true);
   }
 
@@ -119,6 +231,8 @@ export class FlightSchedulingPage implements OnInit {
     this.editingFlight.set(flight);
     this.form.setValue({
       flightNo: flight.flightNo,
+      airline: flight.airline,
+      flightType: flight.flightType,
       origin: flight.origin,
       destination: flight.destination,
       aircraftReg: flight.aircraftReg,

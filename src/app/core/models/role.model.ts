@@ -25,6 +25,7 @@ export type Role =
   | 'DocumentControl'
   | 'BI'
   | 'Security'
+  | 'Facilities'
   | 'ReadOnly';
 
 export const ALL_ROLES: Role[] = [
@@ -48,6 +49,7 @@ export const ALL_ROLES: Role[] = [
   'DocumentControl',
   'BI',
   'Security',
+  'Facilities',
   'ReadOnly'
 ];
 
@@ -72,5 +74,6 @@ export const ROLE_LABELS: Record<Role, string> = {
   DocumentControl: 'Document Management',
   BI: 'Business Intelligence',
   Security: 'Security Management',
+  Facilities: 'Facilities & Assets',
   ReadOnly: 'Read Only'
 };

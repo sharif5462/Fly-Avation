@@ -1,0 +1,240 @@
+<div class="page-container">
+  <app-page-header icon="pi-box" title="Asset Master" description="Master register of facility infrastructure, building systems, and fixed assets across every site.">
+    <p-button label="New Asset" icon="pi pi-plus" (onClick)="openNew()" />
+  </app-page-header>
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-box" [value]="stats().total" label="Total Assets" />
+    <app-stat-card icon="pi-wrench" [value]="stats().underMaintenance" label="Under Maintenance" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+    <app-stat-card icon="pi-ban" [value]="stats().outOfService" label="Out of Service" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+    <app-stat-card icon="pi-exclamation-triangle" [value]="stats().critical" label="Safety-Critical" iconBg="color-mix(in srgb, var(--p-blue-500) 15%, transparent)" iconColor="var(--p-blue-500)" />
+  </div>
+
+  <div class="surface-card">
+    <p-table #dt [value]="assets()" [loading]="loading()" [paginator]="true" [rows]="10" dataKey="id" [rowHover]="true" [stripedRows]="true" [globalFilterFields]="['assetCode', 'assetName', 'assetCategory', 'facility', 'building']" responsiveLayout="scroll">
+      <ng-template #caption>
+        <div class="table-toolbar">
+          <p-iconfield iconPosition="left" class="table-toolbar__search">
+            <p-inputicon class="pi pi-search" />
+            <input pInputText type="text" placeholder="Search assets…" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+          </p-iconfield>
+          <span class="text-muted table-toolbar__count">{{ assets().length }} assets</span>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="assetCode">Asset Code <p-sortIcon field="assetCode" /></th>
+          <th>Asset Name</th>
+          <th>Category</th>
+          <th>Facility</th>
+          <th pSortableColumn="condition">Condition <p-sortIcon field="condition" /></th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status" /></th>
+          <th style="width: 6.5rem">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-asset>
+        <tr>
+          <td><strong>{{ asset.assetCode }}</strong></td>
+          <td>{{ asset.assetName }}</td>
+          <td>{{ asset.assetCategory }}</td>
+          <td>{{ asset.facility }}</td>
+          <td><p-tag [value]="asset.condition" [severity]="conditionSeverity(asset.condition)" /></td>
+          <td><p-tag [value]="asset.status" [severity]="statusSeverity(asset.status)" /></td>
+          <td>
+            <div class="row-actions">
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(asset)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(asset)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="7" class="table-empty">No assets in the register yet.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [header]="editing() ? 'Edit Asset — ' + editing()?.assetCode : 'New Asset'"
+  [style]="{ width: '50rem' }"
+  [draggable]="false"
+  [dismissableMask]="true"
+>
+  <form [formGroup]="form">
+    <p-tabs [value]="activeTab()" (valueChange)="activeTab.set($any($event))" [scrollable]="true">
+      <p-tablist>
+        <p-tab value="0">Basic Info</p-tab>
+        <p-tab value="1">Location</p-tab>
+        <p-tab value="2">Acquisition & Financial</p-tab>
+        <p-tab value="3">Maintenance & Condition</p-tab>
+        <p-tab value="4">Compliance & Status</p-tab>
+      </p-tablist>
+      <p-tabpanels>
+        <!-- Basic Info -->
+        <p-tabpanel value="0">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="assetCode">Asset Code</label>
+              <input pInputText id="assetCode" formControlName="assetCode" placeholder="AST-00123" />
+            </div>
+            <div class="entity-form__field">
+              <label for="assetName">Asset Name</label>
+              <input pInputText id="assetName" formControlName="assetName" />
+            </div>
+            <div class="entity-form__field">
+              <label for="assetCategory">Asset Category</label>
+              <p-select inputId="assetCategory" formControlName="assetCategory" [options]="assetCategories" [editable]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="assetType">Asset Type</label>
+              <input pInputText id="assetType" formControlName="assetType" />
+            </div>
+            <div class="entity-form__field">
+              <label for="serialNumber">Serial Number</label>
+              <input pInputText id="serialNumber" formControlName="serialNumber" />
+            </div>
+            <div class="entity-form__field">
+              <label for="assetTag">Asset Tag (Barcode/RFID)</label>
+              <input pInputText id="assetTag" formControlName="assetTag" />
+            </div>
+            <div class="entity-form__field entity-form__field--full">
+              <label for="description">Description</label>
+              <textarea pTextarea id="description" formControlName="description" rows="2"></textarea>
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- Location -->
+        <p-tabpanel value="1">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="facility">Facility</label>
+              <input pInputText id="facility" formControlName="facility" placeholder="Hangar 3" />
+            </div>
+            <div class="entity-form__field">
+              <label for="building">Building</label>
+              <input pInputText id="building" formControlName="building" />
+            </div>
+            <div class="entity-form__field">
+              <label for="floorZone">Floor / Zone</label>
+              <input pInputText id="floorZone" formControlName="floorZone" />
+            </div>
+            <div class="entity-form__field">
+              <label for="roomLocation">Room / Location</label>
+              <input pInputText id="roomLocation" formControlName="roomLocation" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- Acquisition & Financial -->
+        <p-tabpanel value="2">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="manufacturer">Manufacturer</label>
+              <input pInputText id="manufacturer" formControlName="manufacturer" />
+            </div>
+            <div class="entity-form__field">
+              <label for="model">Model</label>
+              <input pInputText id="model" formControlName="model" />
+            </div>
+            <div class="entity-form__field">
+              <label for="vendor">Vendor</label>
+              <input pInputText id="vendor" formControlName="vendor" />
+            </div>
+            <div class="entity-form__field">
+              <label for="purchaseDate">Purchase Date</label>
+              <p-datepicker inputId="purchaseDate" formControlName="purchaseDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="purchasePrice">Purchase Price</label>
+              <p-inputnumber inputId="purchasePrice" formControlName="purchasePrice" [min]="0" prefix="$" [minFractionDigits]="2" />
+            </div>
+            <div class="entity-form__field">
+              <label for="currentValue">Current Value</label>
+              <p-inputnumber inputId="currentValue" formControlName="currentValue" [min]="0" prefix="$" [minFractionDigits]="2" />
+            </div>
+            <div class="entity-form__field">
+              <label for="depreciationMethod">Depreciation Method</label>
+              <p-select inputId="depreciationMethod" formControlName="depreciationMethod" [options]="depreciationMethods" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="usefulLifeYears">Useful Life (years)</label>
+              <p-inputnumber inputId="usefulLifeYears" formControlName="usefulLifeYears" [min]="0" />
+            </div>
+            <div class="entity-form__field">
+              <label for="warrantyExpiry">Warranty Expiry</label>
+              <p-datepicker inputId="warrantyExpiry" formControlName="warrantyExpiry" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="insurancePolicyNo">Insurance Policy No.</label>
+              <input pInputText id="insurancePolicyNo" formControlName="insurancePolicyNo" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- Maintenance & Condition -->
+        <p-tabpanel value="3">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="condition">Condition</label>
+              <p-select inputId="condition" formControlName="condition" [options]="conditions" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="assignedTechnician">Assigned Technician</label>
+              <input pInputText id="assignedTechnician" formControlName="assignedTechnician" />
+            </div>
+            <div class="entity-form__field">
+              <label for="lastInspectionDate">Last Inspection Date</label>
+              <p-datepicker inputId="lastInspectionDate" formControlName="lastInspectionDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="nextInspectionDate">Next Inspection Date</label>
+              <p-datepicker inputId="nextInspectionDate" formControlName="nextInspectionDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="lastMaintenanceDate">Last Maintenance Date</label>
+              <p-datepicker inputId="lastMaintenanceDate" formControlName="lastMaintenanceDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="nextMaintenanceDate">Next Maintenance Date</label>
+              <p-datepicker inputId="nextMaintenanceDate" formControlName="nextMaintenanceDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="maintenanceFrequencyMonths">Maintenance Frequency (months)</label>
+              <p-inputnumber inputId="maintenanceFrequencyMonths" formControlName="maintenanceFrequencyMonths" [min]="0" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- Compliance & Status -->
+        <p-tabpanel value="4">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="status">Status</label>
+              <p-select inputId="status" formControlName="status" [options]="statuses" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="certificationRequired">Certification Required</label>
+              <p-checkbox inputId="certificationRequired" formControlName="certificationRequired" [binary]="true" />
+            </div>
+            <div class="entity-form__field">
+              <label for="certificationExpiry">Certification Expiry</label>
+              <p-datepicker inputId="certificationExpiry" formControlName="certificationExpiry" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="criticalAsset">Safety-Critical Asset</label>
+              <p-checkbox inputId="criticalAsset" formControlName="criticalAsset" [binary]="true" />
+            </div>
+          </div>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  </form>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button [label]="editing() ? 'Save Changes' : 'Create Asset'" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
+  </ng-template>
+</p-dialog>
