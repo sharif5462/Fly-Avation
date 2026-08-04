@@ -6,8 +6,11 @@ import { ENTITY_CONFIGS } from '../data/entity-configs';
 import { ALL_ROLES } from '../models/role.model';
 import { generateSeedRows } from './fake-data';
 import {
-  seedAircraft,
+  seedAircraftRegistrations,
+  seedAssetMaster,
   seedFlights,
+  seedHazardReports,
+  seedItemMaster,
   seedPilots,
   seedPurchaseOrders,
   seedSpareParts,
@@ -22,11 +25,14 @@ type Row = Record<string, unknown> & { id: string };
 /** Seed functions for resources that back a hand-built (flagship) page. */
 const FLAGSHIP_SEEDS: Record<string, () => Row[]> = {
   'flight-scheduling': seedFlights as () => Row[],
-  'aircraft-information': seedAircraft as () => Row[],
+  'aircraft-registration': seedAircraftRegistrations as () => Row[],
   'work-orders': seedWorkOrders as () => Row[],
   'pilot-management': seedPilots as () => Row[],
   'spare-parts-inventory': seedSpareParts as () => Row[],
   'purchase-orders': seedPurchaseOrders as () => Row[],
+  'item-master': seedItemMaster as () => Row[],
+  'asset-master': seedAssetMaster as () => Row[],
+  'hazard-reporting': seedHazardReports as () => Row[],
   users: () => MOCK_CREDENTIALS.map((c) => ({ ...c.user }) as unknown as Row),
   'role-permissions': () => ALL_ROLES.map((role) => ({ id: role, role, extraModules: [] as string[] }) as unknown as Row)
 };

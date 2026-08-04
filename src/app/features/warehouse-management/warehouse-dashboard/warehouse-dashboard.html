@@ -1,0 +1,66 @@
+<div class="page-container">
+  <app-page-header icon="pi-th-large" title="Warehouse Dashboard" description="Stock health, receiving, and issue activity across the warehouse network." />
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-box" [value]="stats().totalItems" label="Total Items" />
+    <app-stat-card icon="pi-exclamation-triangle" [value]="stats().lowStock" label="At/Below Reorder Level" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+    <app-stat-card icon="pi-shopping-cart" [value]="stats().pendingOrders" label="Pending Purchase Orders" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+    <app-stat-card icon="pi-inbox" [value]="stats().pendingGrns" label="Pending GRNs" iconBg="color-mix(in srgb, var(--p-blue-500) 15%, transparent)" iconColor="var(--p-blue-500)" />
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="surface-card dashboard-panel">
+      <h3>Stock by Category</h3>
+      @if (categoryChartData) {
+        <p-chart type="doughnut" [data]="categoryChartData" [options]="doughnutOptions" [style]="{ height: '16rem' }" />
+      }
+    </div>
+
+    <div class="surface-card dashboard-panel">
+      <h3>Items by Type</h3>
+      @if (typeChartData) {
+        <p-chart type="bar" [data]="typeChartData" [options]="barOptions" [style]="{ height: '16rem' }" />
+      }
+    </div>
+
+    <div class="surface-card dashboard-panel">
+      <h3>Quick Links</h3>
+      <div class="quick-links">
+        @for (link of quickLinks; track link.label) {
+          <a class="quick-link" [routerLink]="link.route">
+            <span class="quick-link__icon pi {{ link.icon }}"></span>
+            {{ link.label }}
+            <span class="pi pi-arrow-right quick-link__arrow"></span>
+          </a>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="surface-card dashboard-panel" style="margin-top: 1.25rem">
+    <h3>Items At or Below Reorder Level</h3>
+    <p-table [value]="lowStockItems()" [loading]="loading()" responsiveLayout="scroll">
+      <ng-template #header>
+        <tr>
+          <th>Item Code</th>
+          <th>Item Name</th>
+          <th>Warehouse</th>
+          <th>Current Stock</th>
+          <th>Reorder Level</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item>
+        <tr>
+          <td><strong>{{ item.itemCode }}</strong></td>
+          <td>{{ item.itemName }}</td>
+          <td>{{ item.warehouse }}</td>
+          <td><p-tag [value]="item.currentStock + ''" [severity]="stockSeverity()" /></td>
+          <td>{{ item.reorderLevel }}</td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="5" class="table-empty">No items at or below reorder level.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

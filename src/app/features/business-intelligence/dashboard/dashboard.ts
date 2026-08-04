@@ -11,7 +11,7 @@ import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
-import type { Aircraft } from '../../fleet-management/aircraft-information/aircraft-information';
+import type { AircraftRegistration } from '../../../core/models/aircraft-registration.model';
 import type { Flight } from '../../flight-operations/flight-scheduling/flight-scheduling';
 import type { SparePart } from '../../inventory-spare-parts/spare-parts-inventory/spare-parts-inventory';
 import type { PoStatus, PurchaseOrder } from '../../procurement/purchase-orders/purchase-orders';
@@ -65,7 +65,7 @@ export class DashboardPage implements OnInit {
   ngOnInit(): void {
     forkJoin({
       flights: this.api.list<Flight>('flight-scheduling'),
-      aircraft: this.api.list<Aircraft>('aircraft-information'),
+      aircraft: this.api.list<AircraftRegistration>('aircraft-registration'),
       workOrders: this.api.list<WorkOrder>('work-orders'),
       spareParts: this.api.list<SparePart>('spare-parts-inventory'),
       purchaseOrders: this.api.list<PurchaseOrder>('purchase-orders')
@@ -79,9 +79,9 @@ export class DashboardPage implements OnInit {
     });
   }
 
-  private computeStats(flights: Flight[], aircraft: Aircraft[], workOrders: WorkOrder[], spareParts: SparePart[]): void {
+  private computeStats(flights: Flight[], aircraft: AircraftRegistration[], workOrders: WorkOrder[], spareParts: SparePart[]): void {
     const activeFlights = flights.filter((f) => f.status === 'In Air' || f.status === 'Departed' || f.status === 'Boarding').length;
-    const activeAircraft = aircraft.filter((a) => a.status === 'Active').length;
+    const activeAircraft = aircraft.filter((a) => a.currentStatus === 'Active').length;
     const fleetAvailability = aircraft.length ? Math.round((activeAircraft / aircraft.length) * 100) : 0;
     const openWorkOrders = workOrders.filter((w) => w.status === 'Open' || w.status === 'In Progress').length;
     const attentionParts = spareParts.filter((p) => p.status !== 'In Stock').length;
@@ -96,9 +96,9 @@ export class DashboardPage implements OnInit {
     return getComputedStyle(document.documentElement).getPropertyValue('--p-text-muted-color') || '#64748b';
   }
 
-  private buildFleetChart(aircraft: Aircraft[]): void {
-    const buckets: Record<string, number> = { Active: 0, 'In Maintenance': 0, Grounded: 0, Stored: 0 };
-    aircraft.forEach((a) => (buckets[a.status] = (buckets[a.status] ?? 0) + 1));
+  private buildFleetChart(aircraft: AircraftRegistration[]): void {
+    const buckets: Record<string, number> = { Active: 0, Maintenance: 0, Grounded: 0, Retired: 0, Parked: 0 };
+    aircraft.forEach((a) => (buckets[a.currentStatus] = (buckets[a.currentStatus] ?? 0) + 1));
     const textColor = this.themeTextColor();
 
     this.fleetChartData = {
@@ -106,8 +106,8 @@ export class DashboardPage implements OnInit {
       datasets: [
         {
           data: Object.values(buckets),
-          backgroundColor: ['#22c55e', '#f59e0b', '#ef4444', '#94a3b8'],
-          hoverBackgroundColor: ['#16a34a', '#d97706', '#dc2626', '#64748b']
+          backgroundColor: ['#22c55e', '#f59e0b', '#ef4444', '#64748b', '#0ea5e9'],
+          hoverBackgroundColor: ['#16a34a', '#d97706', '#dc2626', '#475569', '#0284c7']
         }
       ]
     };

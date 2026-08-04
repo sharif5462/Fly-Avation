@@ -1,0 +1,459 @@
+<div class="page-container">
+  <app-page-header icon="pi-id-card" title="Aircraft Registration" description="Master register of every aircraft in the fleet — identity, ownership, technical specs, certification, maintenance and financials.">
+    <p-button label="Register Aircraft" icon="pi pi-plus" (onClick)="openNew()" />
+  </app-page-header>
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-compass" [value]="stats().total" label="Total Aircraft" />
+    <app-stat-card icon="pi-check-circle" [value]="stats().active" label="Active" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+    <app-stat-card icon="pi-wrench" [value]="stats().maintenance" label="In Maintenance" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+    <app-stat-card icon="pi-ban" [value]="stats().grounded" label="Grounded" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+  </div>
+
+  <div class="surface-card">
+    <p-table
+      #dt
+      [value]="fleet()"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="10"
+      dataKey="id"
+      [rowHover]="true"
+      [stripedRows]="true"
+      [globalFilterFields]="['registrationNumber', 'serialNumber', 'manufacturer', 'model', 'ownerName', 'operatorName', 'homeBaseAirport', 'currentAirport']"
+      responsiveLayout="scroll"
+    >
+      <ng-template #caption>
+        <div class="table-toolbar">
+          <p-iconfield iconPosition="left" class="table-toolbar__search">
+            <p-inputicon class="pi pi-search" />
+            <input pInputText type="text" placeholder="Search register…" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+          </p-iconfield>
+          <span class="text-muted table-toolbar__count">{{ fleet().length }} aircraft</span>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="registrationNumber">Tail Number <p-sortIcon field="registrationNumber" /></th>
+          <th>Manufacturer / Model</th>
+          <th>Operator</th>
+          <th>Home Base</th>
+          <th pSortableColumn="totalFlightHours">Flight Hours <p-sortIcon field="totalFlightHours" /></th>
+          <th pSortableColumn="currentStatus">Status <p-sortIcon field="currentStatus" /></th>
+          <th pSortableColumn="erpStatus">ERP Status <p-sortIcon field="erpStatus" /></th>
+          <th style="width: 6.5rem">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-aircraft>
+        <tr>
+          <td><strong>{{ aircraft.registrationNumber }}</strong></td>
+          <td>{{ aircraft.manufacturer }} {{ aircraft.model }}</td>
+          <td>{{ aircraft.operatorName }}</td>
+          <td>{{ aircraft.homeBaseAirport }}</td>
+          <td>{{ aircraft.totalFlightHours | number }} hrs</td>
+          <td><p-tag [value]="aircraft.currentStatus" [severity]="statusSeverity(aircraft.currentStatus)" /></td>
+          <td><p-tag [value]="aircraft.erpStatus" [severity]="erpSeverity(aircraft.erpStatus)" /></td>
+          <td>
+            <div class="row-actions">
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(aircraft)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(aircraft)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="8" class="table-empty">No aircraft in the register yet.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [header]="editing() ? 'Edit Aircraft — ' + editing()?.registrationNumber : 'Register Aircraft'"
+  [style]="{ width: '58rem' }"
+  [draggable]="false"
+  [dismissableMask]="true"
+>
+  <form [formGroup]="form">
+    <p-tabs [value]="activeTab()" (valueChange)="activeTab.set($any($event))" [scrollable]="true">
+      <p-tablist>
+        <p-tab value="0">Basic Info</p-tab>
+        <p-tab value="1">Ownership</p-tab>
+        <p-tab value="2">Technical</p-tab>
+        <p-tab value="3">Capacity</p-tab>
+        <p-tab value="4">Operational</p-tab>
+        <p-tab value="5">Certification</p-tab>
+        <p-tab value="6">Maintenance</p-tab>
+        <p-tab value="7">Comms Equipment</p-tab>
+        <p-tab value="8">Documents</p-tab>
+        <p-tab value="9">Financial</p-tab>
+        <p-tab value="10">ERP Status</p-tab>
+      </p-tablist>
+      <p-tabpanels>
+        <!-- 1. Basic Information -->
+        <p-tabpanel value="0">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="registrationNumber">Registration Number (Tail Number)</label>
+              <input pInputText id="registrationNumber" formControlName="registrationNumber" placeholder="S2-AHV" />
+            </div>
+            <div class="entity-form__field">
+              <label for="serialNumber">Serial Number (MSN)</label>
+              <input pInputText id="serialNumber" formControlName="serialNumber" placeholder="43219" />
+            </div>
+            <div class="entity-form__field">
+              <label for="manufacturer">Manufacturer</label>
+              <p-select inputId="manufacturer" formControlName="manufacturer" [options]="manufacturers" [editable]="true" appendTo="body" (onChange)="onManufacturerChange($event.value)" />
+            </div>
+            <div class="entity-form__field">
+              <label for="model">Model</label>
+              <p-select inputId="model" formControlName="model" [options]="availableModels()" [editable]="true" appendTo="body" placeholder="B737-800" />
+            </div>
+            <div class="entity-form__field">
+              <label for="aircraftType">Aircraft Type</label>
+              <p-select inputId="aircraftType" formControlName="aircraftType" [options]="aircraftTypes" [editable]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="icaoCode">ICAO Aircraft Code</label>
+              <input pInputText id="icaoCode" formControlName="icaoCode" placeholder="B738" />
+            </div>
+            <div class="entity-form__field">
+              <label for="iataCode">IATA Aircraft Code</label>
+              <input pInputText id="iataCode" formControlName="iataCode" placeholder="738" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- 2. Ownership Information -->
+        <p-tabpanel value="1">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="ownerName">Owner Name</label>
+              <input pInputText id="ownerName" formControlName="ownerName" />
+            </div>
+            <div class="entity-form__field">
+              <label for="operatorName">Operator Name</label>
+              <input pInputText id="operatorName" formControlName="operatorName" />
+            </div>
+            <div class="entity-form__field">
+              <label for="leaseType">Lease Type</label>
+              <p-select inputId="leaseType" formControlName="leaseType" [options]="leaseTypes" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="lessorName">Lessor Name</label>
+              <input pInputText id="lessorName" formControlName="lessorName" />
+            </div>
+            <div class="entity-form__field">
+              <label for="leaseStartDate">Lease Start Date</label>
+              <p-datepicker inputId="leaseStartDate" formControlName="leaseStartDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="leaseEndDate">Lease End Date</label>
+              <p-datepicker inputId="leaseEndDate" formControlName="leaseEndDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- 3. Technical Information -->
+        <p-tabpanel value="2">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="engineManufacturer">Engine Manufacturer</label>
+              <input pInputText id="engineManufacturer" formControlName="engineManufacturer" placeholder="CFM International" />
+            </div>
+            <div class="entity-form__field">
+              <label for="engineModel">Engine Model</label>
+              <input pInputText id="engineModel" formControlName="engineModel" placeholder="CFM56-7B" />
+            </div>
+            <div class="entity-form__field">
+              <label for="engineCount">Number of Engines</label>
+              <p-inputnumber inputId="engineCount" formControlName="engineCount" [min]="0" />
+            </div>
+            <div class="entity-form__field entity-form__field--full">
+              <label for="engineSerialNumbers">Engine Serial Numbers</label>
+              <textarea pTextarea id="engineSerialNumbers" formControlName="engineSerialNumbers" rows="2" placeholder="Comma-separated, e.g. 894512, 894513"></textarea>
+            </div>
+            <div class="entity-form__field">
+              <label for="mtow">Maximum Takeoff Weight (kg)</label>
+              <p-inputnumber inputId="mtow" formControlName="mtow" [min]="0" suffix=" kg" />
+            </div>
+            <div class="entity-form__field">
+              <label for="mlw">Maximum Landing Weight (kg)</label>
+              <p-inputnumber inputId="mlw" formControlName="mlw" [min]="0" suffix=" kg" />
+            </div>
+            <div class="entity-form__field">
+              <label for="mzfw">Maximum Zero Fuel Weight (kg)</label>
+              <p-inputnumber inputId="mzfw" formControlName="mzfw" [min]="0" suffix=" kg" />
+            </div>
+            <div class="entity-form__field">
+              <label for="fuelCapacity">Fuel Capacity (L)</label>
+              <p-inputnumber inputId="fuelCapacity" formControlName="fuelCapacity" [min]="0" suffix=" L" />
+            </div>
+            <div class="entity-form__field">
+              <label for="cruiseSpeed">Cruise Speed (km/h)</label>
+              <p-inputnumber inputId="cruiseSpeed" formControlName="cruiseSpeed" [min]="0" suffix=" km/h" />
+            </div>
+            <div class="entity-form__field">
+              <label for="maxRange">Maximum Range (km)</label>
+              <p-inputnumber inputId="maxRange" formControlName="maxRange" [min]="0" suffix=" km" />
+            </div>
+            <div class="entity-form__field">
+              <label for="wingspan">Wingspan (m)</label>
+              <p-inputnumber inputId="wingspan" formControlName="wingspan" [min]="0" [maxFractionDigits]="2" suffix=" m" />
+            </div>
+            <div class="entity-form__field">
+              <label for="aircraftLength">Length (m)</label>
+              <p-inputnumber inputId="aircraftLength" formControlName="aircraftLength" [min]="0" [maxFractionDigits]="2" suffix=" m" />
+            </div>
+            <div class="entity-form__field">
+              <label for="aircraftHeight">Height (m)</label>
+              <p-inputnumber inputId="aircraftHeight" formControlName="aircraftHeight" [min]="0" [maxFractionDigits]="2" suffix=" m" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- 4. Capacity -->
+        <p-tabpanel value="3">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="totalSeats">Total Seats</label>
+              <p-inputnumber inputId="totalSeats" formControlName="totalSeats" [min]="0" />
+            </div>
+            <div class="entity-form__field">
+              <label for="firstClassSeats">First Class Seats</label>
+              <p-inputnumber inputId="firstClassSeats" formControlName="firstClassSeats" [min]="0" />
+            </div>
+            <div class="entity-form__field">
+              <label for="businessSeats">Business Class Seats</label>
+              <p-inputnumber inputId="businessSeats" formControlName="businessSeats" [min]="0" />
+            </div>
+            <div class="entity-form__field">
+              <label for="economySeats">Economy Class Seats</label>
+              <p-inputnumber inputId="economySeats" formControlName="economySeats" [min]="0" />
+            </div>
+            <div class="entity-form__field">
+              <label for="cargoCapacity">Cargo Capacity (kg)</label>
+              <p-inputnumber inputId="cargoCapacity" formControlName="cargoCapacity" [min]="0" suffix=" kg" />
+            </div>
+            <div class="entity-form__field">
+              <label for="maxPassengers">Maximum Passengers</label>
+              <p-inputnumber inputId="maxPassengers" formControlName="maxPassengers" [min]="0" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- 5. Operational Information -->
+        <p-tabpanel value="4">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="homeBaseAirport">Home Base Airport</label>
+              <input pInputText id="homeBaseAirport" formControlName="homeBaseAirport" placeholder="DAC" />
+            </div>
+            <div class="entity-form__field">
+              <label for="currentAirport">Current Airport</label>
+              <input pInputText id="currentAirport" formControlName="currentAirport" placeholder="DXB" />
+            </div>
+            <div class="entity-form__field">
+              <label for="currentStatus">Current Status</label>
+              <p-select inputId="currentStatus" formControlName="currentStatus" [options]="currentStatuses" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="flightCategory">Flight Category</label>
+              <p-select inputId="flightCategory" formControlName="flightCategory" [options]="flightCategories" appendTo="body" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- 6. Certification -->
+        <p-tabpanel value="5">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="registrationDate">Registration Date</label>
+              <p-datepicker inputId="registrationDate" formControlName="registrationDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="registrationExpiry">Registration Expiry</label>
+              <p-datepicker inputId="registrationExpiry" formControlName="registrationExpiry" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="airworthinessCertNo">Airworthiness Certificate No.</label>
+              <input pInputText id="airworthinessCertNo" formControlName="airworthinessCertNo" />
+            </div>
+            <div class="entity-form__field">
+              <label for="airworthinessExpiry">Airworthiness Expiry</label>
+              <p-datepicker inputId="airworthinessExpiry" formControlName="airworthinessExpiry" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="insurancePolicyNo">Insurance Policy Number</label>
+              <input pInputText id="insurancePolicyNo" formControlName="insurancePolicyNo" />
+            </div>
+            <div class="entity-form__field">
+              <label for="insuranceExpiry">Insurance Expiry</label>
+              <p-datepicker inputId="insuranceExpiry" formControlName="insuranceExpiry" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="noiseCertificate">Noise Certificate</label>
+              <input pInputText id="noiseCertificate" formControlName="noiseCertificate" />
+            </div>
+            <div class="entity-form__field">
+              <label for="radioLicense">Radio License</label>
+              <input pInputText id="radioLicense" formControlName="radioLicense" />
+            </div>
+            <div class="entity-form__field">
+              <label for="certificateOfRegistration">Certificate of Registration</label>
+              <input pInputText id="certificateOfRegistration" formControlName="certificateOfRegistration" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- 7. Maintenance Information -->
+        <p-tabpanel value="6">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="lastMaintenanceDate">Last Maintenance Date</label>
+              <p-datepicker inputId="lastMaintenanceDate" formControlName="lastMaintenanceDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="nextMaintenanceDate">Next Maintenance Date</label>
+              <p-datepicker inputId="nextMaintenanceDate" formControlName="nextMaintenanceDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="lastACheck">Last A Check</label>
+              <p-datepicker inputId="lastACheck" formControlName="lastACheck" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="nextACheck">Next A Check</label>
+              <p-datepicker inputId="nextACheck" formControlName="nextACheck" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="lastCCheck">Last C Check</label>
+              <p-datepicker inputId="lastCCheck" formControlName="lastCCheck" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="nextCCheck">Next C Check</label>
+              <p-datepicker inputId="nextCCheck" formControlName="nextCCheck" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+            </div>
+            <div class="entity-form__field">
+              <label for="totalFlightHours">Total Flight Hours</label>
+              <p-inputnumber inputId="totalFlightHours" formControlName="totalFlightHours" [min]="0" suffix=" hrs" />
+            </div>
+            <div class="entity-form__field">
+              <label for="totalFlightCycles">Total Flight Cycles</label>
+              <p-inputnumber inputId="totalFlightCycles" formControlName="totalFlightCycles" [min]="0" />
+            </div>
+            <div class="entity-form__field">
+              <label for="remainingHours">Remaining Hours</label>
+              <p-inputnumber inputId="remainingHours" formControlName="remainingHours" [min]="0" suffix=" hrs" />
+            </div>
+            <div class="entity-form__field">
+              <label for="remainingCycles">Remaining Cycles</label>
+              <p-inputnumber inputId="remainingCycles" formControlName="remainingCycles" [min]="0" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- 8. Communication Equipment -->
+        <p-tabpanel value="7">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="transponderCode">Transponder Code</label>
+              <input pInputText id="transponderCode" formControlName="transponderCode" placeholder="2000" />
+            </div>
+            <div class="entity-form__field">
+              <label for="eltNumber">ELT Number</label>
+              <input pInputText id="eltNumber" formControlName="eltNumber" />
+            </div>
+            <div class="entity-form__field">
+              <label for="satcomInstalled">SATCOM Installed</label>
+              <p-checkbox inputId="satcomInstalled" formControlName="satcomInstalled" [binary]="true" />
+            </div>
+            <div class="entity-form__field">
+              <label for="adsbInstalled">ADS-B Installed</label>
+              <p-checkbox inputId="adsbInstalled" formControlName="adsbInstalled" [binary]="true" />
+            </div>
+            <div class="entity-form__field">
+              <label for="tcasInstalled">TCAS Installed</label>
+              <p-checkbox inputId="tcasInstalled" formControlName="tcasInstalled" [binary]="true" />
+            </div>
+            <div class="entity-form__field">
+              <label for="weatherRadarInstalled">Weather Radar Installed</label>
+              <p-checkbox inputId="weatherRadarInstalled" formControlName="weatherRadarInstalled" [binary]="true" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- 9. Documents -->
+        <p-tabpanel value="8">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="registrationCertificateFile">Registration Certificate</label>
+              <input pInputText id="registrationCertificateFile" formControlName="registrationCertificateFile" placeholder="registration-cert.pdf" />
+            </div>
+            <div class="entity-form__field">
+              <label for="airworthinessCertificateFile">Airworthiness Certificate</label>
+              <input pInputText id="airworthinessCertificateFile" formControlName="airworthinessCertificateFile" placeholder="airworthiness-cert.pdf" />
+            </div>
+            <div class="entity-form__field">
+              <label for="insuranceCopyFile">Insurance Copy</label>
+              <input pInputText id="insuranceCopyFile" formControlName="insuranceCopyFile" placeholder="insurance-copy.pdf" />
+            </div>
+            <div class="entity-form__field">
+              <label for="leaseAgreementFile">Lease Agreement</label>
+              <input pInputText id="leaseAgreementFile" formControlName="leaseAgreementFile" placeholder="lease-agreement.pdf" />
+            </div>
+            <div class="entity-form__field">
+              <label for="maintenanceCertificateFile">Maintenance Certificate</label>
+              <input pInputText id="maintenanceCertificateFile" formControlName="maintenanceCertificateFile" placeholder="maintenance-cert.pdf" />
+            </div>
+            <div class="entity-form__field">
+              <label for="aircraftPhotoFile">Aircraft Photo</label>
+              <input pInputText id="aircraftPhotoFile" formControlName="aircraftPhotoFile" placeholder="aircraft-photo.jpg" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- 10. Financial Information -->
+        <p-tabpanel value="9">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="purchasePrice">Purchase Price</label>
+              <p-inputnumber inputId="purchasePrice" formControlName="purchasePrice" [min]="0" prefix="$" [minFractionDigits]="2" />
+            </div>
+            <div class="entity-form__field">
+              <label for="currentValue">Current Value</label>
+              <p-inputnumber inputId="currentValue" formControlName="currentValue" [min]="0" prefix="$" [minFractionDigits]="2" />
+            </div>
+            <div class="entity-form__field">
+              <label for="monthlyLeaseCost">Monthly Lease Cost</label>
+              <p-inputnumber inputId="monthlyLeaseCost" formControlName="monthlyLeaseCost" [min]="0" prefix="$" [minFractionDigits]="2" />
+            </div>
+            <div class="entity-form__field">
+              <label for="depreciation">Depreciation</label>
+              <p-inputnumber inputId="depreciation" formControlName="depreciation" [min]="0" prefix="$" [minFractionDigits]="2" />
+            </div>
+            <div class="entity-form__field">
+              <label for="insuranceCost">Insurance Cost</label>
+              <p-inputnumber inputId="insuranceCost" formControlName="insuranceCost" [min]="0" prefix="$" [minFractionDigits]="2" />
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <!-- 11. ERP Status -->
+        <p-tabpanel value="10">
+          <div class="entity-form">
+            <div class="entity-form__field">
+              <label for="erpStatus">ERP Status</label>
+              <p-select inputId="erpStatus" formControlName="erpStatus" [options]="erpStatuses" appendTo="body" />
+            </div>
+          </div>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  </form>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button [label]="editing() ? 'Save Changes' : 'Register Aircraft'" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
+  </ng-template>
+</p-dialog>

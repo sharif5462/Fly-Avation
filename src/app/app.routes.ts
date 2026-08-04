@@ -18,8 +18,8 @@ import { Shell } from './layout/shell/shell';
 const FLAGSHIP_LOADERS: Record<string, Route['loadComponent']> = {
   'flight-scheduling': () =>
     import('./features/flight-operations/flight-scheduling/flight-scheduling').then((m) => m.FlightSchedulingPage),
-  'aircraft-information': () =>
-    import('./features/fleet-management/aircraft-information/aircraft-information').then((m) => m.AircraftInformationPage),
+  'aircraft-registration': () =>
+    import('./features/fleet-management/aircraft-registration/aircraft-registration').then((m) => m.AircraftRegistrationPage),
   'work-orders': () => import('./features/aircraft-maintenance/work-orders/work-orders').then((m) => m.WorkOrdersPage),
   'pilot-management': () =>
     import('./features/crew-management/pilot-management/pilot-management').then((m) => m.PilotManagementPage),
@@ -27,7 +27,17 @@ const FLAGSHIP_LOADERS: Record<string, Route['loadComponent']> = {
     import('./features/inventory-spare-parts/spare-parts-inventory/spare-parts-inventory').then((m) => m.SparePartsInventoryPage),
   'purchase-orders': () => import('./features/procurement/purchase-orders/purchase-orders').then((m) => m.PurchaseOrdersPage),
   'user-roles': () => import('./features/security-management/user-roles/user-roles').then((m) => m.UserRolesPage),
-  'access-control': () => import('./features/security-management/access-control/access-control').then((m) => m.AccessControlPage)
+  'access-control': () => import('./features/security-management/access-control/access-control').then((m) => m.AccessControlPage),
+  'warehouse-dashboard': () =>
+    import('./features/warehouse-management/warehouse-dashboard/warehouse-dashboard').then((m) => m.WarehouseDashboardPage),
+  'item-master': () => import('./features/warehouse-management/item-master/item-master').then((m) => m.ItemMasterPage),
+  'facility-dashboard': () =>
+    import('./features/facilities-assets/facility-dashboard/facility-dashboard').then((m) => m.FacilityDashboardPage),
+  'asset-master': () => import('./features/facilities-assets/asset-master/asset-master').then((m) => m.AssetMasterPage),
+  'sms-dashboard': () =>
+    import('./features/safety-management-system/sms-dashboard/sms-dashboard').then((m) => m.SmsDashboardPage),
+  'hazard-reporting': () =>
+    import('./features/safety-management-system/hazard-reporting/hazard-reporting').then((m) => m.HazardReportingPage)
 };
 
 function scaffoldLoader(): ReturnType<NonNullable<Route['loadComponent']>> {

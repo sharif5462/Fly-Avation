@@ -53,7 +53,7 @@ export const MODULES: ModuleDef[] = [
     icon: 'pi-compass',
     role: 'Fleet',
     items: [
-      { key: 'aircraft-information', label: 'Aircraft Information', icon: 'pi-info-circle', flagship: true },
+      { key: 'aircraft-registration', label: 'Aircraft Registration', icon: 'pi-id-card', flagship: true },
       { key: 'fleet-availability', label: 'Fleet Availability', icon: 'pi-check-circle' },
       { key: 'aircraft-history', label: 'Aircraft History', icon: 'pi-history' },
       { key: 'aircraft-utilization', label: 'Aircraft Utilization', icon: 'pi-chart-bar' },
@@ -69,13 +69,60 @@ export const MODULES: ModuleDef[] = [
     role: 'Inventory',
     items: [
       { key: 'spare-parts-inventory', label: 'Spare Parts Inventory', icon: 'pi-box', flagship: true },
-      { key: 'warehouse-management', label: 'Warehouse Management', icon: 'pi-warehouse' },
+      { key: 'warehouse-management', label: 'Storage Locations', icon: 'pi-warehouse' },
       { key: 'barcode-rfid', label: 'Barcode / RFID', icon: 'pi-qrcode' },
       { key: 'purchase-requests', label: 'Purchase Requests', icon: 'pi-file-edit' },
       { key: 'stock-transfer', label: 'Stock Transfer', icon: 'pi-arrow-right-arrow-left' },
       { key: 'tool-tracking', label: 'Tool Tracking', icon: 'pi-wrench' },
       { key: 'minimum-stock-alerts', label: 'Minimum Stock Alerts', icon: 'pi-bell' },
       { key: 'serial-number-tracking', label: 'Serial Number Tracking', icon: 'pi-tag' }
+    ]
+  },
+  {
+    key: 'warehouse-management',
+    label: 'Warehouse Management',
+    icon: 'pi-warehouse',
+    role: 'Inventory',
+    items: [
+      { key: 'warehouse-dashboard', label: 'Dashboard', icon: 'pi-th-large', flagship: true },
+      { key: 'warehouse-management', label: 'Warehouse Setup', icon: 'pi-building' },
+      { key: 'store-setup', label: 'Store Setup', icon: 'pi-shop' },
+      { key: 'rack-bin-setup', label: 'Rack/Bin Setup', icon: 'pi-th-large' },
+      { key: 'item-category', label: 'Item Category', icon: 'pi-tags' },
+      { key: 'item-master', label: 'Item Master', icon: 'pi-box', flagship: true },
+      { key: 'unit-setup', label: 'Unit Setup', icon: 'pi-calculator' },
+      { key: 'brand-setup', label: 'Brand Setup', icon: 'pi-bookmark' },
+      { key: 'manufacturer-setup', label: 'Manufacturer Setup', icon: 'pi-industry' },
+      // Reuses Procurement's Vendor Management — same real-world supplier record.
+      { key: 'vendor-management', label: 'Supplier Setup', icon: 'pi-building' },
+      // Reuses Inventory & Spare Parts' Purchase Requests entity.
+      { key: 'purchase-requests', label: 'Purchase Request', icon: 'pi-file-edit' },
+      // Reuses Procurement's flagship Purchase Orders page/data.
+      { key: 'purchase-orders', label: 'Purchase Order', icon: 'pi-shopping-cart', flagship: true },
+      // Reuses Procurement's Goods Receiving entity.
+      { key: 'goods-receiving', label: 'Goods Receive (GRN)', icon: 'pi-inbox' },
+      // Reuses Quality Assurance's Quality Inspection entity.
+      { key: 'quality-inspection', label: 'Inspection', icon: 'pi-eye' },
+      { key: 'stock-entry', label: 'Stock Entry', icon: 'pi-sign-in' },
+      { key: 'stock-issue', label: 'Stock Issue', icon: 'pi-sign-out' },
+      { key: 'stock-return', label: 'Stock Return', icon: 'pi-replay' },
+      // Reuses Inventory & Spare Parts' Stock Transfer entity.
+      { key: 'stock-transfer', label: 'Warehouse Transfer', icon: 'pi-arrow-right-arrow-left' },
+      { key: 'aircraft-issue', label: 'Aircraft Issue', icon: 'pi-send' },
+      { key: 'component-installation', label: 'Component Installation', icon: 'pi-plus-circle' },
+      { key: 'component-removal', label: 'Component Removal', icon: 'pi-minus-circle' },
+      { key: 'repair-management', label: 'Repair Management', icon: 'pi-hammer' },
+      { key: 'scrap-management', label: 'Scrap Management', icon: 'pi-trash' },
+      { key: 'inventory-count', label: 'Inventory Count', icon: 'pi-list-check' },
+      { key: 'stock-adjustment', label: 'Stock Adjustment', icon: 'pi-sliders-h' },
+      // Reuses Inventory & Spare Parts' Barcode/RFID entity.
+      { key: 'barcode-rfid', label: 'Barcode / QR', icon: 'pi-qrcode' },
+      // Reuses Inventory & Spare Parts' Serial Number Tracking entity.
+      { key: 'serial-number-tracking', label: 'Serial Number Tracking', icon: 'pi-tag' },
+      { key: 'batch-tracking', label: 'Batch Tracking', icon: 'pi-clone' },
+      { key: 'shelf-life', label: 'Shelf Life', icon: 'pi-calendar-times' },
+      { key: 'warranty', label: 'Warranty', icon: 'pi-shield' },
+      { key: 'calibration', label: 'Calibration', icon: 'pi-gauge' }
     ]
   },
   {
@@ -155,6 +202,44 @@ export const MODULES: ModuleDef[] = [
     ]
   },
   {
+    key: 'facilities-assets',
+    label: 'Facilities & Assets',
+    icon: 'pi-building',
+    role: 'Facilities',
+    items: [
+      { key: 'facility-dashboard', label: 'Dashboard', icon: 'pi-th-large', flagship: true },
+      { key: 'facility-setup', label: 'Facility Setup', icon: 'pi-building' },
+      { key: 'building-zone-setup', label: 'Building/Zone Setup', icon: 'pi-sitemap' },
+      { key: 'asset-category-setup', label: 'Asset Category Setup', icon: 'pi-tags' },
+      { key: 'asset-master', label: 'Asset Master', icon: 'pi-box', flagship: true },
+      { key: 'gse-fleet-registry', label: 'GSE Fleet Registry', icon: 'pi-truck' },
+      // Reuses Procurement's Vendor Management — same real-world contractor/vendor record.
+      { key: 'vendor-management', label: 'Contractor/Vendor Setup', icon: 'pi-building-columns' },
+      { key: 'facility-work-orders', label: 'Facility Work Orders', icon: 'pi-clipboard' },
+      { key: 'facility-preventive-maintenance', label: 'Preventive Maintenance', icon: 'pi-shield' },
+      { key: 'facility-corrective-maintenance', label: 'Corrective Maintenance', icon: 'pi-hammer' },
+      { key: 'asset-inspection', label: 'Asset Inspection', icon: 'pi-eye' },
+      { key: 'meter-reading', label: 'Meter Reading', icon: 'pi-gauge' },
+      { key: 'space-utilization', label: 'Space Utilization', icon: 'pi-th-large' },
+      { key: 'lease-contract-management', label: 'Lease & Contract Management', icon: 'pi-file' },
+      { key: 'utility-energy-management', label: 'Utility & Energy Management', icon: 'pi-bolt' },
+      { key: 'hvac-building-systems', label: 'HVAC & Building Systems', icon: 'pi-cloud' },
+      { key: 'fire-safety-systems', label: 'Fire & Safety Systems', icon: 'pi-exclamation-triangle' },
+      { key: 'physical-security-systems', label: 'Physical Security Systems', icon: 'pi-video' },
+      { key: 'cleaning-janitorial', label: 'Cleaning & Janitorial', icon: 'pi-sparkles' },
+      { key: 'waste-management', label: 'Waste Management', icon: 'pi-trash' },
+      { key: 'parking-management', label: 'Staff/Vehicle Parking', icon: 'pi-car' },
+      { key: 'visitor-management', label: 'Visitor Management', icon: 'pi-user-plus' },
+      { key: 'asset-depreciation', label: 'Asset Depreciation', icon: 'pi-chart-line' },
+      { key: 'asset-disposal', label: 'Asset Disposal', icon: 'pi-trash' },
+      { key: 'insurance-warranty-tracking', label: 'Insurance & Warranty Tracking', icon: 'pi-verified' },
+      { key: 'facility-compliance-certification', label: 'Compliance & Certification', icon: 'pi-verified' },
+      // Reuses Compliance & Safety's Incident Reporting — one incident register, any source.
+      { key: 'incident-reporting', label: 'Incident Reporting', icon: 'pi-flag' },
+      { key: 'facility-audit', label: 'Facility Audit', icon: 'pi-search' }
+    ]
+  },
+  {
     key: 'fuel-management',
     label: 'Fuel Management',
     icon: 'pi-bolt',
@@ -206,11 +291,43 @@ export const MODULES: ModuleDef[] = [
     items: [
       { key: 'icao-compliance', label: 'ICAO Compliance', icon: 'pi-globe' },
       { key: 'iata-compliance', label: 'IATA Compliance', icon: 'pi-globe' },
-      { key: 'safety-management-system', label: 'Safety Management System (SMS)', icon: 'pi-shield' },
       { key: 'risk-assessment', label: 'Risk Assessment', icon: 'pi-exclamation-triangle' },
       { key: 'incident-reporting', label: 'Incident Reporting', icon: 'pi-flag' },
       { key: 'audit-management', label: 'Audit Management', icon: 'pi-search' },
       { key: 'document-control', label: 'Document Control', icon: 'pi-file' }
+    ]
+  },
+  {
+    key: 'safety-management-system',
+    label: 'Safety Management System (SMS)',
+    icon: 'pi-shield',
+    role: 'Compliance',
+    items: [
+      { key: 'sms-dashboard', label: 'Dashboard', icon: 'pi-th-large', flagship: true },
+      { key: 'safety-policy-statement', label: 'Safety Policy & Objectives', icon: 'pi-flag' },
+      { key: 'safety-accountabilities', label: 'Safety Accountabilities', icon: 'pi-user-edit' },
+      { key: 'emergency-response-plan', label: 'Emergency Response Planning', icon: 'pi-phone' },
+      // Reuses Compliance & Safety's Document Control — one controlled-document library, any source.
+      { key: 'document-control', label: 'SMS Documentation', icon: 'pi-file' },
+      { key: 'hazard-reporting', label: 'Hazard Reporting', icon: 'pi-exclamation-circle', flagship: true },
+      // Reuses Compliance & Safety's Risk Assessment.
+      { key: 'risk-assessment', label: 'Safety Risk Assessment', icon: 'pi-exclamation-triangle' },
+      { key: 'safety-risk-register', label: 'Safety Risk Register', icon: 'pi-table' },
+      // Reuses Quality Assurance's CAPA — one corrective/preventive action tracker, any source.
+      { key: 'capa', label: 'Corrective & Preventive Actions', icon: 'pi-refresh' },
+      { key: 'management-of-change', label: 'Management of Change', icon: 'pi-sync' },
+      { key: 'safety-performance-indicators', label: 'Safety Performance Indicators', icon: 'pi-gauge' },
+      // Reuses Compliance & Safety's Audit Management.
+      { key: 'audit-management', label: 'Safety Audits', icon: 'pi-search' },
+      // Reuses Compliance & Safety's Incident Reporting — occurrences feed the same register hazards do.
+      { key: 'incident-reporting', label: 'Occurrence Reporting', icon: 'pi-flag' },
+      { key: 'voluntary-safety-reporting', label: 'Voluntary/Confidential Reporting', icon: 'pi-lock' },
+      { key: 'flight-data-monitoring', label: 'Flight Data Monitoring (FOQA)', icon: 'pi-chart-line' },
+      { key: 'fatigue-risk-management', label: 'Fatigue Risk Management', icon: 'pi-moon' },
+      { key: 'sms-continuous-improvement', label: 'Continuous Improvement', icon: 'pi-arrow-up-right' },
+      { key: 'safety-training', label: 'Safety Training & Competency', icon: 'pi-graduation-cap' },
+      { key: 'safety-communication', label: 'Safety Communication', icon: 'pi-megaphone' },
+      { key: 'safety-culture-survey', label: 'Safety Culture Survey', icon: 'pi-comments' }
     ]
   },
   {

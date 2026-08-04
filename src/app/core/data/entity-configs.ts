@@ -6,10 +6,12 @@ import { EntityConfig, EntityField, FieldType, TagSeverity } from '../models/ent
  * render a real, working CRUD screen for each — table columns, the add/edit
  * dialog form, and validation — without a bespoke component per item.
  *
- * Flagship items (flight-scheduling, aircraft-information, work-orders,
+ * Flagship items (flight-scheduling, aircraft-registration, work-orders,
  * pilot-management, spare-parts-inventory, purchase-orders, user-roles,
- * access-control, dashboard) intentionally have no entry here: they have
- * hand-built components under features/ instead.
+ * access-control, dashboard, warehouse-dashboard, item-master,
+ * facility-dashboard, asset-master, sms-dashboard, hazard-reporting)
+ * intentionally have no entry here: they have hand-built components under
+ * features/ instead.
  */
 
 function f(key: string, label: string, type: FieldType = 'text', extra: Partial<EntityField> = {}): EntityField {
@@ -261,6 +263,173 @@ const ENTITY_LIST: EntityConfig[] = [
     f('currentLocation', 'Current Location'),
     f('installedOn', 'Installed On'),
     statusField([['In Stock', 'success'], ['Installed', 'info'], ['Scrapped', 'danger']])
+  ]),
+
+  // ───────────────────────── Warehouse Management ─────────────────────────
+  // 'warehouse-management', 'purchase-requests', 'purchase-orders', 'goods-receiving', 'quality-inspection',
+  // 'stock-transfer', 'barcode-rfid', 'serial-number-tracking' and 'vendor-management' are shared with other
+  // modules above/below — see the comments next to those items in module-manifest.ts.
+  entity('store-setup', 'Store', 'Store Setup', 'pi-shop', 'Sub-stores within a warehouse where stock physically sits.', [
+    f('storeCode', 'Store Code'),
+    f('storeName', 'Store Name'),
+    f('warehouse', 'Warehouse'),
+    f('storeType', 'Store Type', 'select', { options: ['Main', 'Sub', 'Central', 'Line'].map((v) => ({ label: v, value: v })) }),
+    statusField([['Active', 'success'], ['Inactive', 'secondary']])
+  ]),
+  entity('rack-bin-setup', 'Rack/Bin', 'Rack/Bin Setup', 'pi-th-large', 'Shelf-level rack and bin locations within a store.', [
+    f('rackBinCode', 'Rack/Bin Code'),
+    f('rackBinName', 'Rack/Bin Name'),
+    f('warehouse', 'Warehouse'),
+    f('aisle', 'Aisle'),
+    f('level', 'Level'),
+    statusField([['Active', 'success'], ['Inactive', 'secondary']])
+  ]),
+  entity('item-category', 'Category', 'Item Category', 'pi-tags', 'Top-level classification used to group items on Item Master.', [
+    f('categoryCode', 'Category Code'),
+    f('categoryName', 'Category Name'),
+    f('description', 'Description', 'textarea'),
+    statusField([['Active', 'success'], ['Inactive', 'secondary']])
+  ]),
+  entity('unit-setup', 'Unit', 'Unit Setup', 'pi-calculator', 'Units of measure available to Item Master (EA, BOX, KG...).', [
+    f('unitCode', 'Unit Code'),
+    f('unitName', 'Unit Name'),
+    statusField([['Active', 'success'], ['Inactive', 'secondary']])
+  ]),
+  entity('brand-setup', 'Brand', 'Brand Setup', 'pi-bookmark', 'Product brand master, linked to a manufacturer.', [
+    f('brandCode', 'Brand Code'),
+    f('brandName', 'Brand Name'),
+    f('manufacturer', 'Manufacturer'),
+    statusField([['Active', 'success'], ['Inactive', 'secondary']])
+  ]),
+  entity('manufacturer-setup', 'Manufacturer', 'Manufacturer Setup', 'pi-industry', 'Part and equipment manufacturer master.', [
+    f('manufacturerCode', 'Manufacturer Code'),
+    f('manufacturerName', 'Manufacturer Name'),
+    f('contactPerson', 'Contact Person'),
+    f('phone', 'Phone'),
+    statusField([['Active', 'success'], ['Inactive', 'secondary']])
+  ]),
+  entity('stock-entry', 'Stock Entry', 'Stock Entry', 'pi-sign-in', 'Opening and ad-hoc stock entries received into a warehouse.', [
+    f('entryNo', 'Entry No.'),
+    f('warehouse', 'Warehouse'),
+    f('itemDescription', 'Item Description'),
+    f('batchNo', 'Batch No.'),
+    date('expiryDate', 'Expiry Date'),
+    num('receivedQty', 'Received Qty'),
+    date('entryDate', 'Entry Date'),
+    statusField([['Draft', 'info'], ['Posted', 'success']])
+  ]),
+  entity('stock-issue', 'Stock Issue', 'Stock Issue', 'pi-sign-out', 'Stock issued from a warehouse against an internal request.', [
+    f('issueNo', 'Issue No.'),
+    f('warehouse', 'Warehouse'),
+    f('issuedTo', 'Issued To'),
+    f('itemDescription', 'Item Description'),
+    f('serialNo', 'Serial No.'),
+    num('issuedQty', 'Issued Qty'),
+    date('issueDate', 'Issue Date'),
+    statusField([['Pending', 'info'], ['Issued', 'success'], ['Cancelled', 'danger']])
+  ]),
+  entity('stock-return', 'Stock Return', 'Stock Return', 'pi-replay', 'Unused issued stock returned back into the warehouse.', [
+    f('returnNo', 'Return No.'),
+    f('warehouse', 'Warehouse'),
+    f('itemDescription', 'Item Description'),
+    num('returnQty', 'Return Qty'),
+    date('returnDate', 'Return Date'),
+    f('reason', 'Reason'),
+    statusField([['Pending', 'info'], ['Received', 'success']])
+  ]),
+  entity('aircraft-issue', 'Aircraft Issue', 'Aircraft Issue', 'pi-send', 'Parts issued from the warehouse directly to an aircraft/work order.', [
+    f('issueNo', 'Issue No.'),
+    f('aircraftReg', 'Aircraft Reg.'),
+    f('workOrderNo', 'Work Order No.'),
+    f('itemDescription', 'Item Description'),
+    num('quantity', 'Quantity'),
+    date('issueDate', 'Issue Date'),
+    statusField([['Pending', 'info'], ['Issued', 'success'], ['Cancelled', 'danger']])
+  ]),
+  entity('component-installation', 'Installation', 'Component Installation', 'pi-plus-circle', 'Rotable/repairable component installations onto an aircraft.', [
+    f('installNo', 'Install No.'),
+    f('aircraftReg', 'Aircraft Reg.'),
+    f('componentName', 'Component Name'),
+    f('componentSerialNo', 'Component Serial No.'),
+    date('installedDate', 'Installed Date'),
+    f('installedBy', 'Installed By'),
+    statusField([['Installed', 'success'], ['Pending', 'info']])
+  ]),
+  entity('component-removal', 'Removal', 'Component Removal', 'pi-minus-circle', 'Component removals from an aircraft, pending repair or scrap.', [
+    f('removalNo', 'Removal No.'),
+    f('aircraftReg', 'Aircraft Reg.'),
+    f('componentName', 'Component Name'),
+    f('componentSerialNo', 'Component Serial No.'),
+    date('removalDate', 'Removal Date'),
+    f('removalReason', 'Removal Reason'),
+    statusField([['Removed', 'secondary'], ['Sent for Repair', 'warn'], ['Scrapped', 'danger']])
+  ]),
+  entity('repair-management', 'Repair Order', 'Repair Management', 'pi-hammer', 'Repairable components sent out to a vendor and tracked to return.', [
+    f('repairNo', 'Repair No.'),
+    f('componentName', 'Component Name'),
+    f('componentSerialNo', 'Component Serial No.'),
+    f('vendor', 'Repair Vendor'),
+    date('sentDate', 'Sent Date'),
+    date('expectedReturnDate', 'Expected Return Date'),
+    statusField([['Sent', 'info'], ['In Repair', 'warn'], ['Returned', 'success']])
+  ]),
+  entity('scrap-management', 'Scrap Record', 'Scrap Management', 'pi-trash', 'Items condemned and scrapped out of usable inventory.', [
+    f('scrapNo', 'Scrap No.'),
+    f('itemDescription', 'Item Description'),
+    num('quantity', 'Quantity'),
+    f('scrapReason', 'Scrap Reason'),
+    f('approvedBy', 'Approved By'),
+    date('scrapDate', 'Scrap Date'),
+    statusField([['Pending Approval', 'warn'], ['Approved', 'success']])
+  ]),
+  entity('inventory-count', 'Count Sheet', 'Inventory Count', 'pi-list-check', 'Physical stock counts compared against system quantity on hand.', [
+    f('countNo', 'Count No.'),
+    f('warehouse', 'Warehouse'),
+    date('countDate', 'Count Date'),
+    f('countedBy', 'Counted By'),
+    num('systemQty', 'System Qty'),
+    num('countedQty', 'Counted Qty'),
+    statusField([['In Progress', 'info'], ['Completed', 'success'], ['Variance Found', 'warn']])
+  ]),
+  entity('stock-adjustment', 'Adjustment', 'Stock Adjustment', 'pi-sliders-h', 'Manual stock corrections raised from an inventory count or write-off.', [
+    f('adjustmentNo', 'Adjustment No.'),
+    f('warehouse', 'Warehouse'),
+    f('itemDescription', 'Item Description'),
+    f('adjustmentType', 'Adjustment Type', 'select', { options: ['Add', 'Subtract'].map((v) => ({ label: v, value: v })) }),
+    num('quantity', 'Quantity'),
+    f('reason', 'Reason'),
+    statusField([['Pending Approval', 'warn'], ['Approved', 'success']])
+  ]),
+  entity('batch-tracking', 'Batch', 'Batch Tracking', 'pi-clone', 'Manufacture and expiry tracking per received batch/lot.', [
+    f('batchNo', 'Batch No.'),
+    f('itemDescription', 'Item Description'),
+    date('manufactureDate', 'Manufacture Date'),
+    date('expiryDate', 'Expiry Date'),
+    num('quantity', 'Quantity'),
+    statusField([['Active', 'success'], ['Expiring Soon', 'warn'], ['Expired', 'danger']])
+  ]),
+  entity('shelf-life', 'Shelf-Life Item', 'Shelf Life', 'pi-calendar-times', 'Shelf-life-limited stock nearing or past its expiry date.', [
+    f('itemDescription', 'Item Description'),
+    f('batchNo', 'Batch No.'),
+    date('expiryDate', 'Expiry Date'),
+    num('daysRemaining', 'Days Remaining'),
+    statusField([['OK', 'success'], ['Expiring Soon', 'warn'], ['Expired', 'danger']])
+  ]),
+  entity('warranty', 'Warranty', 'Warranty', 'pi-shield', 'Manufacturer/vendor warranty coverage per serialized item.', [
+    f('itemDescription', 'Item Description'),
+    f('serialNo', 'Serial No.'),
+    date('warrantyStartDate', 'Warranty Start Date'),
+    date('warrantyEndDate', 'Warranty End Date'),
+    f('vendor', 'Vendor'),
+    statusField([['Under Warranty', 'success'], ['Expiring Soon', 'warn'], ['Expired', 'danger']])
+  ]),
+  entity('calibration', 'Calibration Record', 'Calibration', 'pi-gauge', 'Calibration due dates for measuring/test equipment held in the warehouse.', [
+    f('equipmentName', 'Equipment Name'),
+    f('equipmentId', 'Equipment ID'),
+    date('lastCalibrationDate', 'Last Calibration Date'),
+    date('nextCalibrationDate', 'Next Calibration Date'),
+    f('calibratedBy', 'Calibrated By'),
+    statusField([['Calibrated', 'success'], ['Due Soon', 'warn'], ['Overdue', 'danger']])
   ]),
 
   // ───────────────────────── Procurement ─────────────────────────
@@ -519,6 +688,201 @@ const ENTITY_LIST: EntityConfig[] = [
     statusField([['Issued', 'info'], ['In Transit', 'warn'], ['Delivered', 'success']])
   ]),
 
+  // ───────────────────────── Facilities & Assets ─────────────────────────
+  // 'vendor-management' and 'incident-reporting' are shared with Procurement and Compliance & Safety
+  // respectively — see the comments next to those items in module-manifest.ts.
+  entity('facility-setup', 'Facility', 'Facility Setup', 'pi-building', 'Sites, hangars, terminals, and admin buildings owned or leased by the airline.', [
+    f('facilityCode', 'Facility Code'),
+    f('facilityName', 'Facility Name'),
+    f('facilityType', 'Facility Type', 'select', { options: ['Terminal', 'Hangar', 'Warehouse', 'Admin Building', 'Maintenance Base', 'Fuel Farm', 'Cargo Facility'].map((v) => ({ label: v, value: v })) }),
+    f('location', 'Location (Airport Code)'),
+    num('totalAreaSqFt', 'Total Area (sq ft)'),
+    statusField([['Active', 'success'], ['Inactive', 'secondary']])
+  ]),
+  entity('building-zone-setup', 'Zone', 'Building/Zone Setup', 'pi-sitemap', 'Floor- and zone-level subdivisions within a facility.', [
+    f('zoneCode', 'Zone Code'),
+    f('zoneName', 'Zone Name'),
+    f('facility', 'Facility'),
+    f('floor', 'Floor'),
+    f('zoneType', 'Zone Type', 'select', { options: ['Office', 'Storage', 'Technical', 'Public', 'Restricted'].map((v) => ({ label: v, value: v })) }),
+    statusField([['Active', 'success'], ['Inactive', 'secondary']])
+  ]),
+  entity('asset-category-setup', 'Category', 'Asset Category Setup', 'pi-tags', 'Top-level classification used to group items on Asset Master.', [
+    f('categoryCode', 'Category Code'),
+    f('categoryName', 'Category Name'),
+    f('description', 'Description', 'textarea'),
+    statusField([['Active', 'success'], ['Inactive', 'secondary']])
+  ]),
+  entity('gse-fleet-registry', 'GSE Unit', 'GSE Fleet Registry', 'pi-truck', 'Ground support equipment fleet — tugs, loaders, GPUs, de-icing and fuel trucks.', [
+    f('gseId', 'GSE ID'),
+    f('gseType', 'GSE Type', 'select', { options: ['Pushback Tractor', 'Belt Loader', 'Baggage Tractor', 'GPU', 'ASU', 'De-icing Truck', 'Fuel Truck', 'Lavatory Truck', 'Potable Water Truck', 'Catering Truck', 'Cargo Loader', 'Boarding Stairs', 'PCA Unit'].map((v) => ({ label: v, value: v })) }),
+    f('manufacturer', 'Manufacturer'),
+    f('powerSource', 'Power Source', 'select', { options: ['Diesel', 'Electric', 'Hybrid', 'Gasoline'].map((v) => ({ label: v, value: v })) }),
+    f('assignedRamp', 'Assigned Ramp/Stand'),
+    date('lastServiceDate', 'Last Service Date'),
+    statusField([['In Service', 'success'], ['Under Repair', 'warn'], ['Out of Service', 'danger']])
+  ]),
+  entity('facility-work-orders', 'Work Order', 'Facility Work Orders', 'pi-clipboard', 'Repair and service requests raised against a facility or asset.', [
+    f('workOrderNo', 'Work Order No.'),
+    f('facility', 'Facility'),
+    f('itemDescription', 'Asset/Issue'),
+    f('priority', 'Priority', 'select', { options: ['Low', 'Medium', 'High', 'Critical'].map((v) => ({ label: v, value: v })) }),
+    f('requestedBy', 'Requested By'),
+    date('dueDate', 'Due Date'),
+    statusField([['Open', 'danger'], ['In Progress', 'warn'], ['Completed', 'success']])
+  ]),
+  entity('facility-preventive-maintenance', 'PM Task', 'Preventive Maintenance', 'pi-shield', 'Scheduled maintenance performed on facility assets at a fixed interval.', [
+    f('pmNo', 'PM No.'),
+    f('itemDescription', 'Asset'),
+    f('frequency', 'Frequency'),
+    date('nextDueDate', 'Next Due Date'),
+    f('assignedTechnician', 'Assigned Technician'),
+    statusField([['Scheduled', 'info'], ['Due', 'warn'], ['Completed', 'success']])
+  ]),
+  entity('facility-corrective-maintenance', 'Fault', 'Corrective Maintenance', 'pi-hammer', 'Unscheduled repairs raised against reported facility/asset faults.', [
+    f('faultNo', 'Fault No.'),
+    f('itemDescription', 'Asset'),
+    f('faultDescription', 'Fault Description'),
+    f('reportedBy', 'Reported By'),
+    statusField([['Open', 'danger'], ['In Progress', 'warn'], ['Rectified', 'success']])
+  ]),
+  entity('asset-inspection', 'Inspection', 'Asset Inspection', 'pi-eye', 'Periodic condition inspections performed on facility assets.', [
+    f('inspectionNo', 'Inspection No.'),
+    f('itemDescription', 'Asset'),
+    f('inspector', 'Inspector'),
+    date('inspectionDate', 'Inspection Date'),
+    f('result', 'Result', 'select', { options: ['Pass', 'Fail', 'Conditional'].map((v) => ({ label: v, value: v })) }),
+    statusField([['Open', 'info'], ['Closed', 'success']])
+  ]),
+  entity('meter-reading', 'Reading', 'Meter Reading', 'pi-gauge', 'Usage readings — hours, odometer, or cycles — logged per asset.', [
+    f('itemDescription', 'Asset'),
+    f('readingType', 'Reading Type', 'select', { options: ['Hours', 'Odometer', 'Cycles'].map((v) => ({ label: v, value: v })) }),
+    num('readingValue', 'Reading Value'),
+    date('readingDate', 'Reading Date'),
+    f('recordedBy', 'Recorded By')
+  ]),
+  entity('space-utilization', 'Space Record', 'Space Utilization', 'pi-th-large', 'Occupancy versus capacity per zone, used to plan portfolio consolidation.', [
+    f('spaceCode', 'Space Code'),
+    f('zone', 'Zone'),
+    num('capacity', 'Capacity'),
+    num('currentOccupancy', 'Current Occupancy'),
+    num('utilizationPct', 'Utilization (%)', { max: 100 }),
+    statusField([['Under-utilized', 'warn'], ['Optimal', 'success'], ['Over Capacity', 'danger']])
+  ]),
+  entity('lease-contract-management', 'Lease', 'Lease & Contract Management', 'pi-file', 'Facility lease agreements and their validity windows.', [
+    f('leaseNo', 'Lease No.'),
+    f('facility', 'Facility'),
+    f('lessor', 'Lessor'),
+    date('startDate', 'Start Date'),
+    date('endDate', 'End Date'),
+    money('monthlyRent', 'Monthly Rent'),
+    statusField([['Active', 'success'], ['Expiring Soon', 'warn'], ['Expired', 'danger']])
+  ]),
+  entity('utility-energy-management', 'Utility Bill', 'Utility & Energy Management', 'pi-bolt', 'Electricity, water, and gas consumption and cost per facility.', [
+    f('facility', 'Facility'),
+    f('utilityType', 'Utility Type', 'select', { options: ['Electricity', 'Water', 'Gas', 'Sewage'].map((v) => ({ label: v, value: v })) }),
+    f('billingPeriod', 'Billing Period'),
+    num('consumption', 'Consumption'),
+    money('cost', 'Cost'),
+    statusField([['Pending', 'info'], ['Paid', 'success'], ['Overdue', 'danger']])
+  ]),
+  entity('hvac-building-systems', 'System', 'HVAC & Building Systems', 'pi-cloud', 'Air handling units, chillers, and boilers serving a facility.', [
+    f('systemId', 'System ID'),
+    f('facility', 'Facility'),
+    f('systemType', 'System Type', 'select', { options: ['AHU', 'Chiller', 'Boiler', 'Split Unit'].map((v) => ({ label: v, value: v })) }),
+    date('lastServiceDate', 'Last Service Date'),
+    date('nextServiceDate', 'Next Service Date'),
+    statusField([['Operational', 'success'], ['Needs Service', 'warn'], ['Down', 'danger']])
+  ]),
+  entity('fire-safety-systems', 'System', 'Fire & Safety Systems', 'pi-exclamation-triangle', 'Sprinklers, alarms, extinguishers, and suppression systems per facility.', [
+    f('systemId', 'System ID'),
+    f('facility', 'Facility'),
+    f('systemType', 'System Type', 'select', { options: ['Sprinkler', 'Fire Alarm', 'Extinguisher', 'Suppression'].map((v) => ({ label: v, value: v })) }),
+    date('lastInspectionDate', 'Last Inspection Date'),
+    date('nextInspectionDate', 'Next Inspection Date'),
+    statusField([['Compliant', 'success'], ['Due Soon', 'warn'], ['Non-Compliant', 'danger']])
+  ]),
+  entity('physical-security-systems', 'System', 'Physical Security Systems', 'pi-video', 'CCTV, access control hardware, and perimeter security per facility.', [
+    f('systemId', 'System ID'),
+    f('facility', 'Facility'),
+    f('systemType', 'System Type', 'select', { options: ['CCTV', 'Access Control', 'Intrusion Alarm', 'Perimeter Fence'].map((v) => ({ label: v, value: v })) }),
+    date('lastCheckedDate', 'Last Checked Date'),
+    statusField([['Operational', 'success'], ['Needs Attention', 'warn'], ['Down', 'danger']])
+  ]),
+  entity('cleaning-janitorial', 'Task', 'Cleaning & Janitorial', 'pi-sparkles', 'Scheduled cleaning tasks per facility and zone.', [
+    f('taskNo', 'Task No.'),
+    f('facility', 'Facility'),
+    f('zone', 'Zone'),
+    date('scheduledDate', 'Scheduled Date'),
+    f('assignedTo', 'Assigned To'),
+    statusField([['Scheduled', 'info'], ['Completed', 'success'], ['Missed', 'danger']])
+  ]),
+  entity('waste-management', 'Pickup', 'Waste Management', 'pi-trash', 'Scheduled waste pickups by type and disposal vendor.', [
+    f('pickupNo', 'Pickup No.'),
+    f('facility', 'Facility'),
+    f('wasteType', 'Waste Type', 'select', { options: ['General', 'Hazardous', 'Recyclable', 'E-Waste'].map((v) => ({ label: v, value: v })) }),
+    num('quantity', 'Quantity'),
+    date('pickupDate', 'Pickup Date'),
+    f('vendor', 'Vendor'),
+    statusField([['Scheduled', 'info'], ['Collected', 'success']])
+  ]),
+  entity('parking-management', 'Permit', 'Staff/Vehicle Parking', 'pi-car', 'Staff and contractor vehicle parking permits by zone.', [
+    f('permitNo', 'Permit No.'),
+    f('holderName', 'Holder Name'),
+    f('vehicleRegNo', 'Vehicle Reg. No.'),
+    f('parkingZone', 'Parking Zone'),
+    date('validFrom', 'Valid From'),
+    date('validTo', 'Valid To'),
+    statusField([['Active', 'success'], ['Expired', 'danger'], ['Suspended', 'warn']])
+  ]),
+  entity('visitor-management', 'Visitor', 'Visitor Management', 'pi-user-plus', 'Visitor check-in/check-out log per facility.', [
+    f('visitorNo', 'Visitor No.'),
+    f('visitorName', 'Visitor Name'),
+    f('hostEmployee', 'Host Employee'),
+    f('facility', 'Facility'),
+    datetime('checkInTime', 'Check-in Time'),
+    statusField([['Checked In', 'success'], ['Checked Out', 'secondary']])
+  ]),
+  entity('asset-depreciation', 'Depreciation Entry', 'Asset Depreciation', 'pi-chart-line', 'Period depreciation postings and net book value per asset.', [
+    f('itemDescription', 'Asset'),
+    money('acquisitionCost', 'Acquisition Cost'),
+    money('accumulatedDepreciation', 'Accumulated Depreciation'),
+    money('netBookValue', 'Net Book Value'),
+    date('depreciationDate', 'Depreciation Date')
+  ]),
+  entity('asset-disposal', 'Disposal', 'Asset Disposal', 'pi-trash', 'End-of-life asset disposals — sold, scrapped, donated, or traded in.', [
+    f('disposalNo', 'Disposal No.'),
+    f('itemDescription', 'Asset'),
+    f('disposalMethod', 'Disposal Method', 'select', { options: ['Sold', 'Scrapped', 'Donated', 'Traded-in'].map((v) => ({ label: v, value: v })) }),
+    date('disposalDate', 'Disposal Date'),
+    f('approvedBy', 'Approved By'),
+    statusField([['Pending Approval', 'warn'], ['Approved', 'success']])
+  ]),
+  entity('insurance-warranty-tracking', 'Coverage', 'Insurance & Warranty Tracking', 'pi-verified', 'Insurance and warranty coverage windows per asset.', [
+    f('itemDescription', 'Asset'),
+    f('policyNo', 'Policy/Warranty No.'),
+    f('provider', 'Provider'),
+    f('coverageType', 'Coverage Type', 'select', { options: ['Insurance', 'Warranty'].map((v) => ({ label: v, value: v })) }),
+    date('expiryDate', 'Expiry Date'),
+    statusField([['Active', 'success'], ['Expiring Soon', 'warn'], ['Expired', 'danger']])
+  ]),
+  entity('facility-compliance-certification', 'Certificate', 'Compliance & Certification', 'pi-verified', 'Facility-level certificates — fire safety, elevator, occupancy — and their validity.', [
+    f('certificateNo', 'Certificate No.'),
+    f('facility', 'Facility'),
+    f('certificateType', 'Certificate Type'),
+    date('issuedDate', 'Issued Date'),
+    date('expiryDate', 'Expiry Date'),
+    statusField([['Valid', 'success'], ['Expiring Soon', 'warn'], ['Expired', 'danger']])
+  ]),
+  entity('facility-audit', 'Audit', 'Facility Audit', 'pi-search', 'Scheduled facility condition and compliance audits.', [
+    f('auditNo', 'Audit No.'),
+    f('facility', 'Facility'),
+    f('auditor', 'Auditor'),
+    date('auditDate', 'Audit Date'),
+    f('findings', 'Findings', 'textarea'),
+    statusField([['Scheduled', 'info'], ['In Progress', 'warn'], ['Completed', 'success']])
+  ]),
+
   // ───────────────────────── Fuel Management ─────────────────────────
   entity('fuel-purchase', 'Fuel Purchase', 'Fuel Purchase', 'pi-shopping-cart', 'Fuel uplift purchase orders per vendor.', [
     f('poNo', 'PO No.'),
@@ -680,13 +1044,6 @@ const ENTITY_LIST: EntityConfig[] = [
     date('reviewDate', 'Review Date'),
     statusField([['Compliant', 'success'], ['Non-Compliant', 'danger'], ['Under Review', 'warn']])
   ]),
-  entity('safety-management-system', 'SMS Item', 'Safety Management System (SMS)', 'pi-shield', 'Hazard, audit, and policy items under the SMS program.', [
-    f('reportNo', 'Report No.'),
-    f('category', 'Category', 'select', { options: ['Hazard', 'Audit', 'Policy'].map((v) => ({ label: v, value: v })) }),
-    f('description', 'Description'),
-    f('owner', 'Owner'),
-    statusField([['Open', 'danger'], ['Mitigated', 'warn'], ['Closed', 'success']])
-  ]),
   entity('risk-assessment', 'Risk Assessment', 'Risk Assessment', 'pi-exclamation-triangle', 'Operational risk register with severity ratings.', [
     f('assessmentNo', 'Assessment No.'),
     f('area', 'Area'),
@@ -714,6 +1071,107 @@ const ENTITY_LIST: EntityConfig[] = [
     f('category', 'Category'),
     f('revision', 'Revision'),
     statusField([['Draft', 'info'], ['Approved', 'success'], ['Obsolete', 'secondary']])
+  ]),
+
+  // ───────────────────────── Safety Management System (SMS) ─────────────────────────
+  // 'document-control', 'risk-assessment', 'capa', 'audit-management' and 'incident-reporting' are shared
+  // with Compliance & Safety / Quality Assurance — see the comments next to those items in module-manifest.ts.
+  entity('safety-policy-statement', 'Policy', 'Safety Policy & Objectives', 'pi-flag', 'The airline’s safety policy statement and its revision history.', [
+    f('policyNo', 'Policy No.'),
+    f('title', 'Title'),
+    f('version', 'Version'),
+    f('approvedBy', 'Approved By'),
+    date('effectiveDate', 'Effective Date'),
+    statusField([['Draft', 'info'], ['Approved', 'success'], ['Under Review', 'warn']])
+  ]),
+  entity('safety-accountabilities', 'Accountability', 'Safety Accountabilities', 'pi-user-edit', 'Key safety roles, their accountable person, and scope of responsibility.', [
+    f('role', 'Safety Role'),
+    f('accountablePerson', 'Accountable Person'),
+    f('department', 'Department'),
+    f('responsibilities', 'Responsibilities', 'textarea'),
+    statusField([['Active', 'success'], ['Vacant', 'danger']])
+  ]),
+  entity('emergency-response-plan', 'ERP Scenario', 'Emergency Response Planning', 'pi-phone', 'Emergency response scenarios and their drill/exercise schedule.', [
+    f('scenarioNo', 'Scenario No.'),
+    f('scenarioName', 'Scenario Name'),
+    f('responseTeam', 'Response Team'),
+    date('lastDrillDate', 'Last Drill Date'),
+    date('nextDrillDate', 'Next Drill Date'),
+    statusField([['Current', 'success'], ['Drill Due', 'warn'], ['Overdue', 'danger']])
+  ]),
+  entity('safety-risk-register', 'Risk Entry', 'Safety Risk Register', 'pi-table', 'Consolidated risk matrix of identified hazards, scored by likelihood × severity.', [
+    f('hazardDescription', 'Hazard Description'),
+    f('riskCategory', 'Risk Category', 'select', { options: ['Operational', 'Technical', 'Organizational', 'Environmental'].map((v) => ({ label: v, value: v })) }),
+    f('likelihood', 'Likelihood', 'select', { options: ['Rare', 'Unlikely', 'Possible', 'Likely', 'Almost Certain'].map((v) => ({ label: v, value: v })) }),
+    f('severity', 'Severity', 'select', { options: ['Negligible', 'Minor', 'Major', 'Hazardous', 'Catastrophic'].map((v) => ({ label: v, value: v })) }),
+    num('riskScore', 'Risk Score', { min: 1, max: 25 }),
+    statusField([['Open', 'danger'], ['Mitigated', 'warn'], ['Closed', 'success']])
+  ]),
+  entity('management-of-change', 'MOC Record', 'Management of Change', 'pi-sync', 'Formal safety impact assessment for organizational or operational changes.', [
+    f('mocNo', 'MOC No.'),
+    f('changeDescription', 'Change Description', 'textarea'),
+    f('initiatedBy', 'Initiated By'),
+    f('riskImpact', 'Risk Impact', 'select', { options: [{ label: 'Low', value: 'Low', severity: 'success' as TagSeverity }, { label: 'Medium', value: 'Medium', severity: 'warn' as TagSeverity }, { label: 'High', value: 'High', severity: 'danger' as TagSeverity }], badge: true }),
+    date('implementationDate', 'Implementation Date'),
+    statusField([['Proposed', 'info'], ['Under Review', 'warn'], ['Approved', 'success'], ['Rejected', 'danger']])
+  ]),
+  entity('safety-performance-indicators', 'SPI', 'Safety Performance Indicators', 'pi-gauge', 'Tracked safety performance indicators (SPIs) against target vs. actual.', [
+    f('spiName', 'SPI Name'),
+    num('targetValue', 'Target Value'),
+    num('actualValue', 'Actual Value'),
+    f('period', 'Period'),
+    f('trend', 'Trend', 'select', { options: [{ label: 'Improving', value: 'Improving', severity: 'success' as TagSeverity }, { label: 'Stable', value: 'Stable', severity: 'info' as TagSeverity }, { label: 'Declining', value: 'Declining', severity: 'danger' as TagSeverity }], badge: true })
+  ]),
+  entity('voluntary-safety-reporting', 'Voluntary Report', 'Voluntary/Confidential Reporting', 'pi-lock', 'Non-punitive confidential air safety reports (ASR/VDR) submitted by staff.', [
+    f('reportNo', 'Report No.'),
+    f('category', 'Category', 'select', { options: ['Operational', 'Maintenance', 'Ground Handling', 'ATC', 'Other'].map((v) => ({ label: v, value: v })) }),
+    f('description', 'Description', 'textarea'),
+    date('submittedDate', 'Submitted Date'),
+    statusField([['Received', 'info'], ['Under Review', 'warn'], ['Closed', 'success']])
+  ]),
+  entity('flight-data-monitoring', 'FDM Event', 'Flight Data Monitoring (FOQA)', 'pi-chart-line', 'Flight data exceedance events captured from onboard quick-access recorders.', [
+    f('eventNo', 'Event No.'),
+    f('flightNo', 'Flight No.'),
+    f('aircraftReg', 'Aircraft Reg.'),
+    f('exceedanceType', 'Exceedance Type', 'select', { options: ['Hard Landing', 'Unstable Approach', 'High Speed', 'GPWS Warning', 'Other'].map((v) => ({ label: v, value: v })) }),
+    date('eventDate', 'Event Date'),
+    statusField([['New', 'danger'], ['Under Review', 'warn'], ['Closed', 'success']])
+  ]),
+  entity('fatigue-risk-management', 'FRMS Report', 'Fatigue Risk Management', 'pi-moon', 'Crew fatigue self-reports and duty period exposure under the FRMS program.', [
+    f('crewMember', 'Crew Member'),
+    num('dutyPeriodHours', 'Duty Period (hrs)'),
+    num('fatigueScore', 'Fatigue Score', { min: 1, max: 10 }),
+    date('reportedDate', 'Reported Date'),
+    statusField([['Open', 'danger'], ['Reviewed', 'warn'], ['Closed', 'success']])
+  ]),
+  entity('sms-continuous-improvement', 'Review', 'Continuous Improvement', 'pi-arrow-up-right', 'Periodic SMS effectiveness reviews and lessons-learned actions.', [
+    f('reviewNo', 'Review No.'),
+    f('area', 'Area'),
+    f('findings', 'Findings', 'textarea'),
+    date('reviewDate', 'Review Date'),
+    statusField([['Open', 'info'], ['Action Assigned', 'warn'], ['Closed', 'success']])
+  ]),
+  entity('safety-training', 'Training Course', 'Safety Training & Competency', 'pi-graduation-cap', 'SMS-specific training courses and completion tracking by role.', [
+    f('courseNo', 'Course No.'),
+    f('courseTitle', 'Course Title'),
+    f('targetAudience', 'Target Audience'),
+    date('completedDate', 'Completed Date'),
+    statusField([['Scheduled', 'info'], ['Completed', 'success'], ['Overdue', 'danger']])
+  ]),
+  entity('safety-communication', 'Bulletin', 'Safety Communication', 'pi-megaphone', 'Safety bulletins, alerts, and lessons-learned shared across the organization.', [
+    f('bulletinNo', 'Bulletin No.'),
+    f('title', 'Title'),
+    f('audience', 'Audience'),
+    date('publishedDate', 'Published Date'),
+    statusField([['Draft', 'info'], ['Published', 'success'], ['Archived', 'secondary']])
+  ]),
+  entity('safety-culture-survey', 'Survey', 'Safety Culture Survey', 'pi-comments', 'Periodic staff surveys measuring organizational safety culture maturity.', [
+    f('surveyNo', 'Survey No.'),
+    f('department', 'Department'),
+    num('participationRate', 'Participation Rate (%)', { max: 100 }),
+    num('averageScore', 'Average Score', { max: 10 }),
+    date('surveyDate', 'Survey Date'),
+    statusField([['Planned', 'info'], ['In Progress', 'warn'], ['Completed', 'success']])
   ]),
 
   // ───────────────────────── Quality Assurance ─────────────────────────
