@@ -1,0 +1,72 @@
+<div class="page-container">
+  <app-page-header icon="pi-th-large" title="Landside Operations Dashboard" description="Curbside compliance, commercial vehicle permits, ground transportation dispatch, parking occupancy, and road advisories." />
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-map" [value]="stats().curbZonesWithinLimit" label="Curb Checks Within Limit" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+    <app-stat-card icon="pi-exclamation-triangle" [value]="stats().curbDwellExceeded" label="Dwell Exceeded / Citations" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+    <app-stat-card icon="pi-id-card" [value]="stats().activePermits" label="Active Commercial Permits" />
+    <app-stat-card icon="pi-directions-alt" [value]="stats().shuttlesEnRoute" label="Shuttles En Route" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+  </div>
+
+  <div class="stats-row" style="margin-top: 0.75rem">
+    <app-stat-card icon="pi-car" [value]="stats().avgParkingOccupancyPct + '%'" label="Avg. Parking Occupancy" />
+    <app-stat-card icon="pi-users" [value]="stats().vehiclesQueued" label="Vehicles Queued (Taxi/Rideshare)" iconBg="color-mix(in srgb, var(--p-yellow-500) 15%, transparent)" iconColor="var(--p-yellow-600)" />
+    <app-stat-card icon="pi-directions" [value]="stats().activeTrafficAdvisories" label="Active Traffic Advisories" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="surface-card dashboard-panel">
+      <h3>Curb Zone Checks by Status</h3>
+      @if (curbStatusChartData) {
+        <p-chart type="doughnut" [data]="curbStatusChartData" [options]="doughnutOptions" [style]="{ height: '16rem' }" />
+      }
+    </div>
+
+    <div class="surface-card dashboard-panel">
+      <h3>Dispatch Runs by Service Type</h3>
+      @if (dispatchByServiceChartData) {
+        <p-chart type="bar" [data]="dispatchByServiceChartData" [options]="barOptions" [style]="{ height: '16rem' }" />
+      }
+    </div>
+
+    <div class="surface-card dashboard-panel">
+      <h3>Quick Links</h3>
+      <div class="quick-links">
+        @for (link of quickLinks; track link.label) {
+          <a class="quick-link" [routerLink]="link.route">
+            <span class="quick-link__icon pi {{ link.icon }}"></span>
+            {{ link.label }}
+            <span class="pi pi-arrow-right quick-link__arrow"></span>
+          </a>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="surface-card dashboard-panel" style="margin-top: 1.25rem">
+    <h3>Active Road & Traffic Advisories</h3>
+    <p-table [value]="activeAdvisories()" [loading]="loading()" responsiveLayout="scroll">
+      <ng-template #header>
+        <tr>
+          <th>Road Segment</th>
+          <th>Advisory Type</th>
+          <th>Reported Time</th>
+          <th>Reported By</th>
+          <th>Status</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-a>
+        <tr>
+          <td><strong>{{ a.roadSegment }}</strong></td>
+          <td>{{ a.advisoryType }}</td>
+          <td>{{ a.reportedTime | date: 'short' }}</td>
+          <td>{{ a.reportedBy }}</td>
+          <td><p-tag [value]="a.status" [severity]="advisorySeverity(a.status)" /></td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="5" class="table-empty">No active road or traffic advisories.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

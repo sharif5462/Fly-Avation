@@ -1,0 +1,103 @@
+:host {
+  display: block;
+}
+
+/* Groups the KPI rows into labelled bands — this dashboard has 15 stats across
+   four concerns, which reads as noise without the separators. */
+.section-label {
+  margin: 1.5rem 0 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--p-text-muted-color);
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+
+.benchmark-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: 8px;
+  border: 1px solid var(--p-content-border-color);
+  background: color-mix(in srgb, var(--p-primary-color) 5%, transparent);
+  font-size: 0.8125rem;
+  color: var(--p-text-muted-color);
+
+  .pi {
+    margin-top: 0.125rem;
+    color: var(--p-primary-color);
+    flex-shrink: 0;
+  }
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.dashboard-panel {
+  padding: 1.25rem;
+
+  h3 {
+    margin: 0 0 1rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--p-surface-900);
+  }
+}
+
+.quick-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quick-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: 8px;
+  border: 1px solid var(--p-content-border-color);
+  color: var(--p-surface-800);
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  &:hover {
+    border-color: var(--p-primary-color);
+    background: color-mix(in srgb, var(--p-primary-color) 6%, transparent);
+  }
+}
+
+.quick-link__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--p-primary-color) 12%, transparent);
+  color: var(--p-primary-color);
+  font-size: 0.9375rem;
+  flex-shrink: 0;
+}
+
+.quick-link__arrow {
+  margin-left: auto;
+  color: var(--p-text-muted-color);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}

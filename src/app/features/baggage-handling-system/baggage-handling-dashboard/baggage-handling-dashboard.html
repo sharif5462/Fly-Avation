@@ -1,0 +1,136 @@
+<div class="page-container">
+  <app-page-header icon="pi-th-large" title="Baggage Handling System Dashboard" description="Bag flow and Res. 753 tracking, hold baggage screening, transfer hot bags, BHS equipment health, and mishandling performance against industry benchmarks." />
+
+  <h4 class="section-label">Bag Flow</h4>
+  <div class="stats-row">
+    <app-stat-card icon="pi-briefcase" [value]="stats().bagsInSystem" label="Bags Currently In System" />
+    <app-stat-card icon="pi-check-circle" [value]="stats().trackingCompletionPct + '%'" label="IATA 753 Tracking Complete" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+    <app-stat-card icon="pi-sync" [value]="stats().inTransfer" label="Bags In Transfer" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+    <app-stat-card icon="pi-inbox" [value]="stats().ebsStored" label="Bags In Early Bag Storage" />
+    <app-stat-card icon="pi-exclamation-circle" [value]="stats().hotBags" label="Hot Bags / Short Connections" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+  </div>
+
+  <h4 class="section-label">Security &amp; Reconciliation</h4>
+  <div class="stats-row">
+    <app-stat-card icon="pi-shield" [value]="stats().openScreeningAlarms" label="Open Screening Alarms" iconBg="color-mix(in srgb, var(--p-yellow-500) 15%, transparent)" iconColor="var(--p-yellow-600)" />
+    <app-stat-card icon="pi-verified" [value]="stats().brsDiscrepancies" label="BRS Discrepancies" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+    <app-stat-card icon="pi-envelope" [value]="stats().unmatchedMessages" label="Unmatched / Failed Type B Msgs" iconBg="color-mix(in srgb, var(--p-yellow-500) 15%, transparent)" iconColor="var(--p-yellow-600)" />
+    <app-stat-card icon="pi-id-card" [value]="stats().expiringCertifications" label="HBS Certs Expiring / Expired" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+  </div>
+
+  <h4 class="section-label">Equipment Health</h4>
+  <div class="stats-row">
+    <app-stat-card icon="pi-cog" [value]="stats().equipmentAvailabilityPct + '%'" label="BHS Equipment Availability" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+    <app-stat-card icon="pi-exclamation-triangle" [value]="stats().openFaults" label="Open Faults &amp; Alarms" iconBg="color-mix(in srgb, var(--p-yellow-500) 15%, transparent)" iconColor="var(--p-yellow-600)" />
+    <app-stat-card icon="pi-times-circle" [value]="stats().criticalFaults" label="Critical Faults" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+  </div>
+
+  <h4 class="section-label">Performance &amp; Exceptions</h4>
+  <div class="stats-row">
+    <app-stat-card icon="pi-chart-line" [value]="stats().mishandledPerThousandPax" label="Mishandled / 1,000 Pax" [iconBg]="mishandleIconBg()" [iconColor]="mishandleIconColor()" />
+    <app-stat-card icon="pi-search" [value]="stats().openMishandledCases" label="Open Mishandled Cases" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+    <app-stat-card icon="pi-dollar" [value]="'$' + stats().openClaimValue" label="Open Claim Exposure" />
+  </div>
+
+  <p class="benchmark-note">
+    <span class="pi pi-info-circle"></span>
+    Industry benchmark: the global mishandling rate is around <strong>{{ benchmark }} bags per 1,000 passengers</strong>,
+    with transfers driving the largest single share of cases. The KPI above is colour-coded against that figure.
+  </p>
+
+  <div class="dashboard-grid">
+    <div class="surface-card dashboard-panel">
+      <h3>Bags by Status</h3>
+      @if (statusChartData) {
+        <p-chart type="doughnut" [data]="statusChartData" [options]="doughnutOptions" [style]="{ height: '16rem' }" />
+      }
+    </div>
+
+    <div class="surface-card dashboard-panel">
+      <h3>BHS Equipment by Status</h3>
+      @if (equipmentChartData) {
+        <p-chart type="doughnut" [data]="equipmentChartData" [options]="doughnutOptions" [style]="{ height: '16rem' }" />
+      }
+    </div>
+
+    <div class="surface-card dashboard-panel">
+      <h3>Bags by Type</h3>
+      @if (bagTypeChartData) {
+        <p-chart type="bar" [data]="bagTypeChartData" [options]="barOptions" [style]="{ height: '16rem' }" />
+      }
+    </div>
+
+    <div class="surface-card dashboard-panel">
+      <h3>Quick Links</h3>
+      <div class="quick-links">
+        @for (link of quickLinks; track link.label) {
+          <a class="quick-link" [routerLink]="link.route">
+            <span class="quick-link__icon pi {{ link.icon }}"></span>
+            {{ link.label }}
+            <span class="pi pi-arrow-right quick-link__arrow"></span>
+          </a>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="surface-card dashboard-panel" style="margin-top: 1.25rem">
+    <h3>Open BHS Faults &amp; Alarms</h3>
+    <p-table [value]="openFaults()" [loading]="loading()" responsiveLayout="scroll">
+      <ng-template #header>
+        <tr>
+          <th>Fault No.</th>
+          <th>Equipment</th>
+          <th>Fault Type</th>
+          <th>Severity</th>
+          <th>Downtime (min)</th>
+          <th>Status</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-fault>
+        <tr>
+          <td><strong>{{ fault.faultNo }}</strong></td>
+          <td>{{ fault.equipmentId }}</td>
+          <td>{{ fault.faultType }}</td>
+          <td><p-tag [value]="fault.severity" [severity]="faultSeverity(fault.severity)" /></td>
+          <td>{{ fault.downtimeMinutes }}</td>
+          <td>{{ fault.status }}</td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="6" class="table-empty">No open BHS faults or alarms.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <div class="surface-card dashboard-panel" style="margin-top: 1.25rem">
+    <h3>Open Mishandled Baggage Cases</h3>
+    <p-table [value]="openCases()" [loading]="loading()" responsiveLayout="scroll">
+      <ng-template #header>
+        <tr>
+          <th>Case No.</th>
+          <th>Passenger</th>
+          <th>Flight</th>
+          <th>Tag No.</th>
+          <th>Category</th>
+          <th>Root Cause</th>
+          <th>Status</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-c>
+        <tr>
+          <td><strong>{{ c.caseNo }}</strong></td>
+          <td>{{ c.passengerName }}</td>
+          <td>{{ c.flightNo }}</td>
+          <td>{{ c.tagNo }}</td>
+          <td><p-tag [value]="c.category" [severity]="categorySeverity(c.category)" /></td>
+          <td>{{ c.rootCause }}</td>
+          <td>{{ c.status }}</td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="7" class="table-empty">No open mishandled baggage cases.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
