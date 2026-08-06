@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
@@ -14,6 +14,8 @@ import {
   RiskTolerability
 } from '../../../core/models/sms.model';
 import { ApiService } from '../../../core/services/api.service';
+import { createDashboardLoader } from '../../../core/utils/dashboard-loader';
+import { LoadError } from '../../../shared/components/load-error/load-error';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 
@@ -33,14 +35,13 @@ const OPEN_CAPA_STATUSES = ['Open', 'In Progress'];
 
 @Component({
   selector: 'app-sms-dashboard',
-  imports: [RouterLink, ChartModule, TableModule, TagModule, PageHeader, StatCard],
+  imports: [LoadError, RouterLink, ChartModule, TableModule, TagModule, PageHeader, StatCard],
   templateUrl: './sms-dashboard.html',
   styleUrl: './sms-dashboard.scss'
 })
-export class SmsDashboardPage implements OnInit {
+export class SmsDashboardPage {
   private readonly api = inject(ApiService);
 
-  loading = signal(true);
   stats = signal({ totalHazards: 0, openHazards: 0, unacceptableRisk: 0, openCapas: 0 });
   topHazards = signal<HazardReport[]>([]);
 
@@ -56,20 +57,28 @@ export class SmsDashboardPage implements OnInit {
     { label: 'Safety Audits', icon: 'pi-search', route: ['/safety-management-system', 'audit-management'] }
   ];
 
-  ngOnInit(): void {
-    forkJoin({
+  /**
+   * Fans out to every resource this dashboard renders. createDashboardLoader
+   * owns the loading/failed state, the teardown, and the retry — a failed
+   * forkJoin used to leave the page spinning forever.
+   */
+  private readonly loader = createDashboardLoader(
+    () => forkJoin({
       hazards: this.api.list<HazardReport>('hazard-reporting'),
       capas: this.api.list<CapaRow>('capa')
-    }).subscribe(({ hazards, capas }) => {
-      this.computeStats(hazards.data, capas.data);
-      this.buildCategoryChart(hazards.data);
-      this.buildTolerabilityChart(hazards.data);
-      this.topHazards.set(
-        [...hazards.data].filter((h) => h.status !== 'Closed').sort((a, b) => b.initialRiskScore - a.initialRiskScore).slice(0, 6)
-      );
-      this.loading.set(false);
-    });
-  }
+    }),
+    ({ hazards, capas }) => {
+        this.computeStats(hazards.data, capas.data);
+        this.buildCategoryChart(hazards.data);
+        this.buildTolerabilityChart(hazards.data);
+        this.topHazards.set(
+          [...hazards.data].filter((h) => h.status !== 'Closed').sort((a, b) => b.initialRiskScore - a.initialRiskScore).slice(0, 6)
+        );
+    }
+  );
+
+  readonly loading = this.loader.loading;
+  readonly loadFailed = this.loader.failed;
 
   private computeStats(hazards: HazardReport[], capas: CapaRow[]): void {
     const openHazards = hazards.filter((h) => h.status !== 'Closed').length;
@@ -137,5 +146,9 @@ export class SmsDashboardPage implements OnInit {
 
   tolerabilitySeverity(tolerability: RiskTolerability): TagSeverity {
     return RISK_TOLERABILITY_SEVERITY[tolerability];
+  }
+
+  reload(): void {
+    this.loader.reload();
   }
 }

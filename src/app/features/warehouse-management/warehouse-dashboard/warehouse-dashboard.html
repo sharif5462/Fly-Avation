@@ -1,6 +1,15 @@
 <div class="page-container">
   <app-page-header icon="pi-th-large" title="Warehouse Dashboard" description="Stock health, receiving, and issue activity across the warehouse network." />
 
+  @if (loadFailed()) {
+    <app-load-error
+      title="Could not load the dashboard"
+      detail="One or more of the systems this page reads from did not respond."
+      [retrying]="loading()"
+      (retry)="reload()"
+    />
+  }
+
   <div class="stats-row">
     <app-stat-card icon="pi-box" [value]="stats().totalItems" label="Total Items" />
     <app-stat-card icon="pi-exclamation-triangle" [value]="stats().lowStock" label="At/Below Reorder Level" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />

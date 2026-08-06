@@ -1,6 +1,15 @@
 <div class="page-container">
   <app-page-header icon="pi-th-large" title="SMS Dashboard" description="Hazard exposure, risk tolerability, and open corrective actions across the safety program." />
 
+  @if (loadFailed()) {
+    <app-load-error
+      title="Could not load the dashboard"
+      detail="One or more of the systems this page reads from did not respond."
+      [retrying]="loading()"
+      (retry)="reload()"
+    />
+  }
+
   <div class="stats-row">
     <app-stat-card icon="pi-list" [value]="stats().totalHazards" label="Total Hazards" />
     <app-stat-card icon="pi-exclamation-circle" [value]="stats().openHazards" label="Open Hazards" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />

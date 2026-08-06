@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
@@ -8,6 +8,8 @@ import { forkJoin } from 'rxjs';
 
 import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
+import { createDashboardLoader } from '../../../core/utils/dashboard-loader';
+import { LoadError } from '../../../shared/components/load-error/load-error';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 
@@ -30,14 +32,13 @@ const ADVISORY_SEVERITY: Record<string, TagSeverity> = {
 
 @Component({
   selector: 'app-landside-dashboard',
-  imports: [RouterLink, DatePipe, ChartModule, TableModule, TagModule, PageHeader, StatCard],
+  imports: [LoadError, RouterLink, DatePipe, ChartModule, TableModule, TagModule, PageHeader, StatCard],
   templateUrl: './landside-dashboard.html',
   styleUrl: './landside-dashboard.scss'
 })
-export class LandsideDashboardPage implements OnInit {
+export class LandsideDashboardPage {
   private readonly api = inject(ApiService);
 
-  loading = signal(true);
   stats = signal({
     curbZonesWithinLimit: 0,
     curbDwellExceeded: 0,
@@ -63,22 +64,30 @@ export class LandsideDashboardPage implements OnInit {
     { label: 'Terminal Curb Access Control', icon: 'pi-key', route: ['/landside-operations', 'terminal-curb-access-control'] }
   ];
 
-  ngOnInit(): void {
-    forkJoin({
+  /**
+   * Fans out to every resource this dashboard renders. createDashboardLoader
+   * owns the loading/failed state, the teardown, and the retry — a failed
+   * forkJoin used to leave the page spinning forever.
+   */
+  private readonly loader = createDashboardLoader(
+    () => forkJoin({
       curbside: this.api.list<GenericRow>('curbside-management'),
       permits: this.api.list<GenericRow>('commercial-vehicle-permits'),
       dispatch: this.api.list<GenericRow>('ground-transportation-dispatch'),
       parking: this.api.list<GenericRow>('public-parking-management'),
       queue: this.api.list<GenericRow>('taxi-rideshare-queue'),
       traffic: this.api.list<GenericRow>('road-traffic-circulation')
-    }).subscribe(({ curbside, permits, dispatch, parking, queue, traffic }) => {
-      this.computeStats(curbside.data, permits.data, dispatch.data, parking.data, queue.data, traffic.data);
-      this.buildCurbStatusChart(curbside.data);
-      this.buildDispatchChart(dispatch.data);
-      this.activeAdvisories.set(traffic.data.filter((t) => t['status'] === 'Active').slice(0, 6));
-      this.loading.set(false);
-    });
-  }
+    }),
+    ({ curbside, permits, dispatch, parking, queue, traffic }) => {
+        this.computeStats(curbside.data, permits.data, dispatch.data, parking.data, queue.data, traffic.data);
+        this.buildCurbStatusChart(curbside.data);
+        this.buildDispatchChart(dispatch.data);
+        this.activeAdvisories.set(traffic.data.filter((t) => t['status'] === 'Active').slice(0, 6));
+    }
+  );
+
+  readonly loading = this.loader.loading;
+  readonly loadFailed = this.loader.failed;
 
   advisorySeverity(status: unknown): TagSeverity {
     return ADVISORY_SEVERITY[status as string] ?? 'secondary';
@@ -163,5 +172,9 @@ export class LandsideDashboardPage implements OnInit {
         y: { ticks: { color: textColor, stepSize: 1 }, grid: { color: 'rgba(148, 163, 184, 0.2)' }, beginAtZero: true }
       }
     };
+  }
+
+  reload(): void {
+    this.loader.reload();
   }
 }

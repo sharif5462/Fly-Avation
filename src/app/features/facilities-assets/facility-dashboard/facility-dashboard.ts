@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
@@ -14,7 +14,9 @@ import {
   AssetStatus
 } from '../../../core/models/facilities-assets.model';
 import { ApiService } from '../../../core/services/api.service';
+import { createDashboardLoader } from '../../../core/utils/dashboard-loader';
 import { daysUntil } from '../../../core/utils/date.util';
+import { LoadError } from '../../../shared/components/load-error/load-error';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 
@@ -36,14 +38,13 @@ const CERT_HORIZON_DAYS = 90;
 
 @Component({
   selector: 'app-facility-dashboard',
-  imports: [RouterLink, ChartModule, TableModule, TagModule, PageHeader, StatCard],
+  imports: [LoadError, RouterLink, ChartModule, TableModule, TagModule, PageHeader, StatCard],
   templateUrl: './facility-dashboard.html',
   styleUrl: './facility-dashboard.scss'
 })
-export class FacilityDashboardPage implements OnInit {
+export class FacilityDashboardPage {
   private readonly api = inject(ApiService);
 
-  loading = signal(true);
   stats = signal({ totalAssets: 0, needsAttention: 0, openWorkOrders: 0, certsExpiringSoon: 0 });
   attentionAssets = signal<AssetMaster[]>([]);
 
@@ -59,22 +60,30 @@ export class FacilityDashboardPage implements OnInit {
     { label: 'GSE Fleet Registry', icon: 'pi-truck', route: ['/facilities-assets', 'gse-fleet-registry'] }
   ];
 
-  ngOnInit(): void {
-    forkJoin({
+  /**
+   * Fans out to every resource this dashboard renders. createDashboardLoader
+   * owns the loading/failed state, the teardown, and the retry — a failed
+   * forkJoin used to leave the page spinning forever.
+   */
+  private readonly loader = createDashboardLoader(
+    () => forkJoin({
       assets: this.api.list<AssetMaster>('asset-master'),
       workOrders: this.api.list<FacilityWorkOrderRow>('facility-work-orders')
-    }).subscribe(({ assets, workOrders }) => {
-      this.computeStats(assets.data, workOrders.data);
-      this.buildCategoryChart(assets.data);
-      this.buildConditionChart(assets.data);
-      this.attentionAssets.set(
-        assets.data
-          .filter((a) => a.status === 'Under Maintenance' || a.status === 'Out of Service' || this.isCertExpiringSoon(a))
-          .slice(0, 6)
-      );
-      this.loading.set(false);
-    });
-  }
+    }),
+    ({ assets, workOrders }) => {
+        this.computeStats(assets.data, workOrders.data);
+        this.buildCategoryChart(assets.data);
+        this.buildConditionChart(assets.data);
+        this.attentionAssets.set(
+          assets.data
+            .filter((a) => a.status === 'Under Maintenance' || a.status === 'Out of Service' || this.isCertExpiringSoon(a))
+            .slice(0, 6)
+        );
+    }
+  );
+
+  readonly loading = this.loader.loading;
+  readonly loadFailed = this.loader.failed;
 
   private isCertExpiringSoon(asset: AssetMaster): boolean {
     const days = daysUntil(asset.certificationExpiry);
@@ -147,5 +156,9 @@ export class FacilityDashboardPage implements OnInit {
 
   statusSeverity(status: AssetStatus): TagSeverity {
     return ASSET_STATUS_SEVERITY[status];
+  }
+
+  reload(): void {
+    this.loader.reload();
   }
 }

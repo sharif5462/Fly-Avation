@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ChartModule } from 'primeng/chart';
 import { ProgressBarModule } from 'primeng/progressbar';
@@ -9,7 +9,9 @@ import { forkJoin } from 'rxjs';
 
 import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
+import { createDashboardLoader } from '../../../core/utils/dashboard-loader';
 import { daysUntil } from '../../../core/utils/date.util';
+import { LoadError } from '../../../shared/components/load-error/load-error';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 import type { TrackedComponent } from '../component-tracking/component-tracking';
@@ -28,14 +30,13 @@ const CERT_EXPIRY_WINDOW_DAYS = 60;
 
 @Component({
   selector: 'app-mro-dashboard',
-  imports: [RouterLink, DecimalPipe, ChartModule, TableModule, TagModule, ProgressBarModule, PageHeader, StatCard],
+  imports: [LoadError, RouterLink, DecimalPipe, ChartModule, TableModule, TagModule, ProgressBarModule, PageHeader, StatCard],
   templateUrl: './mro-dashboard.html',
   styleUrl: './mro-dashboard.scss'
 })
-export class MroDashboardPage implements OnInit {
+export class MroDashboardPage {
   private readonly api = inject(ApiService);
 
-  loading = signal(true);
   stats = signal({
     openWorkOrders: 0,
     criticalWorkOrders: 0,
@@ -61,22 +62,30 @@ export class MroDashboardPage implements OnInit {
     { label: 'Service Bulletins', icon: 'pi-megaphone', route: ['/aircraft-maintenance', 'service-bulletin-management'] }
   ];
 
-  ngOnInit(): void {
-    forkJoin({
+  /**
+   * Fans out to every resource this dashboard renders. createDashboardLoader
+   * owns the loading/failed state, the teardown, and the retry — a failed
+   * forkJoin used to leave the page spinning forever.
+   */
+  private readonly loader = createDashboardLoader(
+    () => forkJoin({
       workOrders: this.api.list<WorkOrder>('work-orders'),
       components: this.api.list<TrackedComponent>('component-tracking'),
       adCompliance: this.api.list<GenericRow>('ad-compliance'),
       certificates: this.api.list<GenericRow>('airworthiness-certificate'),
       serviceBulletins: this.api.list<GenericRow>('service-bulletin-management'),
       melItems: this.api.list<GenericRow>('mel-cdl-tracking')
-    }).subscribe(({ workOrders, components, adCompliance, certificates, serviceBulletins, melItems }) => {
-      this.computeStats(workOrders.data, components.data, adCompliance.data, certificates.data, serviceBulletins.data, melItems.data);
-      this.buildWoStatusChart(workOrders.data);
-      this.buildWoTypeChart(workOrders.data);
-      this.computeAttentionComponents(components.data);
-      this.loading.set(false);
-    });
-  }
+    }),
+    ({ workOrders, components, adCompliance, certificates, serviceBulletins, melItems }) => {
+        this.computeStats(workOrders.data, components.data, adCompliance.data, certificates.data, serviceBulletins.data, melItems.data);
+        this.buildWoStatusChart(workOrders.data);
+        this.buildWoTypeChart(workOrders.data);
+        this.computeAttentionComponents(components.data);
+    }
+  );
+
+  readonly loading = this.loader.loading;
+  readonly loadFailed = this.loader.failed;
 
   severityForPct(pct: number): TagSeverity {
     if (pct < 10) return 'danger';
@@ -178,5 +187,9 @@ export class MroDashboardPage implements OnInit {
         y: { ticks: { color: textColor, stepSize: 1 }, grid: { color: 'rgba(148, 163, 184, 0.2)' }, beginAtZero: true }
       }
     };
+  }
+
+  reload(): void {
+    this.loader.reload();
   }
 }

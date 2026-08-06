@@ -1,5 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
@@ -9,6 +9,8 @@ import { forkJoin } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
+import { createDashboardLoader } from '../../../core/utils/dashboard-loader';
+import { LoadError } from '../../../shared/components/load-error/load-error';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 import type { AircraftRegistration } from '../../../core/models/aircraft-registration.model';
@@ -23,6 +25,9 @@ interface QuickLink {
   route: string[];
 }
 
+/** How many purchase orders the "Recent" panel shows — and therefore fetches. */
+const RECENT_ORDER_COUNT = 5;
+
 const PO_STATUS_SEVERITY: Record<PoStatus, TagSeverity> = {
   Draft: 'secondary',
   Submitted: 'info',
@@ -33,17 +38,16 @@ const PO_STATUS_SEVERITY: Record<PoStatus, TagSeverity> = {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, DatePipe, CurrencyPipe, ChartModule, TableModule, TagModule, PageHeader, StatCard],
+  imports: [LoadError, RouterLink, DatePipe, CurrencyPipe, ChartModule, TableModule, TagModule, PageHeader, StatCard],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
-export class DashboardPage implements OnInit {
+export class DashboardPage {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
 
   user = this.auth.user;
 
-  loading = signal(true);
   stats = signal({ activeFlights: 0, fleetAvailability: 0, openWorkOrders: 0, attentionParts: 0 });
   recentOrders = signal<PurchaseOrder[]>([]);
 
@@ -62,22 +66,38 @@ export class DashboardPage implements OnInit {
     { label: 'User Roles', icon: 'pi-users', route: ['/security-management', 'user-roles'] }
   ];
 
-  ngOnInit(): void {
-    forkJoin({
+  /**
+   * Fans out to every resource this dashboard renders. createDashboardLoader
+   * owns the loading/failed state, the teardown, and the retry — a failed
+   * forkJoin used to leave the page spinning forever.
+   */
+  private readonly loader = createDashboardLoader(
+    () => forkJoin({
       flights: this.api.list<Flight>('flight-scheduling'),
       aircraft: this.api.list<AircraftRegistration>('aircraft-registration'),
       workOrders: this.api.list<WorkOrder>('work-orders'),
       spareParts: this.api.list<SparePart>('spare-parts-inventory'),
-      purchaseOrders: this.api.list<PurchaseOrder>('purchase-orders')
-    }).subscribe(({ flights, aircraft, workOrders, spareParts, purchaseOrders }) => {
-      this.computeStats(flights.data, aircraft.data, workOrders.data, spareParts.data);
-      this.buildFleetChart(aircraft.data);
-      this.buildFlightChart(flights.data);
-      this.buildWorkOrderChart(workOrders.data);
-      this.recentOrders.set(purchaseOrders.data.slice(0, 5));
-      this.loading.set(false);
-    });
-  }
+      // Only the five most recent are rendered, so ask for five. Fetching
+      // the whole purchase-order table and slicing it is invisible against
+      // the seeded mock and a full table scan against Oracle.
+      purchaseOrders: this.api.list<PurchaseOrder>('purchase-orders', {
+        sortField: 'orderDate',
+        sortOrder: 'desc',
+        page: 0,
+        pageSize: RECENT_ORDER_COUNT
+      })
+    }),
+    ({ flights, aircraft, workOrders, spareParts, purchaseOrders }) => {
+        this.computeStats(flights.data, aircraft.data, workOrders.data, spareParts.data);
+        this.buildFleetChart(aircraft.data);
+        this.buildFlightChart(flights.data);
+        this.buildWorkOrderChart(workOrders.data);
+        this.recentOrders.set(purchaseOrders.data);
+    }
+  );
+
+  readonly loading = this.loader.loading;
+  readonly loadFailed = this.loader.failed;
 
   private computeStats(flights: Flight[], aircraft: AircraftRegistration[], workOrders: WorkOrder[], spareParts: SparePart[]): void {
     const activeFlights = flights.filter((f) => f.status === 'In Air' || f.status === 'Departed' || f.status === 'Boarding').length;
@@ -164,5 +184,9 @@ export class DashboardPage implements OnInit {
         }
       ]
     };
+  }
+
+  reload(): void {
+    this.loader.reload();
   }
 }

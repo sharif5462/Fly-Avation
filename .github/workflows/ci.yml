@@ -31,6 +31,14 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Contrast tokens
+        # Static half only — it needs no browser and no dev server. It fails if
+        # the raw --p-surface-N scale reappears as a text or background colour,
+        # which is invisible to the type checker and to review but renders as
+        # dark-on-dark once the theme flips. Run `npm run test:contrast` locally
+        # against a dev server for the full rendered audit.
+        run: npm run test:contrast
+
       - name: Typecheck
         # `ng build` typechecks too, but running it on its own means a type
         # error is reported as a type error rather than as a build failure.

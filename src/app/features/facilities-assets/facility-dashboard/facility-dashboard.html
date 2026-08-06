@@ -1,6 +1,15 @@
 <div class="page-container">
   <app-page-header icon="pi-th-large" title="Facility Dashboard" description="Asset condition, maintenance backlog, and certification status across every facility." />
 
+  @if (loadFailed()) {
+    <app-load-error
+      title="Could not load the dashboard"
+      detail="One or more of the systems this page reads from did not respond."
+      [retrying]="loading()"
+      (retry)="reload()"
+    />
+  }
+
   <div class="stats-row">
     <app-stat-card icon="pi-box" [value]="stats().totalAssets" label="Total Assets" />
     <app-stat-card icon="pi-wrench" [value]="stats().needsAttention" label="Needs Attention" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />

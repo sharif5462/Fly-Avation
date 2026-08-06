@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
@@ -8,6 +8,8 @@ import { forkJoin } from 'rxjs';
 
 import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
+import { createDashboardLoader } from '../../../core/utils/dashboard-loader';
+import { LoadError } from '../../../shared/components/load-error/load-error';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 
@@ -39,14 +41,13 @@ const UNRESOLVED_CONFLICT_STATUSES = ['Open', 'Being Resolved'];
 
 @Component({
   selector: 'app-resource-dashboard',
-  imports: [RouterLink, DatePipe, ChartModule, TableModule, TagModule, PageHeader, StatCard],
+  imports: [LoadError, RouterLink, DatePipe, ChartModule, TableModule, TagModule, PageHeader, StatCard],
   templateUrl: './resource-dashboard.html',
   styleUrl: './resource-dashboard.scss'
 })
-export class ResourceDashboardPage implements OnInit {
+export class ResourceDashboardPage {
   private readonly api = inject(ApiService);
 
-  loading = signal(true);
   stats = signal({
     standsAvailable: 0,
     gatesOccupied: 0,
@@ -72,8 +73,13 @@ export class ResourceDashboardPage implements OnInit {
     { label: 'Outages & Blockings', icon: 'pi-ban', route: ['/resource-gate-management', 'resource-outage-blocking'] }
   ];
 
-  ngOnInit(): void {
-    forkJoin({
+  /**
+   * Fans out to every resource this dashboard renders. createDashboardLoader
+   * owns the loading/failed state, the teardown, and the retry — a failed
+   * forkJoin used to leave the page spinning forever.
+   */
+  private readonly loader = createDashboardLoader(
+    () => forkJoin({
       stands: this.api.list<GenericRow>('stand-registry'),
       gates: this.api.list<GenericRow>('gate-registry'),
       conflicts: this.api.list<GenericRow>('resource-conflict-management'),
@@ -81,16 +87,19 @@ export class ResourceDashboardPage implements OnInit {
       turnarounds: this.api.list<GenericRow>('turnaround-monitoring'),
       changes: this.api.list<GenericRow>('gate-change-log'),
       utilization: this.api.list<GenericRow>('resource-utilization')
-    }).subscribe(({ stands, gates, conflicts, blockings, turnarounds, changes, utilization }) => {
-      this.computeStats(stands.data, gates.data, conflicts.data, blockings.data, turnarounds.data, changes.data, utilization.data);
-      this.buildStandStatusChart(stands.data);
-      this.buildConflictTypeChart(conflicts.data);
-      this.openConflicts.set(
-        conflicts.data.filter((c) => UNRESOLVED_CONFLICT_STATUSES.includes(c['status'] as string)).slice(0, 6)
-      );
-      this.loading.set(false);
-    });
-  }
+    }),
+    ({ stands, gates, conflicts, blockings, turnarounds, changes, utilization }) => {
+        this.computeStats(stands.data, gates.data, conflicts.data, blockings.data, turnarounds.data, changes.data, utilization.data);
+        this.buildStandStatusChart(stands.data);
+        this.buildConflictTypeChart(conflicts.data);
+        this.openConflicts.set(
+          conflicts.data.filter((c) => UNRESOLVED_CONFLICT_STATUSES.includes(c['status'] as string)).slice(0, 6)
+        );
+    }
+  );
+
+  readonly loading = this.loader.loading;
+  readonly loadFailed = this.loader.failed;
 
   severityTag(severity: unknown): TagSeverity {
     return SEVERITY_SEVERITY[severity as string] ?? 'secondary';
@@ -176,5 +185,9 @@ export class ResourceDashboardPage implements OnInit {
         y: { ticks: { color: textColor, stepSize: 1 }, grid: { color: 'rgba(148, 163, 184, 0.2)' }, beginAtZero: true }
       }
     };
+  }
+
+  reload(): void {
+    this.loader.reload();
   }
 }

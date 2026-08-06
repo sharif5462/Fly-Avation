@@ -30,12 +30,12 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 8px;
-  color: var(--p-surface-600);
+  color: var(--p-text-muted-color);
   position: relative;
   text-decoration: none;
 
   &:hover {
-    background: var(--p-surface-100);
+    background: var(--p-content-hover-background);
   }
 }
 
@@ -63,7 +63,7 @@
   margin-left: 0.25rem;
 
   &:hover {
-    background: var(--p-surface-100);
+    background: var(--p-content-hover-background);
   }
 }
 
@@ -85,7 +85,7 @@
 
   strong {
     font-size: 0.8125rem;
-    color: var(--p-surface-900);
+    color: var(--p-text-color);
   }
 
   small {

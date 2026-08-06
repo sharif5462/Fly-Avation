@@ -8,6 +8,27 @@ import Aura from '@primeuix/themes/aura';
  */
 export const AviationPreset = definePreset(Aura, {
   semantic: {
+    /**
+     * ── Light-mode contrast corrections ──────────────────────────────────
+     * Aura reaches for `{surface.500}` for every kind of secondary text. On
+     * this palette that is #7c8aa3, which scores 3.49:1 on a white card and
+     * 3.28:1 on the page ground — under the WCAG AA minimum of 4.5:1 for
+     * normal text. None of it is decorative: it carries page descriptions,
+     * KPI labels, record counts, placeholders and secondary button labels.
+     *
+     * One step darker (`{surface.600}`, #5c6a83) clears AA on both grounds
+     * at 5.46:1 and 5.13:1 while still reading as secondary. The dark-mode
+     * values already pass and are left alone.
+     *
+     * `npm run test:contrast` measures all of this in a real browser.
+     */
+    text: {
+      mutedColor: 'light-dark({surface.600}, {surface.400})',
+      hoverMutedColor: 'light-dark({surface.700}, {surface.300})'
+    },
+    formField: {
+      placeholderColor: 'light-dark({surface.600}, {surface.400})'
+    },
     primary: {
       50: '#eef5ff',
       100: '#d9e8ff',
@@ -64,6 +85,24 @@ export const AviationPreset = definePreset(Aura, {
           800: '#1d2534',
           900: '#161d29',
           950: '#0d1219'
+        }
+      }
+    }
+  },
+  components: {
+    badge: {
+      // White on {red.500} (#ef4444) is 3.76:1. The notification count is
+      // text, not an icon, so it needs AA — {red.600} takes it to 4.83:1.
+      danger: {
+        background: 'light-dark({red.600}, {red.400})'
+      }
+    },
+    button: {
+      outlined: {
+        // Same {surface.500} problem as muted text, on labels like "Clear
+        // Filters" and every secondary dialog action.
+        secondary: {
+          color: 'light-dark({surface.600}, {surface.400})'
         }
       }
     }

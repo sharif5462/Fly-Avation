@@ -14,8 +14,39 @@
     --app-radius: 10px;
     --app-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
     --app-shadow-md: 0 4px 10px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.06);
+
+    /*
+     * The page "ground" behind the cards. PrimeNG has no semantic token for
+     * it, so the app defines one — but it must still flip per colour scheme,
+     * hence light-dark(). Do NOT reduce this to a bare `var(--p-surface-50)`:
+     * the raw surface scale runs light→dark in *both* schemes (surface-50 is
+     * #f6f8fb in dark mode too), so that painted a white page behind dark
+     * cards. See the rule in the block below.
+     */
+    --app-page-background: light-dark(var(--p-surface-50), var(--p-surface-950));
   }
 }
+
+/* ==========================================================================
+   Colour rule — read before adding any `color:` or `background:`
+   --------------------------------------------------------------------------
+   Use the SEMANTIC tokens, never the raw `--p-surface-N` scale:
+
+     text            -> var(--p-text-color)
+     secondary text  -> var(--p-text-muted-color)
+     card background -> var(--p-content-background)
+     hover surface   -> var(--p-content-hover-background)
+     borders         -> var(--p-content-border-color)
+     page background -> var(--app-page-background)
+
+   The semantic tokens are defined with CSS light-dark(), so they invert with
+   the theme. The `--p-surface-N` scale does not: `surface-900` is a near-black
+   navy in dark mode too, so `color: var(--p-surface-900)` on a card rendered
+   dark-on-dark at a 1.00:1 contrast ratio — the dashboard KPI numbers were
+   invisible. `background: var(--p-surface-100)` had the mirror problem on
+   hover. `npm run test:contrast` fails the build if the raw scale reappears
+   as a text or background colour.
+   ========================================================================== */
 
 * {
   box-sizing: border-box;
@@ -31,8 +62,8 @@ body {
   font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--p-surface-50);
-  color: var(--p-surface-900);
+  background: var(--app-page-background);
+  color: var(--p-text-color);
 }
 
 a {
@@ -49,11 +80,11 @@ a {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--p-surface-300);
+  background: var(--p-content-border-color);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--p-surface-400);
+  background: var(--p-text-muted-color);
 }
 
 /* ---- shared utility classes used across feature pages ---- */
@@ -156,12 +187,14 @@ a {
     color: var(--p-green-500);
   }
 
+  // Progressively dimmer than muted, but still derived from a token that
+  // flips with the theme rather than a fixed point on the surface scale.
   &__pending {
-    color: var(--p-surface-300);
+    color: color-mix(in srgb, var(--p-text-muted-color) 70%, transparent);
   }
 
   &__na {
-    color: var(--p-surface-200);
+    color: color-mix(in srgb, var(--p-text-muted-color) 40%, transparent);
   }
 }
 
@@ -183,7 +216,7 @@ a {
     label {
       font-size: 0.8125rem;
       font-weight: 600;
-      color: var(--p-surface-700);
+      color: var(--p-text-color);
     }
 
     input,

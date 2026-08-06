@@ -42,7 +42,7 @@ import { Component, input } from '@angular/core';
       font-size: 1.375rem;
       font-weight: 700;
       line-height: 1.2;
-      color: var(--p-surface-900);
+      color: var(--p-text-color);
     }
     .stat-card__label {
       font-size: 0.8125rem;

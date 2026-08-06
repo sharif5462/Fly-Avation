@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
@@ -8,6 +8,8 @@ import { forkJoin } from 'rxjs';
 import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ItemMaster } from '../../../core/models/warehouse-management.model';
 import { ApiService } from '../../../core/services/api.service';
+import { createDashboardLoader } from '../../../core/utils/dashboard-loader';
+import { LoadError } from '../../../shared/components/load-error/load-error';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 import type { PoStatus, PurchaseOrder } from '../../procurement/purchase-orders/purchase-orders';
@@ -32,14 +34,13 @@ const GRN_PENDING_STATUSES = ['Pending', 'Partially Received'];
 
 @Component({
   selector: 'app-warehouse-dashboard',
-  imports: [RouterLink, ChartModule, TableModule, TagModule, PageHeader, StatCard],
+  imports: [LoadError, RouterLink, ChartModule, TableModule, TagModule, PageHeader, StatCard],
   templateUrl: './warehouse-dashboard.html',
   styleUrl: './warehouse-dashboard.scss'
 })
-export class WarehouseDashboardPage implements OnInit {
+export class WarehouseDashboardPage {
   private readonly api = inject(ApiService);
 
-  loading = signal(true);
   stats = signal({ totalItems: 0, lowStock: 0, pendingOrders: 0, pendingGrns: 0 });
   lowStockItems = signal<ItemMaster[]>([]);
 
@@ -55,19 +56,27 @@ export class WarehouseDashboardPage implements OnInit {
     { label: 'Purchase Order', icon: 'pi-shopping-cart', route: ['/warehouse-management', 'purchase-orders'] }
   ];
 
-  ngOnInit(): void {
-    forkJoin({
+  /**
+   * Fans out to every resource this dashboard renders. createDashboardLoader
+   * owns the loading/failed state, the teardown, and the retry — a failed
+   * forkJoin used to leave the page spinning forever.
+   */
+  private readonly loader = createDashboardLoader(
+    () => forkJoin({
       items: this.api.list<ItemMaster>('item-master'),
       purchaseOrders: this.api.list<PurchaseOrder>('purchase-orders'),
       grns: this.api.list<GrnRow>('goods-receiving')
-    }).subscribe(({ items, purchaseOrders, grns }) => {
-      this.computeStats(items.data, purchaseOrders.data, grns.data);
-      this.buildCategoryChart(items.data);
-      this.buildTypeChart(items.data);
-      this.lowStockItems.set(items.data.filter((i) => i.currentStock <= i.reorderLevel).slice(0, 6));
-      this.loading.set(false);
-    });
-  }
+    }),
+    ({ items, purchaseOrders, grns }) => {
+        this.computeStats(items.data, purchaseOrders.data, grns.data);
+        this.buildCategoryChart(items.data);
+        this.buildTypeChart(items.data);
+        this.lowStockItems.set(items.data.filter((i) => i.currentStock <= i.reorderLevel).slice(0, 6));
+    }
+  );
+
+  readonly loading = this.loader.loading;
+  readonly loadFailed = this.loader.failed;
 
   private computeStats(items: ItemMaster[], orders: PurchaseOrder[], grns: GrnRow[]): void {
     const lowStock = items.filter((i) => i.currentStock <= i.reorderLevel).length;
@@ -131,5 +140,9 @@ export class WarehouseDashboardPage implements OnInit {
 
   stockSeverity(): TagSeverity {
     return 'danger';
+  }
+
+  reload(): void {
+    this.loader.reload();
   }
 }

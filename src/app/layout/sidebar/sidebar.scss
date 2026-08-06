@@ -58,14 +58,14 @@
   margin: 0.75rem 0.75rem 0;
   padding: 0.625rem 0.75rem;
   border-radius: 8px;
-  color: var(--p-surface-700);
+  color: var(--p-text-color);
   text-decoration: none;
   font-size: 0.875rem;
   font-weight: 600;
   flex-shrink: 0;
 
   &:hover {
-    background: var(--p-surface-100);
+    background: var(--p-content-hover-background);
   }
 
   &--active {

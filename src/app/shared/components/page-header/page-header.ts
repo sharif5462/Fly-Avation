@@ -48,7 +48,7 @@ import { Component, input } from '@angular/core';
       margin: 0;
       font-size: 1.375rem;
       font-weight: 700;
-      color: var(--p-surface-900);
+      color: var(--p-text-color);
     }
     p {
       margin: 0.125rem 0 0;

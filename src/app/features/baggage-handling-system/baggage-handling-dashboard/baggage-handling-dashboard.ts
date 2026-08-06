@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
@@ -7,6 +7,8 @@ import { forkJoin } from 'rxjs';
 
 import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
+import { createDashboardLoader } from '../../../core/utils/dashboard-loader';
+import { LoadError } from '../../../shared/components/load-error/load-error';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 import type { BaggageRecord, BaggageStatus } from '../baggage-handling/baggage-handling';
@@ -62,16 +64,15 @@ const FAULT_SEVERITY: Record<string, TagSeverity> = {
 
 @Component({
   selector: 'app-baggage-handling-dashboard',
-  imports: [RouterLink, ChartModule, TableModule, TagModule, PageHeader, StatCard],
+  imports: [LoadError, RouterLink, ChartModule, TableModule, TagModule, PageHeader, StatCard],
   templateUrl: './baggage-handling-dashboard.html',
   styleUrl: './baggage-handling-dashboard.scss'
 })
-export class BaggageHandlingDashboardPage implements OnInit {
+export class BaggageHandlingDashboardPage {
   private readonly api = inject(ApiService);
 
   readonly benchmark = MISHANDLE_BENCHMARK_PER_1K;
 
-  loading = signal(true);
   stats = signal({
     bagsInSystem: 0,
     trackingCompletionPct: 0,
@@ -107,8 +108,13 @@ export class BaggageHandlingDashboardPage implements OnInit {
     { label: 'Mishandled Baggage / Lost & Found', icon: 'pi-search', route: ['/baggage-handling-system', 'mishandled-baggage'] }
   ];
 
-  ngOnInit(): void {
-    forkJoin({
+  /**
+   * Fans out to every resource this dashboard renders. createDashboardLoader
+   * owns the loading/failed state, the teardown, and the retry — a failed
+   * forkJoin used to leave the page spinning forever.
+   */
+  private readonly loader = createDashboardLoader(
+    () => forkJoin({
       bags: this.api.list<BaggageRecord>('baggage-handling'),
       reconciliation: this.api.list<GenericRow>('baggage-reconciliation'),
       screening: this.api.list<GenericRow>('baggage-screening'),
@@ -121,16 +127,19 @@ export class BaggageHandlingDashboardPage implements OnInit {
       certifications: this.api.list<GenericRow>('hbs-machine-certification'),
       sla: this.api.list<GenericRow>('baggage-sla-performance'),
       claims: this.api.list<GenericRow>('baggage-claims')
-    }).subscribe((sources) => {
-      this.computeStats(sources);
-      this.buildStatusChart(sources.bags.data);
-      this.buildBagTypeChart(sources.bags.data);
-      this.buildEquipmentChart(sources.equipment.data);
-      this.openCases.set(sources.mishandled.data.filter((c) => OPEN_CASE_STATUSES.includes(c['status'] as string)).slice(0, 6));
-      this.openFaults.set(sources.faults.data.filter((fl) => OPEN_FAULT_STATUSES.includes(fl['status'] as string)).slice(0, 6));
-      this.loading.set(false);
-    });
-  }
+    }),
+    (sources) => {
+        this.computeStats(sources);
+        this.buildStatusChart(sources.bags.data);
+        this.buildBagTypeChart(sources.bags.data);
+        this.buildEquipmentChart(sources.equipment.data);
+        this.openCases.set(sources.mishandled.data.filter((c) => OPEN_CASE_STATUSES.includes(c['status'] as string)).slice(0, 6));
+        this.openFaults.set(sources.faults.data.filter((fl) => OPEN_FAULT_STATUSES.includes(fl['status'] as string)).slice(0, 6));
+    }
+  );
+
+  readonly loading = this.loader.loading;
+  readonly loadFailed = this.loader.failed;
 
   categorySeverity(category: unknown): TagSeverity {
     return CATEGORY_SEVERITY[category as string] ?? 'secondary';
@@ -271,5 +280,9 @@ export class BaggageHandlingDashboardPage implements OnInit {
         }
       ]
     };
+  }
+
+  reload(): void {
+    this.loader.reload();
   }
 }

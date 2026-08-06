@@ -1,6 +1,15 @@
 <div class="page-container">
   <app-page-header icon="pi-th-large" title="Baggage Handling System Dashboard" description="Bag flow and Res. 753 tracking, hold baggage screening, transfer hot bags, BHS equipment health, and mishandling performance against industry benchmarks." />
 
+  @if (loadFailed()) {
+    <app-load-error
+      title="Could not load the dashboard"
+      detail="One or more of the systems this page reads from did not respond."
+      [retrying]="loading()"
+      (retry)="reload()"
+    />
+  }
+
   <h4 class="section-label">Bag Flow</h4>
   <div class="stats-row">
     <app-stat-card icon="pi-briefcase" [value]="stats().bagsInSystem" label="Bags Currently In System" />

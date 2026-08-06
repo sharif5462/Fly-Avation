@@ -1,6 +1,15 @@
 <div class="page-container">
   <app-page-header icon="pi-th-large" title="MRO Dashboard" description="Fleet-wide maintenance, compliance, and reliability status at a glance." />
 
+  @if (loadFailed()) {
+    <app-load-error
+      title="Could not load the dashboard"
+      detail="One or more of the systems this page reads from did not respond."
+      [retrying]="loading()"
+      (retry)="reload()"
+    />
+  }
+
   <div class="stats-row">
     <app-stat-card icon="pi-clipboard" [value]="stats().openWorkOrders" label="Open Work Orders" />
     <app-stat-card icon="pi-exclamation-triangle" [value]="stats().criticalWorkOrders" label="Critical Priority WOs" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />

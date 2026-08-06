@@ -1,6 +1,15 @@
 <div class="page-container">
   <app-page-header icon="pi-th-large" title="Landside Operations Dashboard" description="Curbside compliance, commercial vehicle permits, ground transportation dispatch, parking occupancy, and road advisories." />
 
+  @if (loadFailed()) {
+    <app-load-error
+      title="Could not load the dashboard"
+      detail="One or more of the systems this page reads from did not respond."
+      [retrying]="loading()"
+      (retry)="reload()"
+    />
+  }
+
   <div class="stats-row">
     <app-stat-card icon="pi-map" [value]="stats().curbZonesWithinLimit" label="Curb Checks Within Limit" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
     <app-stat-card icon="pi-exclamation-triangle" [value]="stats().curbDwellExceeded" label="Dwell Exceeded / Citations" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />

@@ -46,13 +46,20 @@ production bundle and fails if it finds mock artifacts.
 ### Checks
 
 ```bash
-npm run lint        # ESLint + angular-eslint, including template a11y rules
-npm run typecheck   # tsc --noEmit
-npm test            # Karma/Jasmine, watch mode
-npm run test:ci     # headless, single run, with coverage
+npm run lint           # ESLint + angular-eslint, including template a11y rules
+npm run typecheck      # tsc --noEmit
+npm test               # Karma/Jasmine, watch mode
+npm run test:ci        # headless, single run, with coverage
+npm run test:contrast  # WCAG contrast audit (see below)
 ```
 
-All four run on every push and pull request — see `.github/workflows/ci.yml`.
+These run on every push and pull request — see `.github/workflows/ci.yml`.
+
+**`test:contrast`** has two halves. The static half greps the stylesheets for
+the raw `--p-surface-N` scale used as a colour and needs nothing else, so it
+runs in CI. The rendered half drives Chromium over a sample of routes in both
+themes and measures every text node's real contrast ratio; it needs a dev
+server (`npm start`) and skips itself when one is not reachable.
 
 ## Architecture
 
@@ -66,11 +73,12 @@ src/app/
     models/            Role, User, EntityConfig, ModuleDef — shared types
     data/              module-manifest.ts, entity-configs.ts (see below)
     mock/              mock API interceptor + seed data (dev/demo only)
-    utils/             date.util.ts — date-only vs. instant handling
+    utils/             date.util.ts (date-only vs. instant),
+                       dashboard-loader.ts (load/error/retry state)
     theme/             PrimeNG theme preset
   layout/             Shell, Sidebar, Topbar, Breadcrumb — the authenticated app frame
   shared/
-    components/        PageHeader, StatCard — small reused pieces
+    components/        PageHeader, StatCard, LoadError — small reused pieces
     scaffold/           FeatureListPage — the generic CRUD engine (below)
   features/
     auth/login/
@@ -185,6 +193,47 @@ set `flagship: true` on that item in `module-manifest.ts`.
 > The API also needs to read the same `role-permissions` table, or the two
 > sides will disagree about who can see what.
 
+## Dashboards
+
+The eight dashboards are read-only pages that fan out to several resources and
+render the combined result. They all go through
+`core/utils/dashboard-loader.ts`, which owns three things a bare
+`forkJoin(...).subscribe(next)` does not:
+
+- **Failure.** `forkJoin` errors if *any* source errors. Without an error
+  handler the page kept its spinner running forever with nothing on screen to
+  say it had failed. The loader clears `loading`, sets `failed`, and the page
+  renders `<app-load-error>` with a working **Try Again**.
+- **Teardown.** `takeUntilDestroyed`, so a response arriving after the user
+  navigates away doesn't write to a destroyed component.
+- **Retry.** `reload()`, ignored while a request is already in flight so a
+  double-click can't fan out duplicates.
+
+Adding a dashboard means calling `createDashboardLoader(() => forkJoin({...}),
+(result) => {...})` and rendering the banner on `loadFailed()` — copy any
+existing one.
+
+## Styling and colour
+
+The app has a light and a dark theme. **Use the semantic theme tokens, never
+the raw `--p-surface-N` scale:**
+
+| For | Use |
+| --- | --- |
+| text | `var(--p-text-color)` |
+| secondary text | `var(--p-text-muted-color)` |
+| card background | `var(--p-content-background)` |
+| hover surface | `var(--p-content-hover-background)` |
+| borders | `var(--p-content-border-color)` |
+| page background | `var(--app-page-background)` |
+
+The semantic tokens are defined with CSS `light-dark()` and invert with the
+theme. The surface scale does not — `surface-900` is a near-black navy in dark
+mode too — so `color: var(--p-surface-900)` on a card rendered dark-on-dark at
+a 1.00:1 ratio and made the dashboard KPI numbers invisible. `npm run
+test:contrast` fails the build if the raw scale reappears. Reasoning in
+`docs/adr/0004-semantic-colour-tokens.md`.
+
 ## Dates
 
 Two shapes travel over the wire and they are **not** interchangeable:
@@ -254,11 +303,7 @@ POST   {apiUrl}/auth/login          { username, password }
 
 GET    {apiUrl}/<resource>          → 200 { data: T[], total: number }
                                        optional query: search, sortField,
-                                       sortOrder, page, pageSize (the mock
-                                       implements these; nothing in the UI
-                                       sends them yet — datasets are small
-                                       enough for client-side table paging/
-                                       sorting/filtering today)
+                                       sortOrder, page, pageSize — see below
 GET    {apiUrl}/<resource>/{id}     → 200 T | 404
 POST   {apiUrl}/<resource>          → 201 T           (body: Partial<T>)
 PUT    {apiUrl}/<resource>/{id}     → 200 T           (body: Partial<T>)
@@ -281,6 +326,32 @@ the full list. The JWT `role` claim should be multi-valued to match.
 it once per session to decide which modules to route to and render in the nav.
 **The API must apply the same table server-side** — the frontend check is UX,
 not enforcement.
+
+### List query parameters
+
+`ApiService.list(resource, query?)` sends `search`, `sortField`, `sortOrder`,
+`page` and `pageSize`. The API applies filter → sort → page, and `total` is
+the count **before** paging so a paginator can size itself. Only options the
+caller set are sent: `?search=` (empty) means "match the empty string", which
+is not the same as no filter.
+
+Callers that need a slice pass a query rather than fetching everything and
+calling `.slice()` — the landing dashboard's "recent purchase orders" panel
+asks for five rows sorted by date. Against the seeded mock the difference is
+invisible; against Oracle it is one page versus a full table scan.
+
+**Still outstanding on the frontend:** the 219 scaffold CRUD screens page,
+sort and filter *client-side* over a full unfiltered fetch. That is fine at
+the current seed sizes and will not survive real data. The fix is one
+component (`shared/scaffold/feature-list-page`) switching `p-table` to lazy
+mode and forwarding its events into the query above — the API side is already
+specified here.
+
+**Also outstanding:** the dashboards compute their KPIs by fetching whole
+tables and counting in the browser — the baggage dashboard alone issues 12
+such requests. Counting rows by status is an aggregate the database should do.
+The API should grow per-dashboard summary endpoints returning the counts
+directly; that is a backend contract addition, not a frontend change.
 
 Field-level notes the backend needs to match:
 
@@ -311,3 +382,4 @@ form (Access Control's per-row inline multiselects) · ESLint with
 - [ADR 0001 — Date-only values never travel through UTC](docs/adr/0001-date-only-vs-instant.md)
 - [ADR 0002 — The demo backend is removed at build time, not switched off at runtime](docs/adr/0002-demo-build-separate-from-production.md)
 - [ADR 0003 — Authorization resolves a module key, not a role list](docs/adr/0003-module-access-service.md)
+- [ADR 0004 — Styling uses semantic theme tokens, never the raw surface scale](docs/adr/0004-semantic-colour-tokens.md)

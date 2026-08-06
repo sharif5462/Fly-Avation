@@ -1,6 +1,15 @@
 <div class="page-container">
   <app-page-header icon="pi-th-large" [title]="'Welcome back' + (user()?.fullName ? ', ' + user()!.fullName.split(' ')[0] : '')" description="Here's what's happening across the operation right now." />
 
+  @if (loadFailed()) {
+    <app-load-error
+      title="Could not load the dashboard"
+      detail="One or more of the systems this page reads from did not respond."
+      [retrying]="loading()"
+      (retry)="reload()"
+    />
+  }
+
   <div class="stats-row">
     <app-stat-card icon="pi-send" [value]="stats().activeFlights" label="Flights Active Now" />
     <app-stat-card icon="pi-check-circle" [value]="stats().fleetAvailability + '%'" label="Fleet Availability" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
