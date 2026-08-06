@@ -11,6 +11,9 @@ const LAST_NAMES = [
 const AIRPORTS = ['JFK', 'LHR', 'DXB', 'SIN', 'CDG', 'FRA', 'HND', 'ORD', 'DFW', 'AMS', 'HKG', 'SYD', 'DEL', 'GRU', 'IST'];
 const COMPANY_WORDS = ['Global', 'Sky', 'Atlas', 'Pacific', 'Meridian', 'Horizon', 'Summit', 'Vertex', 'Nordic', 'Continental'];
 const COMPANY_SUFFIX = ['Aviation', 'Logistics', 'Aerospace', 'Supply Co.', 'Industries', 'Parts Ltd.', 'Systems', 'Group'];
+const PLATE_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
+const AIRLINE_CODES = ['AV', 'BA', 'EK', 'LH', 'QR', 'SQ', 'AF', 'KL', 'TK', 'DL', 'UA', 'AA', 'CX', 'QF', 'EY'];
+const EQUIPMENT_PREFIX = ['CNV', 'SRT', 'ATR', 'EDS', 'CAR', 'CHT', 'DCV', 'VLF'];
 const ADJECTIVES = ['Primary', 'Standard', 'Express', 'Priority', 'Scheduled', 'Routine', 'Advanced', 'Regional'];
 const NOUNS = ['Operation', 'Assignment', 'Record', 'Task', 'Order', 'Request', 'Entry', 'Case'];
 
@@ -80,8 +83,11 @@ function generateFieldValue(field: EntityField, entityKey: string, rowIndex: num
       if (looksLike(field, 'email')) {
         return `${pick(FIRST_NAMES).toLowerCase()}.${pick(LAST_NAMES).toLowerCase()}@aviation-erp.test`;
       }
-      if (looksLike(field, 'name') && looksLike(field, 'company', 'vendor', 'supplier', 'customer', 'organization')) {
+      if (looksLike(field, 'company') || (looksLike(field, 'name') && looksLike(field, 'vendor', 'supplier', 'customer', 'organization'))) {
         return `${pick(COMPANY_WORDS)} ${pick(COMPANY_SUFFIX)}`;
+      }
+      if (looksLike(field, 'plate')) {
+        return `${pick(PLATE_LETTERS)}${pick(PLATE_LETTERS)}${pick(PLATE_LETTERS)}-${randomInt(1000, 9999)}`;
       }
       if (looksLike(field, 'name') || looksLike(field, 'employee', 'pilot', 'crew', 'engineer', 'officer', 'agent', 'contact', 'person')) {
         return `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
@@ -91,6 +97,18 @@ function generateFieldValue(field: EntityField, entityKey: string, rowIndex: num
       }
       if (looksLike(field, 'phone')) {
         return `+1-${randomInt(200, 999)}-${randomInt(200, 999)}-${randomInt(1000, 9999)}`;
+      }
+      // These three run before the generic code rule below, which would otherwise
+      // stamp every *No./*Id field in a row with the same `<PREFIX>-<index>` value.
+      if (looksLike(field, 'flight')) {
+        return `${pick(AIRLINE_CODES)}${randomInt(100, 998)}`;
+      }
+      if (looksLike(field, 'tag')) {
+        // IATA 10-digit baggage licence plate: leading 0 + 3-digit carrier code + 6 serial digits.
+        return `0${String(randomInt(1, 999)).padStart(3, '0')}${String(randomInt(0, 999999)).padStart(6, '0')}`;
+      }
+      if (looksLike(field, 'equipment', 'machine')) {
+        return `${pick(EQUIPMENT_PREFIX)}-${String(randomInt(1, 299)).padStart(3, '0')}`;
       }
       if (looksLike(field, 'no.', 'no', 'number', 'code', 'id', 'ref', 'reference', 'serial', 'registration')) {
         return `${codePrefix(entityKey)}-${String(1000 + rowIndex).slice(-4)}`;

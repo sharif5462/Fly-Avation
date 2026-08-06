@@ -15,6 +15,8 @@ export type Role =
   | 'Crew'
   | 'Reservations'
   | 'AirportOps'
+  | 'Baggage'
+  | 'Landside'
   | 'Cargo'
   | 'Fuel'
   | 'Finance'
@@ -39,6 +41,8 @@ export const ALL_ROLES: Role[] = [
   'Crew',
   'Reservations',
   'AirportOps',
+  'Baggage',
+  'Landside',
   'Cargo',
   'Fuel',
   'Finance',
@@ -64,6 +68,8 @@ export const ROLE_LABELS: Record<Role, string> = {
   Crew: 'Crew Management',
   Reservations: 'Passenger Reservations',
   AirportOps: 'Airport Operations',
+  Baggage: 'Baggage Handling System (BHS)',
+  Landside: 'Landside Operations',
   Cargo: 'Cargo Management',
   Fuel: 'Fuel Management',
   Finance: 'Finance & Accounting',

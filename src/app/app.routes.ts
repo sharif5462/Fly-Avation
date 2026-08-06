@@ -25,11 +25,11 @@ const FLAGSHIP_LOADERS: Record<string, Route['loadComponent']> = {
   'component-tracking': () =>
     import('./features/aircraft-maintenance/component-tracking/component-tracking').then((m) => m.ComponentTrackingPage),
   'baggage-handling-dashboard': () =>
-    import('./features/airport-operations/baggage-handling-dashboard/baggage-handling-dashboard').then(
+    import('./features/baggage-handling-system/baggage-handling-dashboard/baggage-handling-dashboard').then(
       (m) => m.BaggageHandlingDashboardPage
     ),
   'baggage-handling': () =>
-    import('./features/airport-operations/baggage-handling/baggage-handling').then((m) => m.BaggageHandlingPage),
+    import('./features/baggage-handling-system/baggage-handling/baggage-handling').then((m) => m.BaggageHandlingPage),
   'pilot-management': () =>
     import('./features/crew-management/pilot-management/pilot-management').then((m) => m.PilotManagementPage),
   'spare-parts-inventory': () =>
@@ -46,7 +46,9 @@ const FLAGSHIP_LOADERS: Record<string, Route['loadComponent']> = {
   'sms-dashboard': () =>
     import('./features/safety-management-system/sms-dashboard/sms-dashboard').then((m) => m.SmsDashboardPage),
   'hazard-reporting': () =>
-    import('./features/safety-management-system/hazard-reporting/hazard-reporting').then((m) => m.HazardReportingPage)
+    import('./features/safety-management-system/hazard-reporting/hazard-reporting').then((m) => m.HazardReportingPage),
+  'landside-dashboard': () =>
+    import('./features/landside-operations/landside-dashboard/landside-dashboard').then((m) => m.LandsideDashboardPage)
 };
 
 function scaffoldLoader(): ReturnType<NonNullable<Route['loadComponent']>> {

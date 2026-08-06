@@ -1,6 +1,6 @@
 # Aviation ERP — Angular Frontend
 
-Angular 20 frontend for a full aviation ERP: 19 modules, 128 screens, JWT
+Angular 20 frontend for a full aviation ERP: 24 modules, 223 screens, JWT
 authentication with role-based authorization, running today on mock data and
 built to drop onto a .NET Web API + Oracle backend with no component changes.
 
@@ -48,41 +48,59 @@ src/app/
     scaffold/           FeatureListPage — the generic CRUD engine (below)
   features/
     auth/login/
-    errors/            403, 404
-    business-intelligence/dashboard/     ┐
-    flight-operations/flight-scheduling/ │
-    fleet-management/aircraft-information/│  flagship (hand-built) pages —
-    aircraft-maintenance/work-orders/     │  see "Flagship vs scaffold" below
-    crew-management/pilot-management/     │
-    inventory-spare-parts/spare-parts-inventory/
-    procurement/purchase-orders/          │
-    security-management/user-roles/       │
-    security-management/access-control/  ┘
+    errors/                     403, 404
+
+    # the 20 flagship (hand-built) pages — see "Flagship vs scaffold" below.
+    # Everything else in the app is the scaffold; it has no folder here.
+    business-intelligence/      dashboard
+    flight-operations/          flight-scheduling
+    fleet-management/           aircraft-registration
+    aircraft-maintenance/       mro-dashboard, work-orders, component-tracking
+    crew-management/            pilot-management
+    inventory-spare-parts/      spare-parts-inventory
+    warehouse-management/       warehouse-dashboard, item-master
+    procurement/                purchase-orders
+    baggage-handling-system/    baggage-handling-dashboard, baggage-handling
+    landside-operations/        landside-dashboard
+    facilities-assets/          facility-dashboard, asset-master
+    safety-management-system/   sms-dashboard, hazard-reporting
+    security-management/        user-roles, access-control
 ```
 
 ### Flagship pages vs. the generic scaffold
 
-Hand-building 128 unique screens up front isn't a good use of time before
+Hand-building 223 unique screens up front isn't a good use of time before
 there's a real backend to wire them to. Instead:
 
-- **9 flagship pages** (Dashboard, Flight Scheduling, Aircraft Information,
-  Work Orders, Pilot Management, Spare Parts Inventory, Purchase Orders,
-  User Roles, Access Control) are fully hand-built: typed models, bespoke
-  table columns, KPI cards, dedicated reactive forms. These are the
-  reference implementation — copy one of these when a scaffold page needs
-  to graduate to something bespoke.
-- **The other 119 items** are all real, working CRUD screens too — search,
+- **20 flagship pages** are fully hand-built: typed models, bespoke table
+  columns, KPI cards, dedicated reactive forms. These are the reference
+  implementation — copy one of these when a scaffold page needs to graduate
+  to something bespoke. Seven are dashboards — the landing Dashboard plus
+  MRO, Warehouse, Baggage Handling, Landside, Facility and SMS. The other
+  thirteen are Flight Scheduling, Aircraft Registration, Work Orders,
+  Component Tracking, Pilot Management, Spare Parts Inventory, Item Master,
+  Purchase Orders, Bag Tracking (Res. 753), Asset Master, Hazard Reporting,
+  User Roles and Access Control.
+- **The other 203 screens** are all real, working CRUD screens too — search,
   sortable table, add/edit dialog with validation, delete confirmation —
   just rendered by one shared component, `FeatureListPage`, configured
   per-entity instead of hand-coded per-entity.
 
-**How the scaffold works:** `core/data/module-manifest.ts` defines all 19
+**How the scaffold works:** `core/data/module-manifest.ts` defines all 24
 modules and their sub-items (label, icon, route key, which ones are
 flagship). `core/data/entity-configs.ts` defines the table columns + form
 fields for every non-flagship item, keyed by the same route key. In
 `app.routes.ts`, every non-flagship item routes to the same lazy-loaded
 `FeatureListPage` chunk with `data: { entityKey }` — so there's exactly one
-extra chunk for all 119 pages, not 119 chunks.
+extra chunk for all 203 pages, not 203 chunks.
+
+**Screens vs. nav entries:** the sidebar has 240 entries across the 24
+modules, but only 223 distinct screens. Some sub-items are deliberately
+reused across modules because they're the same real-world record viewed
+from a different desk — Incident Reporting appears under Compliance &
+Safety, SMS, Facilities and Landside; Vendor Management under Procurement,
+Warehouse and Facilities; Purchase Orders under Procurement and Warehouse.
+A reused key means one route, one entity config and one dataset, not a copy.
 
 **To add a new field to an existing scaffold page:** edit its entry in
 `entity-configs.ts`. The table column and the form field both update; no
@@ -134,13 +152,15 @@ drop-in stand-in, not a parallel code path components need to know about.
 
 - `core/mock/mock-users.ts` — the 9 demo accounts and `/auth/login` logic.
 - `core/mock/flagship-seeds.ts` — hand-written realistic seed data for the
-  9 flagship resources.
-- `core/mock/fake-data.ts` — generates plausible seed rows for the 119
+  11 flagship resources that own a dataset. (The seven dashboards don't —
+  they read the other resources; User Roles and Access Control are backed
+  by the `users` and `role-permissions` resources in the same file's map.)
+- `core/mock/fake-data.ts` — generates plausible seed rows for the 203
   generic scaffold resources from their `entity-configs.ts` field
   definitions (heuristic — a field named/labeled with "cost" gets a
   dollar-ish number, "airport"/"origin" gets an IATA-style code, etc.). Not
   perfect for every field name, but good enough to make every one of the
-  128 pages demoable with realistic-looking data on first load.
+  223 pages demoable with realistic-looking data on first load.
 - `core/mock/mock-db.ts` — thin `localStorage` persistence so anything
   created/edited/deleted while clicking around survives a refresh. A
   "Reset Demo Data" option lives in the user menu (top-right avatar).

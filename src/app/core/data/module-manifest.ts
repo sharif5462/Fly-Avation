@@ -185,14 +185,61 @@ export const MODULES: ModuleDef[] = [
       { key: 'gate-management', label: 'Gate Management', icon: 'pi-sitemap' },
       { key: 'runway-scheduling', label: 'Runway Scheduling', icon: 'pi-directions-alt' },
       { key: 'terminal-operations', label: 'Terminal Operations', icon: 'pi-building-columns' },
-      { key: 'baggage-handling-dashboard', label: 'Baggage Handling Dashboard', icon: 'pi-th-large', flagship: true },
-      { key: 'baggage-handling', label: 'Baggage Handling', icon: 'pi-briefcase', flagship: true },
-      { key: 'baggage-reconciliation', label: 'Baggage Reconciliation (BRS)', icon: 'pi-verified' },
-      { key: 'baggage-screening', label: 'Baggage Screening', icon: 'pi-shield' },
-      { key: 'mishandled-baggage', label: 'Mishandled Baggage / Lost & Found', icon: 'pi-search' },
       { key: 'ground-handling', label: 'Ground Handling', icon: 'pi-car' },
       { key: 'aircraft-parking', label: 'Aircraft Parking', icon: 'pi-map-marker' },
       { key: 'boarding-management', label: 'Boarding Management', icon: 'pi-users' }
+    ]
+  },
+  {
+    key: 'baggage-handling-system',
+    label: 'Baggage Handling System (BHS)',
+    icon: 'pi-briefcase',
+    role: 'Baggage',
+    items: [
+      { key: 'baggage-handling-dashboard', label: 'Dashboard', icon: 'pi-th-large', flagship: true },
+      // ── Bag lifecycle: acceptance → screening → storage → make-up → load → arrival
+      { key: 'bag-drop-units', label: 'Check-in & Self Bag Drop', icon: 'pi-sign-in' },
+      { key: 'baggage-handling', label: 'Bag Tracking (Res. 753)', icon: 'pi-briefcase', flagship: true },
+      { key: 'baggage-screening', label: 'Hold Baggage Screening (HBS)', icon: 'pi-shield' },
+      { key: 'hbs-machine-certification', label: 'HBS Machine Certification', icon: 'pi-verified' },
+      { key: 'out-of-gauge-baggage', label: 'Out-of-Gauge (OOG) Baggage', icon: 'pi-expand' },
+      { key: 'early-bag-storage', label: 'Early Bag Storage (EBS)', icon: 'pi-inbox' },
+      { key: 'baggage-makeup', label: 'Make-up & ULD Build', icon: 'pi-box' },
+      { key: 'transfer-baggage', label: 'Transfer & Hot Bags', icon: 'pi-sync' },
+      { key: 'baggage-reclaim', label: 'Arrivals Reclaim', icon: 'pi-download' },
+      // ── Reconciliation & messaging
+      { key: 'baggage-reconciliation', label: 'Baggage Reconciliation (BRS)', icon: 'pi-verified' },
+      { key: 'baggage-messaging', label: 'IATA Type B Messaging', icon: 'pi-envelope' },
+      // ── The machine: equipment, control system, maintenance
+      { key: 'bhs-equipment', label: 'BHS Equipment Registry', icon: 'pi-cog' },
+      { key: 'bhs-sortation-performance', label: 'Sortation & Read Rate', icon: 'pi-percentage' },
+      { key: 'bhs-fault-log', label: 'Fault, Jam & SCADA Alarms', icon: 'pi-exclamation-triangle' },
+      { key: 'bhs-maintenance', label: 'BHS Preventive Maintenance', icon: 'pi-wrench' },
+      // ── Performance & exceptions
+      { key: 'baggage-sla-performance', label: 'SLA & Performance', icon: 'pi-chart-line' },
+      { key: 'mishandled-baggage', label: 'Mishandled Baggage / Lost & Found', icon: 'pi-search' },
+      { key: 'baggage-claims', label: 'Claims & Compensation', icon: 'pi-dollar' }
+    ]
+  },
+  {
+    key: 'landside-operations',
+    label: 'Landside Operations',
+    icon: 'pi-car',
+    role: 'Landside',
+    items: [
+      { key: 'landside-dashboard', label: 'Dashboard', icon: 'pi-th-large', flagship: true },
+      { key: 'curbside-management', label: 'Curbside Management', icon: 'pi-map' },
+      { key: 'commercial-vehicle-permits', label: 'Commercial Vehicle Permits', icon: 'pi-id-card' },
+      { key: 'ground-transportation-dispatch', label: 'Ground Transportation Dispatch', icon: 'pi-directions-alt' },
+      { key: 'public-parking-management', label: 'Public Parking Management', icon: 'pi-car' },
+      { key: 'taxi-rideshare-queue', label: 'Taxi & Rideshare Queue', icon: 'pi-users' },
+      { key: 'rental-car-facility', label: 'Rental Car Facility', icon: 'pi-building' },
+      { key: 'road-traffic-circulation', label: 'Road & Traffic Circulation', icon: 'pi-directions' },
+      { key: 'vehicle-checkpoint-screening', label: 'Vehicle Checkpoint Screening', icon: 'pi-shield' },
+      { key: 'terminal-curb-access-control', label: 'Terminal Curb Access Control', icon: 'pi-key' },
+      { key: 'landside-revenue', label: 'Parking & Curb Revenue', icon: 'pi-dollar' },
+      // Reuses Compliance & Safety's Incident Reporting — one incident register, any source.
+      { key: 'incident-reporting', label: 'Incident Reporting', icon: 'pi-flag' }
     ]
   },
   {

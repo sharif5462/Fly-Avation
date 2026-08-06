@@ -10,8 +10,8 @@ import { EntityConfig, EntityField, FieldType, TagSeverity } from '../models/ent
  * mro-dashboard, component-tracking, pilot-management, spare-parts-inventory,
  * purchase-orders, user-roles, access-control, dashboard, warehouse-dashboard,
  * item-master, facility-dashboard, asset-master, sms-dashboard, hazard-reporting,
- * baggage-handling-dashboard, baggage-handling) intentionally have no entry
- * here: they have hand-built components under features/ instead.
+ * baggage-handling-dashboard, baggage-handling, landside-dashboard) intentionally
+ * have no entry here: they have hand-built components under features/ instead.
  */
 
 function f(key: string, label: string, type: FieldType = 'text', extra: Partial<EntityField> = {}): EntityField {
@@ -640,32 +640,6 @@ const ENTITY_LIST: EntityConfig[] = [
     f('provider', 'Provider'),
     statusField([['Scheduled', 'info'], ['In Progress', 'warn'], ['Completed', 'success']])
   ]),
-  entity('baggage-reconciliation', 'BRS Record', 'Baggage Reconciliation', 'pi-verified', 'Matches every checked bag to its load authority before departure, per IATA Resolution 753.', [
-    f('reconciliationNo', 'Reconciliation No.'),
-    f('flightNo', 'Flight No.'),
-    f('tagNo', 'Bag Tag No.'),
-    f('loadAuthorizedBy', 'Load Authorized By'),
-    datetime('reconciledAt', 'Reconciled At'),
-    statusField([['Pending', 'info'], ['Matched', 'success'], ['Discrepancy', 'danger'], ['Cleared', 'secondary']])
-  ]),
-  entity('baggage-screening', 'Screening Record', 'Baggage Screening', 'pi-shield', 'Hold baggage security screening results (EDS/ETD) before sortation.', [
-    f('screeningNo', 'Screening No.'),
-    f('tagNo', 'Bag Tag No.'),
-    f('flightNo', 'Flight No.'),
-    f('screeningLevel', 'Screening Level', 'select', { options: ['EDS Level 1', 'EDS Level 2', 'ETD', 'Manual Search'].map((v) => ({ label: v, value: v })) }),
-    datetime('screenedAt', 'Screened At'),
-    statusField([['Clear', 'success'], ['Alarm', 'danger'], ['Resolved', 'warn'], ['Escalated', 'secondary']], 'result', 'Result')
-  ]),
-  entity('mishandled-baggage', 'Baggage Case', 'Mishandled Baggage / Lost & Found', 'pi-search', 'WorldTracer-style tracing file for delayed, damaged, pilfered, or lost baggage.', [
-    f('caseNo', 'Case No.'),
-    f('passengerName', 'Passenger Name'),
-    f('flightNo', 'Flight No.'),
-    f('tagNo', 'Bag Tag No.'),
-    f('category', 'Category', 'select', { badge: true, options: [['Delayed', 'warn'], ['Damaged', 'danger'], ['Pilfered', 'danger'], ['Lost', 'contrast']].map(([v, s]) => ({ label: v, value: v, severity: s as TagSeverity })) }),
-    date('reportedDate', 'Reported Date'),
-    f('aholLocation', 'AHL / Current Location'),
-    statusField([['Open', 'danger'], ['Tracing', 'warn'], ['Located', 'info'], ['Delivered', 'success'], ['Closed', 'secondary']])
-  ]),
   entity('aircraft-parking', 'Parking Assignment', 'Aircraft Parking', 'pi-map-marker', 'Apron stand allocation per aircraft turnaround.', [
     f('standNo', 'Stand No.'),
     f('aircraftReg', 'Aircraft Reg.'),
@@ -679,6 +653,250 @@ const ENTITY_LIST: EntityConfig[] = [
     datetime('boardingStart', 'Boarding Start'),
     num('passengersBoarded', 'Passengers Boarded'),
     statusField([['Not Started', 'secondary'], ['Boarding', 'info'], ['Completed', 'success']])
+  ]),
+
+  // ───────────────────────── Baggage Handling System (BHS) ─────────────────────────
+  // Ordered to follow the physical bag journey (acceptance → screening → storage →
+  // make-up → transfer → reclaim), then the reconciliation/messaging backbone, then
+  // the machine itself (equipment/faults/maintenance), then performance & exceptions.
+  entity('bag-drop-units', 'Bag Drop Unit', 'Check-in & Self Bag Drop', 'pi-sign-in', 'Staffed counters, CUSS kiosks, and one-step/two-step self bag drop units at the acceptance front end.', [
+    f('unitId', 'Unit ID'),
+    f('terminal', 'Terminal'),
+    f('unitType', 'Unit Type', 'select', { options: ['Staffed Counter', 'One-Step Self Bag Drop', 'Two-Step Self Bag Drop', 'CUSS Kiosk', 'Oversize Counter'].map((v) => ({ label: v, value: v })) }),
+    f('airline', 'Airline'),
+    num('bagsAcceptedToday', 'Bags Accepted Today', { min: 0, max: 1200 }),
+    statusField([['Operational', 'success'], ['Degraded', 'warn'], ['Offline', 'danger'], ['Maintenance', 'secondary']])
+  ]),
+  entity('baggage-screening', 'Screening Record', 'Hold Baggage Screening (HBS)', 'pi-shield', 'Multi-level hold baggage screening. Under ECAC Standard 3, CT-based Level 1 absorbs the old Levels 1–3; alarms escalate to image evaluation and trace search.', [
+    f('screeningNo', 'Screening No.'),
+    f('tagNo', 'Bag Tag No.'),
+    f('flightNo', 'Flight No.'),
+    f('screeningLevel', 'Screening Level', 'select', { options: ['Level 1 — Automated CT', 'Level 2 — On-Screen Resolution', 'Level 3 — Manual Review', 'Level 4 — 3D Image Evaluation', 'Level 5 — Trace / ETD Search'].map((v) => ({ label: v, value: v })) }),
+    f('machineId', 'Machine ID'),
+    datetime('screenedAt', 'Screened At'),
+    statusField([['Clear', 'success'], ['Alarm', 'danger'], ['Resolved', 'warn'], ['Escalated', 'secondary']], 'result', 'Result')
+  ]),
+  entity('hbs-machine-certification', 'HBS Machine', 'HBS Machine Certification', 'pi-verified', 'EDS/CT screening machine fleet with ECAC standard approval and certification expiry — Standard 3 compliance is a live regulatory deadline.', [
+    f('machineId', 'Machine ID'),
+    f('manufacturer', 'Manufacturer', 'select', { options: ['Smiths Detection', 'Rapiscan Systems', 'Leidos', 'Analogic', 'Nuctech'].map((v) => ({ label: v, value: v })) }),
+    f('model', 'Model'),
+    f('ecacStandard', 'ECAC Standard', 'select', { options: ['Standard 2', 'Standard 3', 'Standard 3.1'].map((v) => ({ label: v, value: v })) }),
+    num('falseAlarmRatePct', 'False Alarm Rate', { min: 0, max: 40, suffix: '%' }),
+    date('certificationExpiry', 'Certification Expiry'),
+    statusField([['Certified', 'success'], ['Expiring Soon', 'warn'], ['Expired', 'danger'], ['Decommissioned', 'secondary']])
+  ]),
+  entity('out-of-gauge-baggage', 'OOG Item', 'Out-of-Gauge (OOG) Baggage', 'pi-expand', 'Oversize and odd-size items that cannot travel the standard conveyor path and need a dedicated screening and make-up route.', [
+    f('oogNo', 'OOG No.'),
+    f('tagNo', 'Bag Tag No.'),
+    f('flightNo', 'Flight No.'),
+    f('itemType', 'Item Type', 'select', { options: ['Sports Equipment', 'Musical Instrument', 'Wheelchair / Mobility Aid', 'Pet Container', 'Break-Bulk Freight', 'Other Odd-Size'].map((v) => ({ label: v, value: v })) }),
+    num('weightKg', 'Weight (kg)', { min: 5, max: 200 }),
+    f('screeningPath', 'Screening Path', 'select', { options: ['Dedicated OOG CT', 'Manual Search', 'ETD Swab'].map((v) => ({ label: v, value: v })) }),
+    statusField([['Accepted', 'info'], ['Screened', 'warn'], ['At Make-up', 'secondary'], ['Loaded', 'success'], ['Rejected', 'danger']])
+  ]),
+  entity('early-bag-storage', 'Stored Bag', 'Early Bag Storage (EBS)', 'pi-inbox', 'Buffer store for bags checked in before their flight make-up position opens; released back into sortation on schedule.', [
+    f('ebsNo', 'EBS No.'),
+    f('tagNo', 'Bag Tag No.'),
+    f('flightNo', 'Flight No.'),
+    f('storageType', 'Storage Type', 'select', { options: ['Conveyor Lane', 'Lane-Based Store', 'ASRS Rack'].map((v) => ({ label: v, value: v })) }),
+    f('rackPosition', 'Rack / Lane Position'),
+    datetime('storedAt', 'Stored At'),
+    datetime('plannedReleaseAt', 'Planned Release'),
+    statusField([['Stored', 'info'], ['Released', 'success'], ['Overdue', 'danger'], ['Manually Retrieved', 'warn']])
+  ]),
+  entity('baggage-makeup', 'Make-up Record', 'Make-up & ULD Build', 'pi-box', 'Flight make-up positions where sorted bags are built into ULDs or carts for dispatch to the aircraft.', [
+    f('makeupNo', 'Make-up No.'),
+    f('flightNo', 'Flight No.'),
+    f('makeupPosition', 'Make-up Position'),
+    f('uldNo', 'ULD / Cart No.'),
+    num('bagsLoaded', 'Bags Loaded', { min: 0, max: 300 }),
+    f('handler', 'Handler'),
+    statusField([['Open', 'info'], ['Building', 'warn'], ['Closed', 'secondary'], ['Dispatched', 'success']])
+  ]),
+  entity('transfer-baggage', 'Transfer Bag', 'Transfer & Hot Bags', 'pi-sync', 'Connecting bags between inbound and outbound flights. Transfers drive the largest single share of mishandling, so short connections are flagged as hot bags for expedited handling.', [
+    f('transferNo', 'Transfer No.'),
+    f('tagNo', 'Bag Tag No.'),
+    f('inboundFlight', 'Inbound Flight'),
+    f('outboundFlight', 'Outbound Flight'),
+    num('connectionMinutes', 'Connection Time (min)', { min: 20, max: 240 }),
+    f('infeedPoint', 'Transfer Infeed Point'),
+    statusField([['On Track', 'success'], ['Short Connection', 'warn'], ['Hot Bag — Expedite', 'danger'], ['Missed Connection', 'danger'], ['Rerouted', 'secondary']])
+  ]),
+  entity('baggage-reclaim', 'Reclaim Allocation', 'Arrivals Reclaim', 'pi-download', 'Arrivals carousel allocation and delivery performance, measured on first-bag and last-bag times against the service target.', [
+    f('reclaimNo', 'Reclaim No.'),
+    f('flightNo', 'Flight No.'),
+    f('carouselNo', 'Carousel No.'),
+    num('firstBagMinutes', 'First Bag (min)', { min: 5, max: 45 }),
+    num('lastBagMinutes', 'Last Bag (min)', { min: 10, max: 70 }),
+    num('bagsDelivered', 'Bags Delivered', { min: 0, max: 400 }),
+    statusField([['Allocated', 'info'], ['Delivering', 'warn'], ['Completed', 'success'], ['SLA Breach', 'danger']])
+  ]),
+  entity('baggage-reconciliation', 'BRS Record', 'Baggage Reconciliation', 'pi-verified', 'Matches every checked bag to its load authority before departure, per IATA Resolution 753.', [
+    f('reconciliationNo', 'Reconciliation No.'),
+    f('flightNo', 'Flight No.'),
+    f('tagNo', 'Bag Tag No.'),
+    f('loadAuthorizedBy', 'Load Authorized By'),
+    datetime('reconciledAt', 'Reconciled At'),
+    statusField([['Pending', 'info'], ['Matched', 'success'], ['Discrepancy', 'danger'], ['Cleared', 'secondary']])
+  ]),
+  entity('baggage-messaging', 'Type B Message', 'IATA Type B Messaging', 'pi-envelope', 'The IATA RP 1745 message backbone behind reconciliation and sortation — BSM creates the bag record, BPM reports each processing event, BTM hands transfers between carriers.', [
+    f('messageNo', 'Message No.'),
+    f('messageType', 'Message Type', 'select', { options: ['BSM — Baggage Source', 'BPM — Baggage Processed', 'BTM — Baggage Transfer', 'BUM — Baggage Unload', 'BNS — Baggage Not Seen', 'BMM — Baggage Manifest'].map((v) => ({ label: v, value: v })) }),
+    f('tagNo', 'Bag Tag No.'),
+    f('flightNo', 'Flight No.'),
+    f('sender', 'Sender Address'),
+    datetime('receivedAt', 'Received At'),
+    statusField([['Processed', 'success'], ['Pending', 'info'], ['Unmatched', 'warn'], ['Failed', 'danger']])
+  ]),
+  entity('bhs-equipment', 'BHS Equipment', 'BHS Equipment Registry', 'pi-cog', 'The physical system: conveyors, sorters, tag readers, screening machines, and carousels that move bags through the airport.', [
+    f('equipmentId', 'Equipment ID'),
+    f('equipmentType', 'Equipment Type', 'select', { options: ['Conveyor', 'Cross-Belt Sorter', 'Tilt-Tray Sorter', 'ATR Array', 'EDS / CT Machine', 'Make-up Carousel', 'Reclaim Carousel', 'Chute', 'DCV / Tote', 'Vertical Lift'].map((v) => ({ label: v, value: v })) }),
+    f('zone', 'Zone'),
+    f('manufacturer', 'Manufacturer', 'select', { options: ['Vanderlande', 'BEUMER Group', 'Alstef Group', 'Daifuku', 'Siemens Logistics', 'Fives'].map((v) => ({ label: v, value: v })) }),
+    num('throughputBagsPerHour', 'Throughput (bags/hr)', { min: 200, max: 6000 }),
+    date('installedDate', 'Installed Date'),
+    statusField([['Operational', 'success'], ['Degraded', 'warn'], ['Under Maintenance', 'info'], ['Out of Service', 'danger']])
+  ]),
+  entity('bhs-sortation-performance', 'Sortation Record', 'Sortation & Read Rate', 'pi-percentage', 'Automatic tag reader success rate and sortation accuracy per zone. Dirty photocells and no-reads are the leading causes of missorted bags.', [
+    f('recordNo', 'Record No.'),
+    f('zone', 'Zone'),
+    num('atrReadRatePct', 'ATR Read Rate', { min: 70, max: 100, suffix: '%' }),
+    num('noReadCount', 'No-Read Count', { min: 0, max: 500 }),
+    num('missortCount', 'Missort Count', { min: 0, max: 120 }),
+    num('manualEncodingCount', 'Manual Encoding', { min: 0, max: 400 }),
+    date('recordedDate', 'Recorded Date'),
+    statusField([['Above Target', 'success'], ['At Target', 'info'], ['Below Target', 'warn'], ['Critical', 'danger']])
+  ]),
+  entity('bhs-fault-log', 'Fault Record', 'Fault, Jam & SCADA Alarms', 'pi-exclamation-triangle', 'Mechanical faults and control-system alarms. A single jammed sensor can stall an entire pier within minutes, so downtime is tracked per event.', [
+    f('faultNo', 'Fault No.'),
+    f('equipmentId', 'Equipment ID'),
+    f('faultType', 'Fault Type', 'select', { options: ['Bag Jam', 'Photocell Fault', 'VFD Fault Code', 'Motor Overheat', 'Belt Tracking / Slip', 'Emergency Stop', 'Comms Loss', 'Sorter Misfire'].map((v) => ({ label: v, value: v })) }),
+    f('severity', 'Severity', 'select', { badge: true, options: [['Critical', 'danger'], ['Major', 'warn'], ['Minor', 'info'], ['Warning', 'secondary']].map(([v, s]) => ({ label: v, value: v, severity: s as TagSeverity })) }),
+    datetime('detectedAt', 'Detected At'),
+    num('downtimeMinutes', 'Downtime (min)', { min: 0, max: 480 }),
+    statusField([['Open', 'danger'], ['Under Repair', 'warn'], ['Cleared', 'success']])
+  ]),
+  entity('bhs-maintenance', 'PM Task', 'BHS Preventive Maintenance', 'pi-wrench', 'Preventive maintenance scheduled on usage rather than the calendar — belt metres, cycle counts, and bag throughput alongside operating hours.', [
+    f('taskNo', 'Task No.'),
+    f('equipmentId', 'Equipment ID'),
+    f('intervalBasis', 'Interval Basis', 'select', { options: ['Calendar Days', 'Operating Hours', 'Belt Metres', 'Cycle Count', 'Bag Throughput'].map((v) => ({ label: v, value: v })) }),
+    num('intervalValue', 'Interval Value', { min: 30, max: 100000 }),
+    date('lastPerformed', 'Last Performed'),
+    date('nextDue', 'Next Due'),
+    f('technician', 'Technician'),
+    statusField([['Scheduled', 'info'], ['Due', 'warn'], ['Overdue', 'danger'], ['Completed', 'success']])
+  ]),
+  entity('baggage-sla-performance', 'Performance Period', 'SLA & Performance', 'pi-chart-line', 'Baggage performance against service targets and industry benchmarks — the global mishandling rate runs around 6.3 bags per 1,000 passengers.', [
+    f('periodLabel', 'Period'),
+    f('terminal', 'Terminal'),
+    num('mishandledPerThousandPax', 'Mishandled / 1,000 Pax', { min: 0, max: 25 }),
+    num('systemAvailabilityPct', 'System Availability', { min: 80, max: 100, suffix: '%' }),
+    num('throughputBagsPerHour', 'Peak Throughput (bags/hr)', { min: 1000, max: 12000 }),
+    num('firstBagAvgMinutes', 'Avg. First Bag (min)', { min: 5, max: 40 }),
+    statusField([['Meeting SLA', 'success'], ['At Risk', 'warn'], ['Breached', 'danger']])
+  ]),
+  entity('mishandled-baggage', 'Baggage Case', 'Mishandled Baggage / Lost & Found', 'pi-search', 'WorldTracer-style tracing file for delayed, damaged, pilfered, or lost baggage. Delayed bags account for roughly three quarters of all mishandling.', [
+    f('caseNo', 'Case No.'),
+    f('passengerName', 'Passenger Name'),
+    f('flightNo', 'Flight No.'),
+    f('tagNo', 'Bag Tag No.'),
+    f('category', 'Category', 'select', { badge: true, options: [['Delayed', 'warn'], ['Damaged', 'danger'], ['Pilfered', 'danger'], ['Lost', 'contrast']].map(([v, s]) => ({ label: v, value: v, severity: s as TagSeverity })) }),
+    f('rootCause', 'Root Cause', 'select', { options: ['Transfer Mishandling', 'Failure to Load', 'Ticketing / Tag Error', 'Loading Error', 'Arrival Mishandling', 'Security Hold', 'Space-Weight Restriction'].map((v) => ({ label: v, value: v })) }),
+    date('reportedDate', 'Reported Date'),
+    f('aholLocation', 'AHL / Current Location'),
+    statusField([['Open', 'danger'], ['Tracing', 'warn'], ['Located', 'info'], ['Delivered', 'success'], ['Closed', 'secondary']])
+  ]),
+  entity('baggage-claims', 'Claim', 'Claims & Compensation', 'pi-dollar', 'Passenger compensation for delayed, damaged, and lost baggage. Airline liability is capped by the Montreal Convention, and mishandling costs the industry billions each year.', [
+    f('claimNo', 'Claim No.'),
+    f('caseNo', 'Related Case No.'),
+    f('passengerName', 'Passenger Name'),
+    f('claimType', 'Claim Type', 'select', { options: ['Delayed Bag Expenses', 'Damaged Bag', 'Lost Bag', 'Pilfered Contents'].map((v) => ({ label: v, value: v })) }),
+    f('liabilityBasis', 'Liability Basis', 'select', { options: ['Montreal Convention', 'Warsaw Convention', 'Domestic Tariff', 'Goodwill Payment'].map((v) => ({ label: v, value: v })) }),
+    money('claimedAmount', 'Claimed Amount', { max: 3000 }),
+    money('settledAmount', 'Settled Amount', { max: 3000 }),
+    statusField([['Submitted', 'info'], ['Under Review', 'warn'], ['Approved', 'success'], ['Settled', 'secondary'], ['Rejected', 'danger']])
+  ]),
+
+  // ───────────────────────── Landside Operations ─────────────────────────
+  entity('curbside-management', 'Curb Zone Log', 'Curbside Management', 'pi-map', 'Curb zone occupancy and dwell-time monitoring at terminal frontage.', [
+    f('zoneCode', 'Curb Zone Code'),
+    f('terminal', 'Terminal'),
+    f('vehicleType', 'Vehicle Type', 'select', { options: ['Private Car', 'Taxi', 'Rideshare', 'Shuttle Bus', 'Limousine', 'Commercial Van'].map((v) => ({ label: v, value: v })) }),
+    num('dwellTimeMinutes', 'Dwell Time (min)', { min: 1, max: 60 }),
+    f('licensePlate', 'License Plate'),
+    statusField([['Within Limit', 'success'], ['Dwell Exceeded', 'warn'], ['Citation Issued', 'danger'], ['Cleared', 'secondary']])
+  ]),
+  entity('commercial-vehicle-permits', 'Permit', 'Commercial Vehicle Permits', 'pi-id-card', 'Permits for taxis, rideshare, limousines, and commercial operators serving the terminal.', [
+    f('permitNo', 'Permit No.'),
+    f('operatorCompany', 'Operator Company'),
+    f('vehicleType', 'Vehicle Type', 'select', { options: ['Taxi', 'Rideshare', 'Limousine', 'Hotel Shuttle', 'Charter Bus', 'Delivery Van'].map((v) => ({ label: v, value: v })) }),
+    f('licensePlate', 'License Plate'),
+    date('issuedDate', 'Issued Date'),
+    date('expiryDate', 'Expiry Date'),
+    statusField([['Active', 'success'], ['Expiring Soon', 'warn'], ['Suspended', 'danger'], ['Revoked', 'danger']])
+  ]),
+  entity('ground-transportation-dispatch', 'Dispatch Run', 'Ground Transportation Dispatch', 'pi-directions-alt', 'Shuttle bus, hotel connector, and rental-car bus scheduling along landside routes.', [
+    f('routeCode', 'Route Code'),
+    f('vehicleId', 'Vehicle ID'),
+    f('driver', 'Driver'),
+    f('serviceType', 'Service Type', 'select', { options: ['Terminal Shuttle', 'Hotel Connector', 'Rental Car Shuttle', 'Employee Shuttle', 'Remote Parking Shuttle'].map((v) => ({ label: v, value: v })) }),
+    datetime('departureTime', 'Departure Time'),
+    statusField([['Scheduled', 'info'], ['En Route', 'warn'], ['Completed', 'success'], ['Delayed', 'danger']])
+  ]),
+  entity('public-parking-management', 'Parking Facility', 'Public Parking Management', 'pi-car', 'Passenger parking garage and lot occupancy, rates, and facility status.', [
+    f('facilityCode', 'Facility Code'),
+    f('facilityName', 'Facility Name'),
+    f('parkingType', 'Parking Type', 'select', { options: ['Short-Term', 'Long-Term', 'Economy', 'Valet', 'Premium'].map((v) => ({ label: v, value: v })) }),
+    num('totalSpaces', 'Total Spaces', { min: 300, max: 3000 }),
+    num('occupiedSpaces', 'Occupied Spaces', { min: 50, max: 2800 }),
+    money('hourlyRate', 'Hourly Rate', { max: 40 }),
+    statusField([['Open', 'success'], ['Near Full', 'warn'], ['Full', 'danger'], ['Closed', 'secondary']])
+  ]),
+  entity('taxi-rideshare-queue', 'Queue Entry', 'Taxi & Rideshare Queue', 'pi-users', 'Taxi holding-bay and rideshare staging-lot queue order and wait times.', [
+    f('queueNo', 'Queue No.'),
+    f('vehicleType', 'Vehicle Type', 'select', { options: ['Taxi', 'Rideshare', 'Limousine'].map((v) => ({ label: v, value: v })) }),
+    f('licensePlate', 'License Plate'),
+    f('driver', 'Driver'),
+    num('waitTimeMinutes', 'Wait Time (min)', { min: 1, max: 30 }),
+    statusField([['Waiting', 'info'], ['Called Forward', 'warn'], ['Dispatched', 'success'], ['No Show', 'danger']])
+  ]),
+  entity('rental-car-facility', 'Rental Counter', 'Rental Car Facility', 'pi-building', 'Rental car operator counters, ready/return lots, and shuttle coordination.', [
+    f('counterCode', 'Counter Code'),
+    f('rentalCompany', 'Rental Company'),
+    num('readyLotSpaces', 'Ready Lot Spaces', { min: 10, max: 400 }),
+    num('returnLotSpaces', 'Return Lot Spaces', { min: 10, max: 400 }),
+    f('shuttleRoute', 'Shuttle Route'),
+    statusField([['Operating', 'success'], ['Limited Service', 'warn'], ['Closed', 'secondary']])
+  ]),
+  entity('road-traffic-circulation', 'Traffic Advisory', 'Road & Traffic Circulation', 'pi-directions', 'Roadway circulation status, congestion advisories, and closures on airport access roads.', [
+    f('roadSegment', 'Road Segment'),
+    f('advisoryType', 'Advisory Type', 'select', { options: ['Congestion', 'Lane Closure', 'Accident', 'Construction', 'Special Event'].map((v) => ({ label: v, value: v })) }),
+    datetime('reportedTime', 'Reported Time'),
+    f('reportedBy', 'Reported By'),
+    statusField([['Active', 'danger'], ['Monitoring', 'warn'], ['Cleared', 'success']])
+  ]),
+  entity('vehicle-checkpoint-screening', 'Checkpoint Record', 'Vehicle Checkpoint Screening', 'pi-shield', 'Vehicle inspections at landside security checkpoints prior to terminal frontage access.', [
+    f('checkpointId', 'Checkpoint'),
+    f('licensePlate', 'License Plate'),
+    f('driverName', 'Driver Name'),
+    datetime('screeningTime', 'Screening Time'),
+    f('screenedBy', 'Screened By'),
+    statusField([['Cleared', 'success'], ['Secondary Inspection', 'warn'], ['Denied Entry', 'danger']])
+  ]),
+  entity('terminal-curb-access-control', 'Access Credential', 'Terminal Curb Access Control', 'pi-key', 'AVI/RFID credentials and gate access for vehicles authorized onto terminal curb roadways.', [
+    f('credentialNo', 'Credential No.'),
+    f('operatorCompany', 'Operator Company'),
+    f('licensePlate', 'License Plate'),
+    f('accessZone', 'Access Zone', 'select', { options: ['Departures Curb', 'Arrivals Curb', 'Service Road', 'Cargo Ramp Road'].map((v) => ({ label: v, value: v })) }),
+    date('expiryDate', 'Expiry Date'),
+    statusField([['Active', 'success'], ['Expiring Soon', 'warn'], ['Deactivated', 'danger']])
+  ]),
+  entity('landside-revenue', 'Revenue Entry', 'Parking & Curb Revenue', 'pi-dollar', 'Daily revenue collected from parking facilities, curb access fees, and ground transportation concessions.', [
+    f('revenueSource', 'Revenue Source', 'select', { options: ['Parking Facility', 'Curb Access Fee', 'Taxi/Rideshare Trip Fee', 'Rental Car Concession', 'Valet Service'].map((v) => ({ label: v, value: v })) }),
+    date('transactionDate', 'Transaction Date'),
+    money('amount', 'Amount', { max: 5000 }),
+    f('collectionMethod', 'Collection Method', 'select', { options: ['Cash', 'Credit Card', 'Mobile Payment', 'Invoice/Account'].map((v) => ({ label: v, value: v })) }),
+    statusField([['Recorded', 'info'], ['Reconciled', 'success'], ['Disputed', 'danger']])
   ]),
 
   // ───────────────────────── Cargo Management ─────────────────────────
