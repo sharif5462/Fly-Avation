@@ -26,21 +26,47 @@ served from seeded, localStorage-backed mock data (see **Mock data layer**
 below). Sign in with any of the demo accounts shown on the login screen
 (click one to auto-fill its credentials), e.g. `superadmin` / `super123`.
 
+### Builds
+
+| Command | Backend | Demo accounts | Use it for |
+| --- | --- | --- | --- |
+| `npm start` | mock | shown | local development |
+| `npm run build:demo` | mock | shown | stakeholder demos, UAT sandboxes |
+| `npm run build` | **real API at `/api`** | **absent** | production |
+
+`npm run build` does not merely switch the mock layer off — `angular.json`
+replaces `src/app/core/mock/index.ts` with a stub, so the mock interceptor,
+the seed data and the demo credentials are not in the artifact at all. See
+`docs/adr/0002-demo-build-separate-from-production.md`.
+
+Anything outside `core/mock/` must import from **`core/mock`** (the barrel),
+never from a file inside it, or the replacement is bypassed. CI greps the
+production bundle and fails if it finds mock artifacts.
+
+### Checks
+
 ```bash
-npm run build     # production build → dist/aviation-erp
+npm run lint        # ESLint + angular-eslint, including template a11y rules
+npm run typecheck   # tsc --noEmit
+npm test            # Karma/Jasmine, watch mode
+npm run test:ci     # headless, single run, with coverage
 ```
+
+All four run on every push and pull request — see `.github/workflows/ci.yml`.
 
 ## Architecture
 
 ```
 src/app/
   core/               # framework-agnostic app plumbing, no UI
-    auth/              AuthService, authGuard, roleGuard, authInterceptor
+    auth/              AuthService, ModuleAccessService, authGuard, roleGuard,
+                       authInterceptor
     interceptors/      errorInterceptor (401/403/5xx handling)
     services/          ApiService — the one place that knows request URLs
     models/            Role, User, EntityConfig, ModuleDef — shared types
     data/              module-manifest.ts, entity-configs.ts (see below)
-    mock/              mock API interceptor + seed data (dev-only)
+    mock/              mock API interceptor + seed data (dev/demo only)
+    utils/             date.util.ts — date-only vs. instant handling
     theme/             PrimeNG theme preset
   layout/             Shell, Sidebar, Topbar, Breadcrumb — the authenticated app frame
   shared/
@@ -124,28 +150,64 @@ set `flagship: true` on that item in `module-manifest.ts`.
 - **AuthService** (`core/auth/auth.service.ts`) holds session state in
   signals, persisted to `localStorage`. `login()` posts to
   `POST /auth/login`; the response `{ token, expiresAt, user }` is stored
-  and the token is attached to every subsequent request.
+  and the token is attached to every subsequent request. `expiresAt` is
+  enforced: a stored session whose token has expired is discarded on
+  startup rather than let through to the guards. That is a UX guarantee, not
+  a security boundary — the API remains the only thing that truly validates
+  a token.
 - **authGuard** blocks unauthenticated access to the whole app shell and
   remembers the target URL as `?returnUrl=` for after login.
+- **ModuleAccessService** (`core/auth/module-access.service.ts`) is the one
+  place that answers "may this user open this module?", combining the
+  manifest's owning role with any grants made on the Access Control screen.
+  Both `roleGuard` and the sidebar consult it. See
+  `docs/adr/0003-module-access-service.md`.
 - **roleGuard**, applied once per module (not per page) in `app.routes.ts`,
-  reads `route.data['roles']` and checks it against the signed-in user's
-  roles. `SuperAdmin` and `Admin` bypass every check. A module with no
-  `role` set (Notification System) is open to any authenticated user.
+  passes `route.data['moduleKey']` to `ModuleAccessService`. `SuperAdmin` and
+  `Admin` bypass every check. A module with no `role` set (Notification
+  System) is open to any authenticated user.
 - **authInterceptor** attaches `Authorization: Bearer <token>` to requests
   bound for `environment.apiUrl`.
 - **errorInterceptor** centralizes 401 (→ logout), 403 (→ `/403`), and
   network/5xx handling (→ toast) so individual pages don't each need this
-  logic.
+  logic. Requests to `{apiUrl}/auth/*` are exempt from the 401 branch: a
+  rejected sign-in is a wrong password, not an expired session, and the login
+  page owns that error state.
 - Roles are enumerated in `core/models/role.model.ts` — one role per
   module, plus `SuperAdmin`/`Admin`/`ReadOnly`. `security-management` →
   **Access Control** lets an admin grant a role extra access to modules
-  beyond its default one.
+  beyond its default one; those grants are read back by
+  `ModuleAccessService` and take effect in both the router and the sidebar.
+
+> The .NET API must enforce the same rules per endpoint. Everything above
+> decides what to render and route to; a user who types a URL directly still
+> gets the app shell, and only the API's 403 stops the data coming back.
+> The API also needs to read the same `role-permissions` table, or the two
+> sides will disagree about who can see what.
+
+## Dates
+
+Two shapes travel over the wire and they are **not** interchangeable:
+
+- **date-only** (`YYYY-MM-DD`) — a calendar day: licence expiry, due date,
+  warranty end.
+- **instant** (full ISO 8601) — a moment: departure time, bag scan.
+
+`core/utils/date.util.ts` owns the conversion. Use `toDateOnly` /
+`fromDateOnly` (or `toRequiredDateOnly` for a `Validators.required` field) for
+the first, and `toInstant` for the second.
+
+**`toISOString()` on a date-only value is a bug**, and so is
+`new Date('2026-08-06')` — the first shifts the day back for users east of
+UTC, the second forward for users west of it. Both look correct in UTC, which
+is how the original code passed review. Full reasoning in
+`docs/adr/0001-date-only-vs-instant.md`.
 
 Demo accounts (see the login screen for the full set with job titles):
 `superadmin` / `super123` has every role; the other eight are scoped to
 1–2 modules each so role-gating is actually visible when testing.
 
-## Mock data layer (dev only — this is what to remove/bypass for production)
+## Mock data layer (dev and demo builds only — absent from production)
 
 No .NET/Oracle backend exists yet, so `core/mock/mock-api.interceptor.ts`
 intercepts every request under `environment.apiUrl` and serves it from an
@@ -153,6 +215,11 @@ in-memory store backed by `localStorage`, when `environment.useMockApi` is
 `true`. It implements the same REST contract documented below, so this is a
 drop-in stand-in, not a parallel code path components need to know about.
 
+- `core/mock/index.ts` — **the only module the rest of the app imports
+  from.** Production builds replace it with `index.prod.ts`, a stub with the
+  same exported surface that pulls in none of the files below. Deep-importing
+  any of them bypasses that replacement and puts the demo credentials back in
+  the production bundle, which is what the CI grep exists to catch.
 - `core/mock/mock-users.ts` — the 9 demo accounts and `/auth/login` logic.
 - `core/mock/flagship-seeds.ts` — hand-written realistic seed data for the
   11 flagship resources that own a dataset. (The eight dashboards don't —
@@ -168,9 +235,11 @@ drop-in stand-in, not a parallel code path components need to know about.
   created/edited/deleted while clicking around survives a refresh. A
   "Reset Demo Data" option lives in the user menu (top-right avatar).
 
-**To go live against the real API:** set `environment.useMockApi = false`
-(and point `environment.apiUrl` at the deployed API). No component or
-service code changes — everything already goes through `ApiService`.
+**To go live against the real API:** `npm run build`. It already points at
+`/api` with the mock layer stripped out; only `environment.prod.ts` needs
+touching if the API lives somewhere other than the SPA's own origin. No
+component or service code changes — everything already goes through
+`ApiService`.
 
 ## API contract for the .NET Web API
 
@@ -206,8 +275,25 @@ DELETE {apiUrl}/<resource>/{id}     → 200 { success: true } | 404
 plus `SuperAdmin`/`Admin`/`ReadOnly`) — see `core/models/role.model.ts` for
 the full list. The JWT `role` claim should be multi-valued to match.
 
+`role-permissions` is a real resource, not a mock-only one: one row per
+`Role`, shaped `{ id: Role, role: Role, extraModules: string[] }`, where
+`extraModules` holds module keys from `module-manifest.ts`. The frontend reads
+it once per session to decide which modules to route to and render in the nav.
+**The API must apply the same table server-side** — the frontend check is UX,
+not enforcement.
+
+Field-level notes the backend needs to match:
+
+- **Date-only fields** are sent and expected as `YYYY-MM-DD` with no time and
+  no zone — Oracle `DATE`, not `TIMESTAMP WITH TIME ZONE`. Do not normalize
+  them to UTC on the way in or out; see the **Dates** section above.
+- **Instants** are sent as full ISO 8601 with an offset.
+- **`id` and `createdAt` are server-owned.** The frontend never sends a
+  meaningful `id` on `POST`, and the API should ignore one if present.
+
 HTTP status codes the frontend already handles via `errorInterceptor`:
-`401` → signs the user out and redirects to `/login`; `403` → redirects to
+`401` → signs the user out and redirects to `/login` (except on
+`{apiUrl}/auth/*`, where the calling page handles it); `403` → redirects to
 `/403`; `5xx`/network failure → toast notification. Everything else is
 surfaced to the calling page as a normal error.
 
@@ -217,4 +303,11 @@ Angular 20 (standalone components, signals, new control-flow syntax,
 zoneful change detection) · PrimeNG 20 (Aura theme, custom preset in
 `core/theme/`) · PrimeFlex · Chart.js via `p-chart` · reactive forms
 throughout, with `NgModel` used only where a control lives outside any
-form (Access Control's per-row inline multiselects).
+form (Access Control's per-row inline multiselects) · ESLint with
+`angular-eslint` including the template accessibility rules · Karma/Jasmine.
+
+## Architecture decisions
+
+- [ADR 0001 — Date-only values never travel through UTC](docs/adr/0001-date-only-vs-instant.md)
+- [ADR 0002 — The demo backend is removed at build time, not switched off at runtime](docs/adr/0002-demo-build-separate-from-production.md)
+- [ADR 0003 — Authorization resolves a module key, not a role list](docs/adr/0003-module-access-service.md)

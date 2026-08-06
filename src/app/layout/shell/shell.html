@@ -1,5 +1,8 @@
 <div class="shell" [class.shell--sidebar-open]="sidebarOpen()">
-  <div class="shell__backdrop" (click)="closeSidebar()"></div>
+  <!-- A real <button> rather than a click-handling <div>: the backdrop is the
+       only way to dismiss the mobile sidebar, so it has to be reachable by
+       keyboard and announced, not just clickable with a mouse. -->
+  <button type="button" class="shell__backdrop" aria-label="Close navigation menu" (click)="closeSidebar()"></button>
 
   <app-sidebar class="shell__sidebar" />
 

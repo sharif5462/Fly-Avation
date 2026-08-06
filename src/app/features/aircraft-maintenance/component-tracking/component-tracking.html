@@ -55,8 +55,8 @@
           <td><p-tag [value]="component.status" [severity]="statusSeverity(component.status)" /></td>
           <td>
             <div class="row-actions">
-              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(component)"></button>
-              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(component)"></button>
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" aria-label="Edit component {{ component.componentNo }}" (click)="openEdit(component)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" aria-label="Delete component {{ component.componentNo }}" (click)="confirmDelete(component)"></button>
             </div>
           </td>
         </tr>

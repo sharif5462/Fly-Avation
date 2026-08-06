@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  # A newer push to the same branch makes the in-flight run redundant.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        # `ng build` typechecks too, but running it on its own means a type
+        # error is reported as a type error rather than as a build failure.
+        run: npm run typecheck
+
+      - name: Unit tests
+        # ubuntu-latest ships Chrome; the runner executes as a user without
+        # namespace privileges, hence the no-sandbox launcher.
+        run: npm run test:ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Assert the mock backend is not in the production bundle
+        # environment.useMockApi=false only makes the mock layer dormant; the
+        # fileReplacement in angular.json is what actually removes it. This
+        # step fails the build if that seam is ever bypassed by importing
+        # core/mock internals directly instead of through the barrel.
+        run: |
+          if grep -rqE 'super123|mockdb:|No mock handler for' dist/aviation-erp/browser/; then
+            echo "::error::Mock backend artifacts found in the production bundle."
+            echo "Import from 'core/mock', never from 'core/mock/<file>' — see core/mock/index.ts."
+            exit 1
+          fi
+          echo "Production bundle is clean."
+
+      - name: Demo build
+        # Built on every run so the mock-backed configuration cannot rot
+        # unnoticed while only the production path is exercised.
+        run: npm run build:demo
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 7

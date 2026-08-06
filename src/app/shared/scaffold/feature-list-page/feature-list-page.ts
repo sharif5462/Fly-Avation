@@ -1,5 +1,6 @@
-import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, FormGroup, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -18,9 +19,16 @@ import { TooltipModule } from 'primeng/tooltip';
 import { getEntityConfig } from '../../../core/data/entity-configs';
 import { EntityConfig, EntityField, TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
+import { formatDate, formatDateTime, fromDateOnly, toDateOnly, toInstant } from '../../../core/utils/date.util';
 import { PageHeader } from '../../components/page-header/page-header';
 
 type Row = Record<string, unknown> & { id: string };
+
+/** Placeholder for a value that is absent, not one that failed to parse. */
+const EMPTY_DISPLAY = '—';
+
+/** `EntityField.prefix` value that marks a number field as currency. */
+const CURRENCY_PREFIX = '$';
 
 /**
  * Renders a real, working CRUD screen — search, sortable table, add/edit
@@ -50,13 +58,14 @@ type Row = Record<string, unknown> & { id: string };
   ],
   templateUrl: './feature-list-page.html'
 })
-export class FeatureListPage implements OnInit {
+export class FeatureListPage {
   entityKey = input.required<string>();
 
   private readonly api = inject(ApiService);
   private readonly fb = inject(FormBuilder);
   private readonly confirmation = inject(ConfirmationService);
   private readonly messages = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   config = computed<EntityConfig | undefined>(() => getEntityConfig(this.entityKey()));
   tableFields = computed<EntityField[]>(() => (this.config()?.fields ?? []).filter((field) => !field.hideInTable));
@@ -70,18 +79,24 @@ export class FeatureListPage implements OnInit {
   saving = signal(false);
   form: FormGroup = this.fb.group({});
 
-  // Every manifest item routes here through its own distinct route config
-  // (see app.routes.ts), so Angular's default RouteReuseStrategy destroys
-  // and recreates this component on every navigation between sibling
-  // scaffold pages — ngOnInit reliably re-runs with the new entityKey.
-  ngOnInit(): void {
-    // The dialog's <form> template binds formControlName for every
-    // formFields() entry as soon as this component renders — even while the
-    // dialog itself is hidden — so `form` needs its controls built up front,
-    // not lazily inside openNew()/openEdit(), or Angular throws "Cannot find
-    // control with name" the instant the page loads.
-    this.buildForm();
-    this.load();
+  constructor() {
+    // Keyed off the input signal rather than ngOnInit: Angular's default
+    // RouteReuseStrategy happens to destroy and recreate this component
+    // between sibling scaffold pages today (each manifest item has its own
+    // route config), but that is an implementation detail of the router, not
+    // a guarantee. Reacting to entityKey directly means a reused instance
+    // still reloads instead of silently showing the previous entity's rows.
+    //
+    // The dialog's <form> binds formControlName for every formFields() entry
+    // as soon as the page renders — even while the dialog is hidden — so the
+    // controls have to exist before the first render, not lazily inside
+    // openNew()/openEdit(), or Angular throws "Cannot find control with name".
+    effect(() => {
+      this.entityKey();
+      this.closeDialog();
+      this.buildForm();
+      this.load();
+    });
   }
 
   private load(): void {
@@ -92,17 +107,22 @@ export class FeatureListPage implements OnInit {
       return;
     }
     this.loading.set(true);
-    this.api.list<Row>(cfg.key).subscribe({
-      next: (res) => {
-        this.rows.set(res.data);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.rows.set([]);
-        this.loading.set(false);
-        this.messages.add({ severity: 'error', summary: 'Load failed', detail: `Could not load ${cfg.pluralLabel}.` });
-      }
-    });
+    this.api
+      .list<Row>(cfg.key)
+      // Without this, a response that lands after the user has navigated on
+      // writes rows for the previous entity into a destroyed component.
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.rows.set(res.data);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.rows.set([]);
+          this.loading.set(false);
+          this.messages.add({ severity: 'error', summary: 'Load failed', detail: `Could not load ${cfg.pluralLabel}.` });
+        }
+      });
   }
 
   severityFor(field: EntityField, value: unknown): TagSeverity | undefined {
@@ -111,26 +131,68 @@ export class FeatureListPage implements OnInit {
 
   displayValue(field: EntityField, row: Row): string {
     const raw = row[field.key];
-    if (raw === null || raw === undefined || raw === '') return '—';
+    if (raw === null || raw === undefined || raw === '') return EMPTY_DISPLAY;
 
     switch (field.type) {
       case 'boolean':
         return raw ? 'Yes' : 'No';
+      // Both go through date.util so a 'YYYY-MM-DD' value is read as a local
+      // calendar day instead of UTC midnight, which renders as the previous
+      // day for every user west of UTC.
       case 'date':
-        return new Date(raw as string).toLocaleDateString();
+        return formatDate(raw) ?? String(raw);
       case 'datetime':
-        return new Date(raw as string).toLocaleString();
+        return formatDateTime(raw) ?? String(raw);
       case 'number': {
         const numeric = Number(raw);
-        const formatted =
-          field.prefix === '$'
-            ? numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-            : numeric.toLocaleString();
+        // A non-numeric value in a numeric column is bad data, not zero —
+        // show it verbatim rather than rendering the string "NaN".
+        if (!Number.isFinite(numeric)) return String(raw);
+        const formatted = this.isCurrency(field)
+          ? numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : numeric.toLocaleString();
         return `${field.prefix ?? ''}${formatted}${field.suffix ? ' ' + field.suffix : ''}`;
       }
       default:
         return String(raw);
     }
+  }
+
+  /** A '$' prefix is the config's way of saying "money" — always two decimals. */
+  isCurrency(field: EntityField): boolean {
+    return field.prefix === CURRENCY_PREFIX;
+  }
+
+  /**
+   * The specific reason a control is invalid. Previously every field reported
+   * "<label> is required", so a too-short code or an out-of-range number told
+   * the user to fill in a field they had already filled in.
+   */
+  errorMessage(field: EntityField): string | null {
+    const control = this.form.get(field.key);
+    if (!control || control.valid || !control.touched) return null;
+
+    const errors = control.errors ?? {};
+    if (errors['required']) return `${field.label} is required.`;
+    if (errors['email']) return `${field.label} must be a valid email address.`;
+    if (errors['minlength']) {
+      return `${field.label} must be at least ${(errors['minlength'] as { requiredLength: number }).requiredLength} characters.`;
+    }
+    if (errors['maxlength']) {
+      return `${field.label} must be at most ${(errors['maxlength'] as { requiredLength: number }).requiredLength} characters.`;
+    }
+    if (errors['min']) return `${field.label} must be ${(errors['min'] as { min: number }).min} or more.`;
+    if (errors['max']) return `${field.label} must be ${(errors['max'] as { max: number }).max} or less.`;
+    return `${field.label} is invalid.`;
+  }
+
+  /** Row-level accessible name for the icon-only action buttons. */
+  rowLabel(row: Row): string {
+    const cfg = this.config();
+    if (!cfg) return 'record';
+    const titleField = this.tableFields()[0];
+    const title = titleField ? this.displayValue(titleField, row) : EMPTY_DISPLAY;
+    return title === EMPTY_DISPLAY ? cfg.label : `${cfg.label} ${title}`;
   }
 
   openNew(): void {
@@ -146,23 +208,30 @@ export class FeatureListPage implements OnInit {
     this.dialogVisible.set(true);
   }
 
+  closeDialog(): void {
+    this.dialogVisible.set(false);
+    this.editingRow.set(null);
+    this.saving.set(false);
+  }
+
   save(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
     const cfg = this.config();
-    if (!cfg) return;
+    if (!cfg || this.saving()) return;
 
     this.saving.set(true);
-    const payload = this.coerceForSave(this.form.value);
+    // getRawValue(), not `value`: `value` omits disabled controls, which would
+    // silently drop those fields from the PUT payload.
+    const payload = this.coerceForSave(this.form.getRawValue());
     const editing = this.editingRow();
     const request$ = editing ? this.api.update(cfg.key, editing['id'] as string, payload) : this.api.create(cfg.key, payload);
 
-    request$.subscribe({
+    request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
-        this.saving.set(false);
-        this.dialogVisible.set(false);
+        this.closeDialog();
         this.messages.add({
           severity: 'success',
           summary: editing ? 'Updated' : 'Created',
@@ -188,7 +257,7 @@ export class FeatureListPage implements OnInit {
       acceptButtonProps: { label: 'Delete', severity: 'danger' },
       rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
       accept: () => {
-        this.api.remove(cfg.key, row['id'] as string).subscribe({
+        this.api.remove(cfg.key, row['id'] as string).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: () => {
             this.messages.add({ severity: 'success', summary: 'Deleted', detail: `${cfg.label} removed.` });
             this.load();
@@ -202,7 +271,7 @@ export class FeatureListPage implements OnInit {
   private buildForm(): void {
     const controls: Record<string, unknown> = {};
     for (const field of this.formFields()) {
-      const validators = [];
+      const validators: ValidatorFn[] = [];
       if (field.required) validators.push(Validators.required);
       if (field.type === 'email') validators.push(Validators.email);
       if (field.minLength != null) validators.push(Validators.minLength(field.minLength));
@@ -224,8 +293,11 @@ export class FeatureListPage implements OnInit {
     const out: Record<string, unknown> = {};
     for (const field of this.formFields()) {
       const raw = row[field.key];
-      if ((field.type === 'date' || field.type === 'datetime') && typeof raw === 'string' && raw) {
-        out[field.key] = new Date(raw);
+      if (field.type === 'date' || field.type === 'datetime') {
+        // fromDateOnly, not `new Date(raw)`: a 'YYYY-MM-DD' string parses as
+        // UTC midnight per spec, so the picker would open on the previous day
+        // for anyone west of UTC.
+        out[field.key] = fromDateOnly(raw as string | Date | null) ?? this.defaultValueFor(field);
       } else {
         out[field.key] = raw ?? this.defaultValueFor(field);
       }
@@ -237,10 +309,13 @@ export class FeatureListPage implements OnInit {
     const out: Record<string, unknown> = {};
     for (const field of this.formFields()) {
       const raw = value[field.key];
-      if (field.type === 'date' && raw instanceof Date) {
-        out[field.key] = raw.toISOString().slice(0, 10);
-      } else if (field.type === 'datetime' && raw instanceof Date) {
-        out[field.key] = raw.toISOString();
+      if (field.type === 'date') {
+        // A date-only field is a calendar day, so it is serialized from the
+        // picker's *local* Y/M/D. toISOString() would shift it back a day for
+        // every user east of UTC.
+        out[field.key] = raw instanceof Date ? toDateOnly(raw) : (raw ?? null);
+      } else if (field.type === 'datetime') {
+        out[field.key] = raw instanceof Date ? toInstant(raw) : (raw ?? null);
       } else {
         out[field.key] = raw;
       }

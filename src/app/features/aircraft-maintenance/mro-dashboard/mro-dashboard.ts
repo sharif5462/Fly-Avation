@@ -9,6 +9,7 @@ import { forkJoin } from 'rxjs';
 
 import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
+import { daysUntil } from '../../../core/utils/date.util';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 import type { TrackedComponent } from '../component-tracking/component-tracking';
@@ -44,7 +45,7 @@ export class MroDashboardPage implements OnInit {
     openServiceBulletins: 0,
     activeMelItems: 0
   });
-  attentionComponents = signal<Array<TrackedComponent & { pct: number }>>([]);
+  attentionComponents = signal<(TrackedComponent & { pct: number })[]>([]);
 
   woStatusChartData: unknown = null;
   woTypeChartData: unknown = null;
@@ -91,11 +92,10 @@ export class MroDashboardPage implements OnInit {
     serviceBulletins: GenericRow[],
     melItems: GenericRow[]
   ): void {
-    const now = Date.now();
-    const withinWindow = (iso: unknown, days: number) => {
-      if (typeof iso !== 'string' || !iso) return false;
-      const diff = (new Date(iso).getTime() - now) / 86400000;
-      return diff <= days;
+    const withinWindow = (value: unknown, days: number) => {
+      if (typeof value !== 'string' || !value) return false;
+      const remaining = daysUntil(value);
+      return remaining !== null && remaining <= days;
     };
 
     this.stats.set({

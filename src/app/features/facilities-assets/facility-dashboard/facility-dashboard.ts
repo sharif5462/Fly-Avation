@@ -14,6 +14,7 @@ import {
   AssetStatus
 } from '../../../core/models/facilities-assets.model';
 import { ApiService } from '../../../core/services/api.service';
+import { daysUntil } from '../../../core/utils/date.util';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 
@@ -76,9 +77,8 @@ export class FacilityDashboardPage implements OnInit {
   }
 
   private isCertExpiringSoon(asset: AssetMaster): boolean {
-    if (!asset.certificationExpiry) return false;
-    const days = (new Date(asset.certificationExpiry).getTime() - Date.now()) / 86400000;
-    return days >= 0 && days <= CERT_HORIZON_DAYS;
+    const days = daysUntil(asset.certificationExpiry);
+    return days !== null && days >= 0 && days <= CERT_HORIZON_DAYS;
   }
 
   private computeStats(assets: AssetMaster[], workOrders: FacilityWorkOrderRow[]): void {

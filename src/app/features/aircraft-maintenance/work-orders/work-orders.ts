@@ -15,6 +15,7 @@ import { TextareaModule } from 'primeng/textarea';
 
 import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
+import { fromDateOnly, toRequiredDateOnly } from '../../../core/utils/date.util';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 
@@ -148,8 +149,8 @@ export class WorkOrdersPage implements OnInit {
       priority: order.priority,
       status: order.status,
       assignedTechnician: order.assignedTechnician,
-      openedDate: new Date(order.openedDate),
-      dueDate: new Date(order.dueDate),
+      openedDate: fromDateOnly(order.openedDate),
+      dueDate: fromDateOnly(order.dueDate),
       description: order.description ?? ''
     });
     this.dialogVisible.set(true);
@@ -163,8 +164,8 @@ export class WorkOrdersPage implements OnInit {
     const value = this.form.getRawValue();
     const payload = {
       ...value,
-      openedDate: value.openedDate!.toISOString().slice(0, 10),
-      dueDate: value.dueDate!.toISOString().slice(0, 10)
+      openedDate: toRequiredDateOnly(value.openedDate, 'Opened Date'),
+      dueDate: toRequiredDateOnly(value.dueDate, 'Due Date')
     };
     const editing = this.editingOrder();
     this.saving.set(true);

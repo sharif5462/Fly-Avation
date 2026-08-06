@@ -57,12 +57,17 @@ function scaffoldLoader(): ReturnType<NonNullable<Route['loadComponent']>> {
   return import('./shared/scaffold/feature-list-page/feature-list-page').then((m) => m.FeatureListPage);
 }
 
-/** Builds one parent route per module, gated by that module's role, with one child route per sub-item. */
+/**
+ * Builds one parent route per module, gated by that module's access rules,
+ * with one child route per sub-item. The guard resolves `moduleKey` against
+ * both the manifest's owning role and any grants made on the Access Control
+ * screen — see core/auth/module-access.service.ts.
+ */
 function buildModuleRoutes(): Routes {
   return MODULES.map((mod) => ({
     path: mod.key,
     canActivate: [roleGuard],
-    data: { roles: mod.role ? [mod.role] : undefined },
+    data: { moduleKey: mod.key },
     children: mod.items
       .filter((item) => !(mod.key === 'business-intelligence' && item.key === 'dashboard'))
       .map((item) => {

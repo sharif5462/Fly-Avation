@@ -44,8 +44,8 @@
           <td><p-tag [value]="part.status" [severity]="severity(part.status)" /></td>
           <td>
             <div class="row-actions">
-              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(part)"></button>
-              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(part)"></button>
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" aria-label="Edit part {{ part.partNo }}" (click)="openEdit(part)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" aria-label="Delete part {{ part.partNo }}" (click)="confirmDelete(part)"></button>
             </div>
           </td>
         </tr>

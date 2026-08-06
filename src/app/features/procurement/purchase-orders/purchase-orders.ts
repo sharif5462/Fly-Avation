@@ -15,6 +15,7 @@ import { TagModule } from 'primeng/tag';
 
 import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
+import { fromDateOnly, toRequiredDateOnly } from '../../../core/utils/date.util';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 
@@ -115,8 +116,8 @@ export class PurchaseOrdersPage implements OnInit {
     this.form.setValue({
       poNumber: order.poNumber,
       vendor: order.vendor,
-      orderDate: new Date(order.orderDate),
-      expectedDelivery: new Date(order.expectedDelivery),
+      orderDate: fromDateOnly(order.orderDate),
+      expectedDelivery: fromDateOnly(order.expectedDelivery),
       itemCount: order.itemCount,
       totalAmount: order.totalAmount,
       status: order.status
@@ -132,8 +133,8 @@ export class PurchaseOrdersPage implements OnInit {
     const value = this.form.getRawValue();
     const payload = {
       ...value,
-      orderDate: value.orderDate!.toISOString().slice(0, 10),
-      expectedDelivery: value.expectedDelivery!.toISOString().slice(0, 10)
+      orderDate: toRequiredDateOnly(value.orderDate, 'Order Date'),
+      expectedDelivery: toRequiredDateOnly(value.expectedDelivery, 'Expected Delivery')
     };
     const editing = this.editingOrder();
     this.saving.set(true);

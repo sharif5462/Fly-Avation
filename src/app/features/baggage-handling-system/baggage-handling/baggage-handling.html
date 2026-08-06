@@ -56,8 +56,8 @@
           <td><p-tag [value]="bag.status" [severity]="statusSeverity(bag.status)" /></td>
           <td>
             <div class="row-actions">
-              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(bag)"></button>
-              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(bag)"></button>
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" aria-label="Edit bag {{ bag.tagNo }}" (click)="openEdit(bag)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" aria-label="Delete bag {{ bag.tagNo }}" (click)="confirmDelete(bag)"></button>
             </div>
           </td>
         </tr>

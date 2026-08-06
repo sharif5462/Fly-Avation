@@ -44,8 +44,8 @@
           <td><p-tag [value]="pilot.status" [severity]="severity(pilot.status)" /></td>
           <td>
             <div class="row-actions">
-              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(pilot)"></button>
-              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(pilot)"></button>
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" aria-label="Edit pilot {{ pilot.fullName }}" (click)="openEdit(pilot)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" aria-label="Delete pilot {{ pilot.fullName }}" (click)="confirmDelete(pilot)"></button>
             </div>
           </td>
         </tr>

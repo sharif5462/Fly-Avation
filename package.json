@@ -5,8 +5,12 @@
     "ng": "ng",
     "start": "ng serve --open",
     "build": "ng build",
+    "build:demo": "ng build --configuration demo",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadlessNoSandbox --code-coverage",
+    "lint": "ng lint",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit"
   },
   "prettier": {
     "printWidth": 100,
@@ -43,12 +47,15 @@
     "@angular/cli": "^20.1.6",
     "@angular/compiler-cli": "^20.1.0",
     "@types/jasmine": "~5.1.0",
+    "angular-eslint": "21.0.1",
+    "eslint": "^9.39.1",
     "jasmine-core": "~5.8.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.8.2"
+    "typescript": "~5.8.2",
+    "typescript-eslint": "8.46.4"
   }
 }

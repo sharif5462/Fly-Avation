@@ -35,6 +35,7 @@ import {
 } from '../../../core/models/sms.model';
 import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
+import { fromDateOnly, toDateOnly } from '../../../core/utils/date.util';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 
@@ -158,7 +159,7 @@ export class HazardReportingPage implements OnInit {
     const patch: Record<string, unknown> = { ...hazard };
     for (const key of HAZARD_DATE_FIELDS) {
       const value = hazard[key];
-      patch[key] = value ? new Date(value) : null;
+      patch[key] = fromDateOnly(value);
     }
     this.form.patchValue(patch);
     this.activeTab.set('0');
@@ -173,7 +174,7 @@ export class HazardReportingPage implements OnInit {
     const payload: Record<string, unknown> = { ...this.form.getRawValue() };
     for (const key of HAZARD_DATE_FIELDS) {
       const value = payload[key] as Date | null;
-      payload[key] = value ? value.toISOString().slice(0, 10) : null;
+      payload[key] = toDateOnly(value);
     }
 
     const editing = this.editing();

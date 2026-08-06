@@ -31,7 +31,13 @@
 }
 
 .shell__backdrop {
+  // `display: none` on the desktop layout keeps it out of the tab order and
+  // the accessibility tree too, so no extra aria wiring is needed — it only
+  // becomes reachable on the breakpoint where the drawer exists.
   display: none;
+  padding: 0;
+  border: none;
+  cursor: pointer;
 }
 
 @media (max-width: 991px) {

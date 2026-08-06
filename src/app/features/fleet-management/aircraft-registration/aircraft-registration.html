@@ -55,8 +55,8 @@
           <td><p-tag [value]="aircraft.erpStatus" [severity]="erpSeverity(aircraft.erpStatus)" /></td>
           <td>
             <div class="row-actions">
-              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(aircraft)"></button>
-              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(aircraft)"></button>
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" aria-label="Edit aircraft {{ aircraft.registrationNumber }}" (click)="openEdit(aircraft)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" aria-label="Delete aircraft {{ aircraft.registrationNumber }}" (click)="confirmDelete(aircraft)"></button>
             </div>
           </td>
         </tr>

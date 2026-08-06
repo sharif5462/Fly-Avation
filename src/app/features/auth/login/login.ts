@@ -8,7 +8,7 @@ import { MessageModule } from 'primeng/message';
 import { PasswordModule } from 'primeng/password';
 
 import { AuthService } from '../../../core/auth/auth.service';
-import { MOCK_CREDENTIALS } from '../../../core/mock/mock-users';
+import { DEMO_ACCOUNTS } from '../../../core/mock';
 
 @Component({
   selector: 'app-login',
@@ -37,14 +37,12 @@ export class LoginPage {
     email: ['', [Validators.required, Validators.email]]
   });
 
-  demoAccounts = MOCK_CREDENTIALS.map((c) => ({
-    username: c.user.username,
-    password: c.password,
-    fullName: c.user.fullName,
-    jobTitle: c.user.jobTitle,
-    initials: c.user.initials,
-    avatarColor: c.user.avatarColor
-  }));
+  /**
+   * Empty in production builds, where `core/mock` is replaced by a stub. The
+   * panel below then renders nothing — a public sign-in page advertising a
+   * list of real usernames is free reconnaissance for an attacker.
+   */
+  readonly demoAccounts = DEMO_ACCOUNTS;
 
   submit(): void {
     if (this.form.invalid) {

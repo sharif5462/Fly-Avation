@@ -42,8 +42,8 @@
           <td><p-tag [value]="hazard.status" [severity]="statusSeverity(hazard.status)" /></td>
           <td>
             <div class="row-actions">
-              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(hazard)"></button>
-              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(hazard)"></button>
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" aria-label="Edit hazard report {{ hazard.hazardNo }}" (click)="openEdit(hazard)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" aria-label="Delete hazard report {{ hazard.hazardNo }}" (click)="confirmDelete(hazard)"></button>
             </div>
           </td>
         </tr>

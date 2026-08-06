@@ -34,7 +34,7 @@ function datetime(key: string, label: string, extra: Partial<EntityField> = {}):
   return f(key, label, 'datetime', extra);
 }
 
-function statusField(pairs: Array<[string, TagSeverity]>, key = 'status', label = 'Status'): EntityField {
+function statusField(pairs: [string, TagSeverity][], key = 'status', label = 'Status'): EntityField {
   return {
     key,
     label,

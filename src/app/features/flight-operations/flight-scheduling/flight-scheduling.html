@@ -11,25 +11,28 @@
   </div>
 
   <div class="surface-card filter-bar">
+    <!-- Each label points at its control's generated input id (inputId on the
+         PrimeNG components), so clicking the label focuses the field and a
+         screen reader announces the two together. -->
     <div class="filter-bar__field">
-      <label>From Date</label>
-      <p-datepicker [ngModel]="filterFromDate()" (ngModelChange)="filterFromDate.set($event)" dateFormat="M d, yy" [showIcon]="true" [showButtonBar]="true" placeholder="Any" appendTo="body" />
+      <label for="filterFromDate">From Date</label>
+      <p-datepicker inputId="filterFromDate" [ngModel]="filterFromDate()" (ngModelChange)="filterFromDate.set($event)" dateFormat="M d, yy" [showIcon]="true" [showButtonBar]="true" placeholder="Any" appendTo="body" />
     </div>
     <div class="filter-bar__field">
-      <label>To Date</label>
-      <p-datepicker [ngModel]="filterToDate()" (ngModelChange)="filterToDate.set($event)" dateFormat="M d, yy" [showIcon]="true" [showButtonBar]="true" placeholder="Any" appendTo="body" />
+      <label for="filterToDate">To Date</label>
+      <p-datepicker inputId="filterToDate" [ngModel]="filterToDate()" (ngModelChange)="filterToDate.set($event)" dateFormat="M d, yy" [showIcon]="true" [showButtonBar]="true" placeholder="Any" appendTo="body" />
     </div>
     <div class="filter-bar__field">
-      <label>Flight Type</label>
-      <p-select [ngModel]="filterFlightType()" (ngModelChange)="filterFlightType.set($event)" [options]="flightTypes" placeholder="All Types" (keydown)="clearOnBackspace($event, filterFlightType)" appendTo="body" />
+      <label for="filterFlightType">Flight Type</label>
+      <p-select inputId="filterFlightType" [ngModel]="filterFlightType()" (ngModelChange)="filterFlightType.set($event)" [options]="flightTypes" placeholder="All Types" (keydown)="clearOnBackspace($event, filterFlightType)" appendTo="body" />
     </div>
     <div class="filter-bar__field">
-      <label>Airline</label>
-      <p-select [ngModel]="filterAirline()" (ngModelChange)="filterAirline.set($event)" [options]="airlines" placeholder="All Airlines" [filter]="true" (keydown)="clearOnBackspace($event, filterAirline)" appendTo="body" />
+      <label for="filterAirline">Airline</label>
+      <p-select inputId="filterAirline" [ngModel]="filterAirline()" (ngModelChange)="filterAirline.set($event)" [options]="airlines" placeholder="All Airlines" [filter]="true" (keydown)="clearOnBackspace($event, filterAirline)" appendTo="body" />
     </div>
     <div class="filter-bar__field">
-      <label>Flight Number</label>
-      <input pInputText [ngModel]="filterFlightNo()" (ngModelChange)="filterFlightNo.set($event)" placeholder="e.g. AV123" />
+      <label for="filterFlightNo">Flight Number</label>
+      <input pInputText id="filterFlightNo" [ngModel]="filterFlightNo()" (ngModelChange)="filterFlightNo.set($event)" placeholder="e.g. AV123" />
     </div>
     <div class="filter-bar__actions">
       <p-button label="Clear Filters" icon="pi pi-filter-slash" severity="secondary" [outlined]="true" [disabled]="!hasActiveFilters()" (onClick)="clearFilters()" />
@@ -74,8 +77,8 @@
           <td><p-tag [value]="flight.status" [severity]="severity(flight.status)" /></td>
           <td>
             <div class="row-actions">
-              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(flight)"></button>
-              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(flight)"></button>
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" aria-label="Edit flight {{ flight.flightNo }}" (click)="openEdit(flight)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" aria-label="Delete flight {{ flight.flightNo }}" (click)="confirmDelete(flight)"></button>
             </div>
           </td>
         </tr>

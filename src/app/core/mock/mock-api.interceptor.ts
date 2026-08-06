@@ -135,10 +135,15 @@ function handleResourceRequest(req: HttpRequest<unknown>, resource: string, id?:
     }
     case 'POST': {
       const body = (req.body ?? {}) as Record<string, unknown>;
+      // Server-assigned fields go *after* the body spread. With the spread
+      // last, a client that posted its own `id` overwrote the generated one
+      // and could collide with — then, via PUT, overwrite — an existing row.
+      // Identity and creation time belong to the server, as they will in the
+      // real API.
       const newRow: Row = {
+        ...body,
         id: `${resource}-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`,
-        createdAt: new Date().toISOString(),
-        ...body
+        createdAt: new Date().toISOString()
       };
       saveCollection(resource, [newRow, ...rows]);
       return jsonResponse(req, newRow, 201);

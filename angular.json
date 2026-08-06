@@ -3,7 +3,10 @@
   "version": 1,
   "cli": {
     "packageManager": "npm",
-    "analytics": "1324b174-5c37-4e35-80ab-9ba6db90552b"
+    "analytics": "1324b174-5c37-4e35-80ab-9ba6db90552b",
+    "schematicCollections": [
+      "angular-eslint"
+    ]
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -80,6 +83,31 @@
                 {
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/environment.prod.ts"
+                },
+                {
+                  "replace": "src/app/core/mock/index.ts",
+                  "with": "src/app/core/mock/index.prod.ts"
+                }
+              ]
+            },
+            "demo": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1.5MB",
+                  "maximumError": "2.5MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.demo.ts"
                 }
               ]
             },
@@ -96,6 +124,9 @@
           "configurations": {
             "production": {
               "buildTarget": "aviation-erp:build:production"
+            },
+            "demo": {
+              "buildTarget": "aviation-erp:build:demo"
             },
             "development": {
               "buildTarget": "aviation-erp:build:development"
@@ -123,6 +154,15 @@
             ],
             "styles": [
               "src/styles.scss"
+            ]
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
             ]
           }
         }

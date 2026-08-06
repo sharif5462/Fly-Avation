@@ -4,6 +4,7 @@
     type="button"
     icon="pi pi-bars"
     class="p-button-text p-button-plain topbar__menu-btn"
+    aria-label="Open navigation menu"
     (click)="menuToggle.emit()"
   ></button>
 
@@ -16,6 +17,8 @@
     class="p-button-text p-button-plain topbar__icon-btn"
     pTooltip="Toggle theme"
     tooltipPosition="bottom"
+    [attr.aria-label]="darkMode() ? 'Switch to light theme' : 'Switch to dark theme'"
+    [attr.aria-pressed]="darkMode()"
     (click)="toggleDarkMode()"
   ></button>
 
@@ -24,18 +27,25 @@
     class="topbar__icon-btn topbar__bell"
     pTooltip="Notifications"
     tooltipPosition="bottom"
+    aria-label="Notifications, 3 unread"
   >
-    <span class="pi pi-bell"></span>
+    <span class="pi pi-bell" aria-hidden="true"></span>
     <p-badge value="3" severity="danger" />
   </a>
 
-  <button class="topbar__user" type="button" (click)="userMenu.toggle($event)">
+  <button
+    class="topbar__user"
+    type="button"
+    [attr.aria-label]="'Account menu for ' + (user()?.fullName ?? 'current user')"
+    aria-haspopup="menu"
+    (click)="userMenu.toggle($event)"
+  >
     <p-avatar [label]="user()?.initials" shape="circle" styleClass="topbar__avatar" [style]="{ 'background-color': user()?.avatarColor, color: '#fff' }" />
     <span class="topbar__user-text">
       <strong>{{ user()?.fullName }}</strong>
       <small>{{ roleLabel() }}</small>
     </span>
-    <span class="pi pi-angle-down"></span>
+    <span class="pi pi-angle-down" aria-hidden="true"></span>
   </button>
   <p-menu #userMenu [model]="userMenuItems" [popup]="true" />
 
@@ -46,6 +56,7 @@
     class="p-button-text p-button-plain topbar__icon-btn topbar__logout"
     pTooltip="Sign out"
     tooltipPosition="bottom"
+    aria-label="Sign out"
     (click)="logout()"
   ></button>
 </header>

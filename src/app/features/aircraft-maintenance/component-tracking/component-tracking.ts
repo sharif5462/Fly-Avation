@@ -16,6 +16,7 @@ import { TagModule } from 'primeng/tag';
 
 import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
+import { fromDateOnly, toDateOnly, toRequiredDateOnly } from '../../../core/utils/date.util';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 
@@ -171,11 +172,11 @@ export class ComponentTrackingPage implements OnInit {
       aircraftReg: component.aircraftReg,
       position: component.position,
       serialNumber: component.serialNumber,
-      installedDate: new Date(component.installedDate),
+      installedDate: fromDateOnly(component.installedDate),
       lifeLimitHours: component.lifeLimitHours,
       lifeRemainingHours: component.lifeRemainingHours,
       cyclesRemaining: component.cyclesRemaining,
-      nextRemovalDue: component.nextRemovalDue ? new Date(component.nextRemovalDue) : null,
+      nextRemovalDue: fromDateOnly(component.nextRemovalDue),
       status: component.status
     });
     this.dialogVisible.set(true);
@@ -189,8 +190,8 @@ export class ComponentTrackingPage implements OnInit {
     const value = this.form.getRawValue();
     const payload = {
       ...value,
-      installedDate: value.installedDate!.toISOString().slice(0, 10),
-      nextRemovalDue: value.nextRemovalDue ? value.nextRemovalDue.toISOString().slice(0, 10) : null
+      installedDate: toRequiredDateOnly(value.installedDate, 'Installed Date'),
+      nextRemovalDue: toDateOnly(value.nextRemovalDue)
     };
     const editing = this.editingComponent();
     this.saving.set(true);

@@ -15,6 +15,7 @@ import { TagModule } from 'primeng/tag';
 
 import { TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
+import { daysUntil, fromDateOnly, toRequiredDateOnly } from '../../../core/utils/date.util';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 
@@ -43,8 +44,12 @@ const STATUS_SEVERITY: Record<PilotStatus, TagSeverity> = {
   Suspended: 'danger'
 };
 
-function daysUntil(iso: string): number {
-  return Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
+/** How far ahead a lapsing medical certificate is flagged on the roster. */
+const MEDICAL_EXPIRY_WARNING_DAYS = 60;
+
+/** Days until a medical certificate lapses; negative once it already has. */
+function daysUntilExpiry(dateOnly: string): number {
+  return daysUntil(dateOnly) ?? 0;
 }
 
 @Component({
@@ -89,7 +94,10 @@ export class PilotManagementPage implements OnInit {
       total: rows.length,
       active: rows.filter((p) => p.status === 'Active').length,
       training: rows.filter((p) => p.status === 'Training').length,
-      medicalExpiring: rows.filter((p) => daysUntil(p.medicalCertExpiry) <= 60 && daysUntil(p.medicalCertExpiry) >= 0).length
+      medicalExpiring: rows.filter((p) => {
+        const days = daysUntilExpiry(p.medicalCertExpiry);
+        return days >= 0 && days <= MEDICAL_EXPIRY_WARNING_DAYS;
+      }).length
     };
   });
 
@@ -113,9 +121,9 @@ export class PilotManagementPage implements OnInit {
   }
 
   medicalSeverity(expiry: string): TagSeverity {
-    const days = daysUntil(expiry);
+    const days = daysUntilExpiry(expiry);
     if (days < 0) return 'danger';
-    if (days <= 60) return 'warn';
+    if (days <= MEDICAL_EXPIRY_WARNING_DAYS) return 'warn';
     return 'success';
   }
 
@@ -133,7 +141,7 @@ export class PilotManagementPage implements OnInit {
       licenseNo: pilot.licenseNo,
       licenseType: pilot.licenseType,
       ratings: pilot.ratings,
-      medicalCertExpiry: new Date(pilot.medicalCertExpiry),
+      medicalCertExpiry: fromDateOnly(pilot.medicalCertExpiry),
       totalFlightHours: pilot.totalFlightHours,
       status: pilot.status
     });
@@ -146,7 +154,7 @@ export class PilotManagementPage implements OnInit {
       return;
     }
     const value = this.form.getRawValue();
-    const payload = { ...value, medicalCertExpiry: value.medicalCertExpiry!.toISOString().slice(0, 10) };
+    const payload = { ...value, medicalCertExpiry: toRequiredDateOnly(value.medicalCertExpiry, 'Medical Certificate Expiry') };
     const editing = this.editingPilot();
     this.saving.set(true);
     const request$ = editing ? this.api.update<Pilot>(RESOURCE, editing.id, payload) : this.api.create<Pilot>(RESOURCE, payload);

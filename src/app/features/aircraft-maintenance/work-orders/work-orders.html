@@ -44,8 +44,8 @@
           <td><p-tag [value]="order.status" [severity]="statusSeverity(order.status)" /></td>
           <td>
             <div class="row-actions">
-              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(order)"></button>
-              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(order)"></button>
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" aria-label="Edit work order {{ order.woNumber }}" (click)="openEdit(order)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" aria-label="Delete work order {{ order.woNumber }}" (click)="confirmDelete(order)"></button>
             </div>
           </td>
         </tr>

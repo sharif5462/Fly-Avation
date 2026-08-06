@@ -5,17 +5,16 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 
+import {
+  ModuleAccessService,
+  ROLE_PERMISSIONS_RESOURCE,
+  RolePermission
+} from '../../../core/auth/module-access.service';
 import { MODULES } from '../../../core/data/module-manifest';
 import { ALL_ROLES, ROLE_LABELS, Role } from '../../../core/models/role.model';
 import { ApiService } from '../../../core/services/api.service';
 import { PageHeader } from '../../../shared/components/page-header/page-header';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
-
-interface RolePermission {
-  id: string;
-  role: Role;
-  extraModules: string[];
-}
 
 interface RoleRow {
   role: Role;
@@ -24,14 +23,16 @@ interface RoleRow {
   extraModules: string[];
 }
 
-const RESOURCE = 'role-permissions';
-
 /**
  * Base access per role comes straight from module-manifest.ts (each module
  * declares the one role that owns it). This page lets an admin grant a role
  * *extra* cross-module access on top of that baseline — e.g. give Finance
  * read access into Procurement — persisted per role via the generic
  * ApiService against the `role-permissions` resource.
+ *
+ * What is saved here is enforced by ModuleAccessService, which both roleGuard
+ * and the sidebar consult; a saved grant is pushed straight into that
+ * service's cache so it takes effect without a reload.
  */
 @Component({
   selector: 'app-access-control',
@@ -48,6 +49,7 @@ const RESOURCE = 'role-permissions';
 })
 export class AccessControlPage implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly access = inject(ModuleAccessService);
   private readonly messages = inject(MessageService);
 
   readonly moduleOptions = MODULES.map((m) => ({ label: m.label, value: m.key }));
@@ -77,10 +79,13 @@ export class AccessControlPage implements OnInit {
 
   onExtraModulesChange(row: RoleRow, moduleKeys: string[]): void {
     this.savingRole.set(row.role);
-    this.api.update<RolePermission>(RESOURCE, row.role, { extraModules: moduleKeys }).subscribe({
+    this.api.update<RolePermission>(ROLE_PERMISSIONS_RESOURCE, row.role, { extraModules: moduleKeys }).subscribe({
       next: () => {
         this.savingRole.set(null);
         this.permissions.update((rows) => rows.map((p) => (p.role === row.role ? { ...p, extraModules: moduleKeys } : p)));
+        // Keep the guard/sidebar cache in step with what was just persisted,
+        // so an admin editing their own roles sees the change immediately.
+        this.access.setGrant(row.role, moduleKeys);
         this.messages.add({ severity: 'success', summary: 'Access updated', detail: `${ROLE_LABELS[row.role]} permissions saved.` });
       },
       error: () => {
@@ -92,7 +97,7 @@ export class AccessControlPage implements OnInit {
 
   private load(): void {
     this.loading.set(true);
-    this.api.list<RolePermission>(RESOURCE).subscribe({
+    this.api.list<RolePermission>(ROLE_PERMISSIONS_RESOURCE).subscribe({
       next: (res) => {
         this.permissions.set(res.data);
         this.loading.set(false);

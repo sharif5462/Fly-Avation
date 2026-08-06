@@ -6,7 +6,7 @@
  */
 
 const AIRCRAFT_REGS = ['N101AV', 'N102AV', 'N204SK', 'N305SK', 'G-ABCP', 'G-XLRJ', 'D-AIBX', 'A6-EQF', 'VT-ANL', 'B-KQC'];
-const AIRPORT_PAIRS: Array<[string, string]> = [
+const AIRPORT_PAIRS: [string, string][] = [
   ['JFK', 'LHR'], ['DXB', 'SIN'], ['ORD', 'DFW'], ['CDG', 'FRA'], ['HND', 'ICN'],
   ['SYD', 'AKL'], ['GRU', 'EZE'], ['DEL', 'BOM'], ['AMS', 'IST'], ['HKG', 'NRT']
 ];
@@ -183,14 +183,14 @@ type ComponentStatus = 'Installed' | 'Removed' | 'In Repair' | 'Quarantine' | 'S
 
 export function seedComponentTracking() {
   const iso = (daysFromNow: number) => new Date(Date.now() + daysFromNow * 86400000).toISOString().slice(0, 10);
-  const parts: Array<{
+  const parts: {
     name: string;
     ata: string;
     category: 'Rotable' | 'Life-Limited Part' | 'Repairable' | 'Consumable';
     position: string;
     lifeLimitHours: number | null;
     lifeRemainingPct: number | null;
-  }> = [
+  }[] = [
     { name: 'CFM56-7B HPT Blade Set', ata: '72-50', category: 'Life-Limited Part', position: 'Engine 1', lifeLimitHours: 20000, lifeRemainingPct: 0.06 },
     { name: 'Landing Gear Actuator', ata: '32-30', category: 'Rotable', position: 'L/H Main Gear', lifeLimitHours: 15000, lifeRemainingPct: 0.42 },
     { name: 'Hydraulic Pump Assembly', ata: '29-10', category: 'Rotable', position: 'Center Hydraulic System', lifeLimitHours: 12000, lifeRemainingPct: 0.18 },
@@ -522,12 +522,12 @@ export function seedBaggageHandling() {
   const bagTypes: BagType[] = ['Checked', 'Checked', 'Priority', 'Checked', 'Oversize', 'Checked', 'Fragile'];
   const routeTypes: BagRouteType[] = ['Origin', 'Origin', 'Transfer', 'Origin', 'Transit', 'Transfer', 'Origin'];
 
-  const rows: Array<{
+  const rows: {
     status: BaggageStatus;
     hasLoaded: boolean;
     hasTransfer: boolean;
     hasArrived: boolean;
-  }> = [
+  }[] = [
     { status: 'Delivered', hasLoaded: true, hasTransfer: false, hasArrived: true },
     { status: 'Arrived', hasLoaded: true, hasTransfer: false, hasArrived: true },
     { status: 'In Transfer', hasLoaded: true, hasTransfer: true, hasArrived: false },

@@ -42,8 +42,8 @@
           <td><p-tag [value]="asset.status" [severity]="statusSeverity(asset.status)" /></td>
           <td>
             <div class="row-actions">
-              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(asset)"></button>
-              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(asset)"></button>
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" aria-label="Edit asset {{ asset.assetCode }}" (click)="openEdit(asset)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" aria-label="Delete asset {{ asset.assetCode }}" (click)="confirmDelete(asset)"></button>
             </div>
           </td>
         </tr>

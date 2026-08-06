@@ -50,20 +50,23 @@
         <p-button type="submit" label="Sign In" icon="pi pi-sign-in" [loading]="loading()" styleClass="w-full" />
       </form>
 
-      <div class="login__demo">
-        <p class="text-muted">Demo accounts — click to fill, then Sign In</p>
-        <div class="login__demo-grid">
-          @for (account of demoAccounts; track account.username) {
-            <button type="button" class="login__demo-chip" (click)="quickFill(account.username, account.password)">
-              <span class="login__demo-avatar" [style.background-color]="account.avatarColor">{{ account.initials }}</span>
-              <span class="login__demo-text">
-                <strong>{{ account.fullName }}</strong>
-                <small>{{ account.jobTitle }}</small>
-              </span>
-            </button>
-          }
+      <!-- Mock-backend builds only; empty (and so hidden) against the real API. -->
+      @if (demoAccounts.length) {
+        <div class="login__demo">
+          <p class="text-muted">Demo accounts — click to fill, then Sign In</p>
+          <div class="login__demo-grid">
+            @for (account of demoAccounts; track account.username) {
+              <button type="button" class="login__demo-chip" (click)="quickFill(account.username, account.password)">
+                <span class="login__demo-avatar" [style.background-color]="account.avatarColor">{{ account.initials }}</span>
+                <span class="login__demo-text">
+                  <strong>{{ account.fullName }}</strong>
+                  <small>{{ account.jobTitle }}</small>
+                </span>
+              </button>
+            }
+          </div>
         </div>
-      </div>
+      }
     </div>
   </section>
 </div>

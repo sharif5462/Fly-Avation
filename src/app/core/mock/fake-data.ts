@@ -124,9 +124,9 @@ function generateFieldValue(field: EntityField, entityKey: string, rowIndex: num
   }
 }
 
-export function generateSeedRows(config: EntityConfig): Array<Record<string, unknown>> {
+export function generateSeedRows(config: EntityConfig): Record<string, unknown>[] {
   const count = config.seedCount ?? 12;
-  const rows: Array<Record<string, unknown>> = [];
+  const rows: Record<string, unknown>[] = [];
 
   for (let i = 0; i < count; i++) {
     const row: Record<string, unknown> = {

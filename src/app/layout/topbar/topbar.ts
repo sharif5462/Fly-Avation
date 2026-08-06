@@ -8,7 +8,7 @@ import { MenuModule } from 'primeng/menu';
 import { TooltipModule } from 'primeng/tooltip';
 
 import { AuthService } from '../../core/auth/auth.service';
-import { resetMockDatabase } from '../../core/mock/mock-db';
+import { MOCK_BACKEND_AVAILABLE, resetMockDatabase } from '../../core/mock';
 import { ROLE_LABELS } from '../../core/models/role.model';
 
 const DARK_MODE_KEY = 'aviation_erp_dark_mode';
@@ -28,10 +28,16 @@ export class Topbar {
   user = this.auth.user;
   darkMode = signal(typeof localStorage !== 'undefined' && localStorage.getItem(DARK_MODE_KEY) === 'true');
 
+  // "Reset Demo Data" only exists where there is a mock database to reset;
+  // production builds replace core/mock with a stub and drop the entry.
   userMenuItems: MenuItem[] = [
-    { label: 'Reset Demo Data', icon: 'pi pi-refresh', command: () => this.resetDemoData() },
-    { separator: true },
-    { label: 'Sign Out', icon: 'pi pi-sign-out', command: () => this.auth.logout() }
+    ...(MOCK_BACKEND_AVAILABLE
+      ? [
+          { label: 'Reset Demo Data', icon: 'pi pi-refresh', command: () => this.resetDemoData() },
+          { separator: true }
+        ]
+      : []),
+    { label: 'Sign Out', icon: 'pi pi-sign-out', command: () => this.logout() }
   ];
 
   roleLabel(): string {
@@ -40,6 +46,8 @@ export class Topbar {
   }
 
   logout(): void {
+    // ModuleAccessService clears its own per-user grant cache off the
+    // identity change, so there is nothing extra to tear down here.
     this.auth.logout();
   }
 
