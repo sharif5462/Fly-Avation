@@ -1,0 +1,130 @@
+<div class="page-container">
+  <app-page-header icon="pi-microchip" title="Component Tracking" description="Rotable and life-limited component installation history, position, and remaining life across the fleet.">
+    <p-button label="New Component" icon="pi pi-plus" (onClick)="openNew()" />
+  </app-page-header>
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-microchip" [value]="stats().total" label="Total Components" />
+    <app-stat-card icon="pi-shield" [value]="stats().lifeLimited" label="Rotable / Life-Limited" iconBg="color-mix(in srgb, var(--p-blue-500) 15%, transparent)" iconColor="var(--p-blue-500)" />
+    <app-stat-card icon="pi-exclamation-triangle" [value]="stats().critical" label="Below 25% Life Remaining" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+    <app-stat-card icon="pi-wrench" [value]="stats().inRepair" label="In Repair / Quarantine" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+  </div>
+
+  <div class="surface-card">
+    <p-table #dt [value]="components()" [loading]="loading()" [paginator]="true" [rows]="10" dataKey="id" [rowHover]="true" [stripedRows]="true" [globalFilterFields]="['componentNo', 'componentName', 'aircraftReg', 'serialNumber', 'status']" responsiveLayout="scroll">
+      <ng-template #caption>
+        <div class="table-toolbar">
+          <p-iconfield iconPosition="left" class="table-toolbar__search">
+            <p-inputicon class="pi pi-search" />
+            <input pInputText type="text" placeholder="Search components…" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+          </p-iconfield>
+          <span class="text-muted table-toolbar__count">{{ components().length }} component{{ components().length === 1 ? '' : 's' }}</span>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="componentNo">Component No. <p-sortIcon field="componentNo" /></th>
+          <th>Name</th>
+          <th>Category</th>
+          <th pSortableColumn="aircraftReg">Aircraft <p-sortIcon field="aircraftReg" /></th>
+          <th>Position</th>
+          <th style="width: 12rem">Life Remaining</th>
+          <th pSortableColumn="nextRemovalDue">Next Due <p-sortIcon field="nextRemovalDue" /></th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status" /></th>
+          <th style="width: 6.5rem">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-component>
+        <tr>
+          <td><strong>{{ component.componentNo }}</strong></td>
+          <td>{{ component.componentName }}</td>
+          <td>{{ component.category }}</td>
+          <td>{{ component.aircraftReg }}</td>
+          <td>{{ component.position }}</td>
+          <td>
+            @if (isLifeTracked(component)) {
+              <div class="life-cell">
+                <p-progressbar [value]="lifePct(component)" [showValue]="false" [color]="lifeColor(component)" [style]="{ height: '0.5rem' }" />
+                <span class="life-cell__pct">{{ lifePct(component) }}% · {{ component.lifeRemainingHours | number }} hrs</span>
+              </div>
+            } @else {
+              <span class="text-muted">—</span>
+            }
+          </td>
+          <td>{{ component.nextRemovalDue ? (component.nextRemovalDue | date: 'MMM d, y') : '—' }}</td>
+          <td><p-tag [value]="component.status" [severity]="statusSeverity(component.status)" /></td>
+          <td>
+            <div class="row-actions">
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(component)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(component)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="9" class="table-empty">No components tracked yet.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [header]="editingComponent() ? 'Edit Component' : 'New Component'" [style]="{ width: '38rem' }" [draggable]="false" [dismissableMask]="true">
+  <form [formGroup]="form" class="entity-form">
+    <div class="entity-form__field">
+      <label for="componentNo">Component No.</label>
+      <input pInputText id="componentNo" formControlName="componentNo" placeholder="CMP-10234" />
+    </div>
+    <div class="entity-form__field">
+      <label for="componentName">Component Name</label>
+      <input pInputText id="componentName" formControlName="componentName" placeholder="Hydraulic Pump Assembly" />
+    </div>
+    <div class="entity-form__field">
+      <label for="category">Category</label>
+      <p-select inputId="category" formControlName="category" [options]="categories" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="ataChapter">ATA Chapter</label>
+      <input pInputText id="ataChapter" formControlName="ataChapter" placeholder="29-00" />
+    </div>
+    <div class="entity-form__field">
+      <label for="aircraftReg">Aircraft Reg.</label>
+      <input pInputText id="aircraftReg" formControlName="aircraftReg" placeholder="N101AV" />
+    </div>
+    <div class="entity-form__field">
+      <label for="position">Installed Position</label>
+      <input pInputText id="position" formControlName="position" placeholder="Engine 1 / L-H Main Gear" />
+    </div>
+    <div class="entity-form__field">
+      <label for="serialNumber">Serial Number</label>
+      <input pInputText id="serialNumber" formControlName="serialNumber" placeholder="SN-894512" />
+    </div>
+    <div class="entity-form__field">
+      <label for="installedDate">Installed Date</label>
+      <p-datepicker inputId="installedDate" formControlName="installedDate" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="lifeLimitHours">Life Limit (hrs)</label>
+      <p-inputnumber inputId="lifeLimitHours" formControlName="lifeLimitHours" [min]="0" placeholder="Leave blank if not life-limited" />
+    </div>
+    <div class="entity-form__field">
+      <label for="lifeRemainingHours">Life Remaining (hrs)</label>
+      <p-inputnumber inputId="lifeRemainingHours" formControlName="lifeRemainingHours" [min]="0" />
+    </div>
+    <div class="entity-form__field">
+      <label for="cyclesRemaining">Cycles Remaining</label>
+      <p-inputnumber inputId="cyclesRemaining" formControlName="cyclesRemaining" [min]="0" />
+    </div>
+    <div class="entity-form__field">
+      <label for="nextRemovalDue">Next Removal Due</label>
+      <p-datepicker inputId="nextRemovalDue" formControlName="nextRemovalDue" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="status">Status</label>
+      <p-select inputId="status" formControlName="status" [options]="statuses" appendTo="body" />
+    </div>
+  </form>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button [label]="editingComponent() ? 'Save Changes' : 'Create'" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
+  </ng-template>
+</p-dialog>

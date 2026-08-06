@@ -8,6 +8,8 @@ import { generateSeedRows } from './fake-data';
 import {
   seedAircraftRegistrations,
   seedAssetMaster,
+  seedBaggageHandling,
+  seedComponentTracking,
   seedFlights,
   seedHazardReports,
   seedItemMaster,
@@ -27,6 +29,8 @@ const FLAGSHIP_SEEDS: Record<string, () => Row[]> = {
   'flight-scheduling': seedFlights as () => Row[],
   'aircraft-registration': seedAircraftRegistrations as () => Row[],
   'work-orders': seedWorkOrders as () => Row[],
+  'component-tracking': seedComponentTracking as () => Row[],
+  'baggage-handling': seedBaggageHandling as () => Row[],
   'pilot-management': seedPilots as () => Row[],
   'spare-parts-inventory': seedSpareParts as () => Row[],
   'purchase-orders': seedPurchaseOrders as () => Row[],
