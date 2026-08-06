@@ -10,8 +10,8 @@ import { EntityConfig, EntityField, FieldType, TagSeverity } from '../models/ent
  * mro-dashboard, component-tracking, pilot-management, spare-parts-inventory,
  * purchase-orders, user-roles, access-control, dashboard, warehouse-dashboard,
  * item-master, facility-dashboard, asset-master, sms-dashboard, hazard-reporting,
- * baggage-handling-dashboard, baggage-handling, landside-dashboard) intentionally
- * have no entry here: they have hand-built components under features/ instead.
+ * baggage-handling-dashboard, baggage-handling, landside-dashboard, resource-dashboard)
+ * intentionally have no entry here: they have hand-built components under features/ instead.
  */
 
 function f(key: string, label: string, type: FieldType = 'text', extra: Partial<EntityField> = {}): EntityField {
@@ -653,6 +653,144 @@ const ENTITY_LIST: EntityConfig[] = [
     datetime('boardingStart', 'Boarding Start'),
     num('passengersBoarded', 'Passengers Boarded'),
     statusField([['Not Started', 'secondary'], ['Boarding', 'info'], ['Completed', 'success']])
+  ]),
+
+  // ───────────────────────── Resource & Gate Management ─────────────────────────
+  // Ordered resource masters (the physical things allocated) → allocation and
+  // planning → availability and performance. Gate Allocation and Stand Allocation
+  // aren't here: they reuse Airport Operations' per-flight `gate-management` and
+  // `aircraft-parking` assignment records, which point at the masters below.
+  entity('stand-registry', 'Stand', 'Stand & Bay Registry', 'pi-map-marker', 'Aircraft stand master — apron, size code, and contact/remote classification.', [
+    f('standNo', 'Stand No.'),
+    f('apron', 'Apron'),
+    f('standType', 'Stand Type', 'select', { options: ['Contact', 'Remote', 'Cargo', 'Maintenance', 'De-icing'].map((v) => ({ label: v, value: v })) }),
+    f('maxAircraftCode', 'Max Aircraft Code', 'select', { options: ['Code C', 'Code D', 'Code E', 'Code F'].map((v) => ({ label: v, value: v })) }),
+    num('boardingBridges', 'Boarding Bridges', { min: 0, max: 3 }),
+    statusField([['Available', 'success'], ['Occupied', 'info'], ['Blocked', 'warn'], ['Out of Service', 'danger']])
+  ]),
+  entity('gate-registry', 'Gate', 'Gate Registry', 'pi-sitemap', 'Boarding gate master — terminal, pier, holdroom capacity, and gate class.', [
+    f('gateNo', 'Gate No.'),
+    f('terminal', 'Terminal'),
+    f('pier', 'Pier'),
+    f('gateType', 'Gate Type', 'select', { options: ['Contact', 'Bus Gate', 'Swing (Domestic/International)', 'Regional'].map((v) => ({ label: v, value: v })) }),
+    num('holdroomCapacity', 'Holdroom Capacity', { min: 40, max: 450 }),
+    statusField([['Available', 'success'], ['Occupied', 'info'], ['Blocked', 'warn'], ['Out of Service', 'danger']])
+  ]),
+  entity('boarding-bridge-management', 'Boarding Bridge', 'Boarding Bridges (PBB)', 'pi-arrow-right-arrow-left', 'Passenger boarding bridge units, their assigned stand, and serviceability.', [
+    f('bridgeId', 'Bridge ID'),
+    f('standNo', 'Stand No.'),
+    f('bridgeModel', 'Bridge Model'),
+    date('lastServiceDate', 'Last Service Date'),
+    num('cyclesThisMonth', 'Cycles This Month', { min: 0, max: 400 }),
+    statusField([['Serviceable', 'success'], ['Degraded', 'warn'], ['Under Maintenance', 'warn'], ['Out of Service', 'danger']])
+  ]),
+  entity('check-in-desk-management', 'Check-in Desk', 'Check-in Desks & Kiosks', 'pi-check-square', 'Check-in counter and self-service kiosk allocation to airlines by time block.', [
+    f('deskNo', 'Desk No.'),
+    f('terminal', 'Terminal'),
+    f('deskType', 'Desk Type', 'select', { options: ['Standard Counter', 'Bag Drop', 'Self-Service Kiosk', 'Premium/Business', 'Oversize Baggage'].map((v) => ({ label: v, value: v })) }),
+    f('allocatedAirline', 'Allocated Airline'),
+    datetime('allocationStart', 'Allocation Start'),
+    datetime('allocationEnd', 'Allocation End'),
+    statusField([['Allocated', 'info'], ['Open', 'success'], ['Closed', 'secondary'], ['Out of Service', 'danger']])
+  ]),
+  entity('reclaim-belt-management', 'Reclaim Belt', 'Arrivals Reclaim Belts', 'pi-download', 'Arrivals baggage reclaim carousel allocation and first/last bag performance.', [
+    f('beltNo', 'Belt No.'),
+    f('terminal', 'Terminal'),
+    f('flightNo', 'Flight No.'),
+    f('beltType', 'Belt Type', 'select', { options: ['Domestic', 'International', 'Oversize', 'Priority'].map((v) => ({ label: v, value: v })) }),
+    num('firstBagMinutes', 'First Bag (min)', { min: 5, max: 40 }),
+    statusField([['Allocated', 'info'], ['Delivering', 'warn'], ['Complete', 'success'], ['Out of Service', 'danger']])
+  ]),
+  entity('common-use-systems', 'Workstation', 'Common-Use Systems (CUPPS)', 'pi-desktop', 'Shared CUTE/CUPPS workstations and peripherals issued to airlines at desks and gates.', [
+    f('workstationId', 'Workstation ID'),
+    f('location', 'Location'),
+    f('platform', 'Platform', 'select', { options: ['CUPPS', 'CUTE (Legacy)', 'CUSS Kiosk', 'Local Airline Build'].map((v) => ({ label: v, value: v })) }),
+    f('assignedAirline', 'Assigned Airline'),
+    date('lastPatchDate', 'Last Patch Date'),
+    statusField([['Online', 'success'], ['Degraded', 'warn'], ['Offline', 'danger'], ['Retired', 'secondary']])
+  ]),
+  entity('seasonal-slot-planning', 'Slot Series', 'Seasonal Slot Planning', 'pi-calendar', 'IATA seasonal slot series held per airline, and the gate/stand capacity reserved against them.', [
+    f('slotRef', 'Slot Reference'),
+    f('season', 'Season', 'select', { options: ['Summer (S25)', 'Winter (W25)', 'Summer (S26)', 'Winter (W26)'].map((v) => ({ label: v, value: v })) }),
+    f('airline', 'Airline'),
+    f('operation', 'Operation', 'select', { options: ['Arrival', 'Departure', 'Turnaround'].map((v) => ({ label: v, value: v })) }),
+    num('weeklyFrequency', 'Weekly Frequency', { min: 1, max: 21 }),
+    statusField([['Requested', 'info'], ['Allocated', 'success'], ['Waitlisted', 'warn'], ['Returned', 'secondary']])
+  ]),
+  entity('daily-resource-plan', 'Plan Entry', 'Daily Resource Plan', 'pi-calendar-clock', 'The published day-of-operation allocation plan covering stands, gates, desks, and belts.', [
+    f('planRef', 'Plan Reference'),
+    date('operationDate', 'Operation Date'),
+    f('resourceType', 'Resource Type', 'select', { options: ['Stand', 'Gate', 'Check-in Desk', 'Reclaim Belt', 'Boarding Bridge', 'De-icing Pad'].map((v) => ({ label: v, value: v })) }),
+    f('plannedBy', 'Planned By'),
+    num('allocationsPlanned', 'Allocations Planned', { min: 20, max: 400 }),
+    statusField([['Draft', 'secondary'], ['Published', 'info'], ['In Effect', 'success'], ['Superseded', 'warn']])
+  ]),
+  entity('resource-conflict-management', 'Conflict', 'Allocation Conflicts', 'pi-exclamation-triangle', 'Double-bookings, size-code violations, and towing gaps flagged against the allocation plan.', [
+    f('conflictRef', 'Conflict Ref.'),
+    f('resourceId', 'Resource'),
+    f('conflictType', 'Conflict Type', 'select', { options: ['Double Booking', 'Size Code Violation', 'Insufficient Towing Gap', 'Adjacent Stand Restriction', 'Resource Out of Service'].map((v) => ({ label: v, value: v })) }),
+    f('severity', 'Severity', 'select', { options: ['Critical', 'Major', 'Minor'].map((v) => ({ label: v, value: v })) }),
+    datetime('detectedTime', 'Detected Time'),
+    statusField([['Open', 'danger'], ['Being Resolved', 'warn'], ['Resolved', 'success'], ['Accepted Risk', 'secondary']])
+  ]),
+  entity('gate-change-log', 'Change Record', 'Gate & Stand Changes', 'pi-sync', 'Day-of-operation reallocations, why they happened, and how much notice passengers got.', [
+    f('flightNo', 'Flight No.'),
+    f('previousAllocation', 'Previous Allocation'),
+    f('newAllocation', 'New Allocation'),
+    f('changeReason', 'Change Reason', 'select', { options: ['Aircraft Change', 'Delay / Knock-on', 'Resource Failure', 'Towing Requirement', 'Operational Request'].map((v) => ({ label: v, value: v })) }),
+    datetime('changeTime', 'Change Time'),
+    num('noticeMinutes', 'Passenger Notice (min)', { min: 0, max: 180 }),
+    statusField([['Applied', 'success'], ['Pending Approval', 'warn'], ['Reverted', 'secondary']])
+  ]),
+  entity('towing-movement-plan', 'Movement', 'Towing & Aircraft Movements', 'pi-truck', 'Planned aircraft tows between stands, remote parking, and maintenance bays.', [
+    f('movementRef', 'Movement Ref.'),
+    f('aircraftReg', 'Aircraft Reg.'),
+    f('fromStand', 'From Stand'),
+    f('toStand', 'To Stand'),
+    f('movementType', 'Movement Type', 'select', { options: ['Tow to Remote', 'Tow to Contact', 'Tow to Maintenance', 'Repositioning', 'Return to Service'].map((v) => ({ label: v, value: v })) }),
+    datetime('scheduledTime', 'Scheduled Time'),
+    statusField([['Planned', 'info'], ['In Progress', 'warn'], ['Completed', 'success'], ['Cancelled', 'secondary']])
+  ]),
+  entity('deicing-pad-allocation', 'Pad Allocation', 'De-icing Pad Allocation', 'pi-cloud', 'Remote de-icing pad slots, holdover times, and throughput during winter operations.', [
+    f('padNo', 'Pad No.'),
+    f('flightNo', 'Flight No.'),
+    f('aircraftReg', 'Aircraft Reg.'),
+    datetime('slotTime', 'Slot Time'),
+    num('holdoverMinutes', 'Holdover Time (min)', { min: 10, max: 90 }),
+    statusField([['Booked', 'info'], ['In Progress', 'warn'], ['Complete', 'success'], ['Missed Slot', 'danger']])
+  ]),
+  entity('remote-stand-bussing', 'Bussing Run', 'Remote Stand & Bussing', 'pi-car', 'Apron bus runs connecting remote stands to the terminal, per flight.', [
+    f('runRef', 'Run Ref.'),
+    f('flightNo', 'Flight No.'),
+    f('standNo', 'Stand No.'),
+    f('direction', 'Direction', 'select', { options: ['Terminal to Stand (Boarding)', 'Stand to Terminal (Arrival)'].map((v) => ({ label: v, value: v })) }),
+    num('busesAssigned', 'Buses Assigned', { min: 1, max: 8 }),
+    statusField([['Scheduled', 'info'], ['Running', 'warn'], ['Completed', 'success'], ['Delayed', 'danger']])
+  ]),
+  entity('resource-outage-blocking', 'Blocking', 'Outages & Blockings', 'pi-ban', 'Stands, gates, and bridges taken out of allocation for works, closures, or defects.', [
+    f('blockingRef', 'Blocking Ref.'),
+    f('resourceId', 'Resource'),
+    f('resourceType', 'Resource Type', 'select', { options: ['Stand', 'Gate', 'Check-in Desk', 'Reclaim Belt', 'Boarding Bridge', 'De-icing Pad'].map((v) => ({ label: v, value: v })) }),
+    f('reason', 'Reason', 'select', { options: ['Planned Works', 'Equipment Defect', 'Surface Damage', 'Security Closure', 'Construction Project'].map((v) => ({ label: v, value: v })) }),
+    datetime('blockedFrom', 'Blocked From'),
+    datetime('blockedUntil', 'Blocked Until'),
+    statusField([['Scheduled', 'info'], ['Active', 'danger'], ['Lifted', 'success']])
+  ]),
+  entity('turnaround-monitoring', 'Turnaround', 'Turnaround Monitoring (A-CDM)', 'pi-stopwatch', 'A-CDM milestone tracking per turnaround — on-block, ready, and off-block against target.', [
+    f('flightNo', 'Flight No.'),
+    f('standNo', 'Stand No.'),
+    datetime('onBlockTime', 'On-Block (AIBT)'),
+    datetime('targetOffBlock', 'Target Off-Block (TOBT)'),
+    num('turnaroundMinutes', 'Turnaround (min)', { min: 25, max: 240 }),
+    statusField([['On Schedule', 'success'], ['At Risk', 'warn'], ['Delayed', 'danger'], ['Completed', 'secondary']])
+  ]),
+  entity('resource-utilization', 'Utilization Record', 'Resource Utilization', 'pi-chart-bar', 'Daily occupancy and turn counts per resource, used to justify capacity investment.', [
+    f('resourceId', 'Resource'),
+    f('resourceType', 'Resource Type', 'select', { options: ['Stand', 'Gate', 'Check-in Desk', 'Reclaim Belt', 'Boarding Bridge', 'De-icing Pad'].map((v) => ({ label: v, value: v })) }),
+    date('reportDate', 'Report Date'),
+    num('occupancyPct', 'Occupancy (%)', { min: 10, max: 99, suffix: '%' }),
+    num('turnsHandled', 'Turns Handled', { min: 1, max: 24 }),
+    statusField([['Under-utilized', 'info'], ['Optimal', 'success'], ['At Capacity', 'warn'], ['Over Capacity', 'danger']])
   ]),
 
   // ───────────────────────── Baggage Handling System (BHS) ─────────────────────────
