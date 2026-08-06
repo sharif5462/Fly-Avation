@@ -1,0 +1,74 @@
+<div class="page-container">
+  <app-page-header icon="pi-th-large" title="Resource & Gate Management Dashboard" description="Stand and gate availability, allocation conflicts, resource blockings, turnaround risk, and utilization." />
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-map-marker" [value]="stats().standsAvailable" label="Stands Available" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+    <app-stat-card icon="pi-sitemap" [value]="stats().gatesOccupied" label="Gates Occupied" />
+    <app-stat-card icon="pi-exclamation-triangle" [value]="stats().openConflicts" label="Open Allocation Conflicts" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+    <app-stat-card icon="pi-ban" [value]="stats().activeBlockings" label="Active Blockings" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+  </div>
+
+  <div class="stats-row" style="margin-top: 0.75rem">
+    <app-stat-card icon="pi-chart-bar" [value]="stats().avgOccupancyPct + '%'" label="Avg. Resource Occupancy" />
+    <app-stat-card icon="pi-stopwatch" [value]="stats().turnaroundsAtRisk" label="Turnarounds At Risk" iconBg="color-mix(in srgb, var(--p-yellow-500) 15%, transparent)" iconColor="var(--p-yellow-600)" />
+    <app-stat-card icon="pi-sync" [value]="stats().gateChangesApplied" label="Gate & Stand Changes Applied" />
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="surface-card dashboard-panel">
+      <h3>Stand Availability by Status</h3>
+      @if (standStatusChartData) {
+        <p-chart type="doughnut" [data]="standStatusChartData" [options]="doughnutOptions" [style]="{ height: '16rem' }" />
+      }
+    </div>
+
+    <div class="surface-card dashboard-panel">
+      <h3>Allocation Conflicts by Type</h3>
+      @if (conflictTypeChartData) {
+        <p-chart type="bar" [data]="conflictTypeChartData" [options]="barOptions" [style]="{ height: '16rem' }" />
+      }
+    </div>
+
+    <div class="surface-card dashboard-panel">
+      <h3>Quick Links</h3>
+      <div class="quick-links">
+        @for (link of quickLinks; track link.label) {
+          <a class="quick-link" [routerLink]="link.route">
+            <span class="quick-link__icon pi {{ link.icon }}"></span>
+            {{ link.label }}
+            <span class="pi pi-arrow-right quick-link__arrow"></span>
+          </a>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="surface-card dashboard-panel" style="margin-top: 1.25rem">
+    <h3>Unresolved Allocation Conflicts</h3>
+    <p-table [value]="openConflicts()" [loading]="loading()" responsiveLayout="scroll">
+      <ng-template #header>
+        <tr>
+          <th>Conflict Ref.</th>
+          <th>Resource</th>
+          <th>Conflict Type</th>
+          <th>Severity</th>
+          <th>Detected</th>
+          <th>Status</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-c>
+        <tr>
+          <td><strong>{{ c.conflictRef }}</strong></td>
+          <td>{{ c.resourceId }}</td>
+          <td>{{ c.conflictType }}</td>
+          <td><p-tag [value]="c.severity" [severity]="severityTag(c.severity)" /></td>
+          <td>{{ c.detectedTime | date: 'short' }}</td>
+          <td>{{ c.status }}</td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="6" class="table-empty">No unresolved allocation conflicts.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

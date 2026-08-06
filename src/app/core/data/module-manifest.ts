@@ -191,6 +191,39 @@ export const MODULES: ModuleDef[] = [
     ]
   },
   {
+    key: 'resource-gate-management',
+    label: 'Resource & Gate Management',
+    icon: 'pi-sitemap',
+    role: 'Resources',
+    items: [
+      { key: 'resource-dashboard', label: 'Dashboard', icon: 'pi-th-large', flagship: true },
+      // ── Resource masters: the physical things that get allocated to flights.
+      { key: 'stand-registry', label: 'Stand & Bay Registry', icon: 'pi-map-marker' },
+      { key: 'gate-registry', label: 'Gate Registry', icon: 'pi-sitemap' },
+      { key: 'boarding-bridge-management', label: 'Boarding Bridges (PBB)', icon: 'pi-arrow-right-arrow-left' },
+      { key: 'check-in-desk-management', label: 'Check-in Desks & Kiosks', icon: 'pi-check-square' },
+      { key: 'reclaim-belt-management', label: 'Arrivals Reclaim Belts', icon: 'pi-download' },
+      { key: 'common-use-systems', label: 'Common-Use Systems (CUPPS)', icon: 'pi-desktop' },
+      // ── Allocation & planning: assigning those resources to flights.
+      // Reuses Airport Operations' Gate Management — the per-flight gate assignment
+      // record; `gate-registry` above is the gate master it points at.
+      { key: 'gate-management', label: 'Gate Allocation', icon: 'pi-sitemap' },
+      // Reuses Airport Operations' Aircraft Parking — the per-turnaround stand assignment.
+      { key: 'aircraft-parking', label: 'Stand Allocation', icon: 'pi-map-marker' },
+      { key: 'seasonal-slot-planning', label: 'Seasonal Slot Planning', icon: 'pi-calendar' },
+      { key: 'daily-resource-plan', label: 'Daily Resource Plan', icon: 'pi-calendar-clock' },
+      { key: 'resource-conflict-management', label: 'Allocation Conflicts', icon: 'pi-exclamation-triangle' },
+      { key: 'gate-change-log', label: 'Gate & Stand Changes', icon: 'pi-sync' },
+      { key: 'towing-movement-plan', label: 'Towing & Aircraft Movements', icon: 'pi-truck' },
+      { key: 'deicing-pad-allocation', label: 'De-icing Pad Allocation', icon: 'pi-cloud' },
+      { key: 'remote-stand-bussing', label: 'Remote Stand & Bussing', icon: 'pi-car' },
+      // ── Availability & performance.
+      { key: 'resource-outage-blocking', label: 'Outages & Blockings', icon: 'pi-ban' },
+      { key: 'turnaround-monitoring', label: 'Turnaround Monitoring (A-CDM)', icon: 'pi-stopwatch' },
+      { key: 'resource-utilization', label: 'Resource Utilization', icon: 'pi-chart-bar' }
+    ]
+  },
+  {
     key: 'baggage-handling-system',
     label: 'Baggage Handling System (BHS)',
     icon: 'pi-briefcase',

@@ -48,7 +48,9 @@ const FLAGSHIP_LOADERS: Record<string, Route['loadComponent']> = {
   'hazard-reporting': () =>
     import('./features/safety-management-system/hazard-reporting/hazard-reporting').then((m) => m.HazardReportingPage),
   'landside-dashboard': () =>
-    import('./features/landside-operations/landside-dashboard/landside-dashboard').then((m) => m.LandsideDashboardPage)
+    import('./features/landside-operations/landside-dashboard/landside-dashboard').then((m) => m.LandsideDashboardPage),
+  'resource-dashboard': () =>
+    import('./features/resource-gate-management/resource-dashboard/resource-dashboard').then((m) => m.ResourceDashboardPage)
 };
 
 function scaffoldLoader(): ReturnType<NonNullable<Route['loadComponent']>> {
