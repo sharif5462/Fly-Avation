@@ -121,10 +121,48 @@ a {
   gap: 0.125rem;
 }
 
+.life-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 9rem;
+
+  &__pct {
+    font-size: 0.75rem;
+    color: var(--p-text-muted-color);
+    white-space: nowrap;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
 .table-empty {
   text-align: center;
   padding: 2.5rem 1rem !important;
   color: var(--p-text-muted-color);
+}
+
+.tracking-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+
+  &__done {
+    color: var(--p-green-500);
+  }
+
+  &__pending {
+    color: var(--p-surface-300);
+  }
+
+  &__na {
+    color: var(--p-surface-200);
+  }
 }
 
 .entity-form {

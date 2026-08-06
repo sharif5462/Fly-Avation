@@ -179,6 +179,57 @@ export function seedWorkOrders() {
   });
 }
 
+type ComponentStatus = 'Installed' | 'Removed' | 'In Repair' | 'Quarantine' | 'Scrapped';
+
+export function seedComponentTracking() {
+  const iso = (daysFromNow: number) => new Date(Date.now() + daysFromNow * 86400000).toISOString().slice(0, 10);
+  const parts: Array<{
+    name: string;
+    ata: string;
+    category: 'Rotable' | 'Life-Limited Part' | 'Repairable' | 'Consumable';
+    position: string;
+    lifeLimitHours: number | null;
+    lifeRemainingPct: number | null;
+  }> = [
+    { name: 'CFM56-7B HPT Blade Set', ata: '72-50', category: 'Life-Limited Part', position: 'Engine 1', lifeLimitHours: 20000, lifeRemainingPct: 0.06 },
+    { name: 'Landing Gear Actuator', ata: '32-30', category: 'Rotable', position: 'L/H Main Gear', lifeLimitHours: 15000, lifeRemainingPct: 0.42 },
+    { name: 'Hydraulic Pump Assembly', ata: '29-10', category: 'Rotable', position: 'Center Hydraulic System', lifeLimitHours: 12000, lifeRemainingPct: 0.18 },
+    { name: 'Brake Disc Assembly', ata: '32-40', category: 'Life-Limited Part', position: 'R/H Main Gear', lifeLimitHours: 8000, lifeRemainingPct: 0.09 },
+    { name: 'APU Starter Motor', ata: '49-10', category: 'Repairable', position: 'Tail Cone', lifeLimitHours: null, lifeRemainingPct: null },
+    { name: 'Avionics Control Module', ata: '34-20', category: 'Repairable', position: 'Avionics Bay', lifeLimitHours: null, lifeRemainingPct: null },
+    { name: 'Turbine Blade Set — LPT', ata: '72-53', category: 'Life-Limited Part', position: 'Engine 2', lifeLimitHours: 18000, lifeRemainingPct: 0.63 },
+    { name: 'Fuel Filter Element', ata: '28-20', category: 'Consumable', position: 'Engine 1 Fuel System', lifeLimitHours: null, lifeRemainingPct: null },
+    { name: 'Wheel Bearing Kit', ata: '32-45', category: 'Consumable', position: 'Nose Gear', lifeLimitHours: null, lifeRemainingPct: null },
+    { name: 'Nav Light Assembly', ata: '33-40', category: 'Repairable', position: 'L/H Wingtip', lifeLimitHours: null, lifeRemainingPct: null },
+    { name: 'Oxygen Mask Unit', ata: '35-10', category: 'Consumable', position: 'Cabin Zone B', lifeLimitHours: null, lifeRemainingPct: null },
+    { name: 'Landing Gear Actuator', ata: '32-30', category: 'Rotable', position: 'Nose Gear', lifeLimitHours: 15000, lifeRemainingPct: 0.81 },
+    { name: 'Cabin Air Valve', ata: '21-30', category: 'Consumable', position: 'Cabin Zone A', lifeLimitHours: null, lifeRemainingPct: null },
+    { name: 'CFM56-7B HPT Blade Set', ata: '72-50', category: 'Life-Limited Part', position: 'Engine 2', lifeLimitHours: 20000, lifeRemainingPct: 0.29 }
+  ];
+  const statuses: ComponentStatus[] = ['Installed', 'Installed', 'Installed', 'In Repair', 'Quarantine', 'Removed'];
+
+  return parts.map((p, i) => {
+    const lifeRemainingHours = p.lifeLimitHours != null && p.lifeRemainingPct != null ? Math.round(p.lifeLimitHours * p.lifeRemainingPct) : null;
+    const status = i % 6 === 3 ? 'In Repair' : i % 9 === 5 ? 'Quarantine' : statuses[i % statuses.length];
+    return {
+      id: `ct-${String(i + 1).padStart(4, '0')}`,
+      componentNo: `CMP-${10200 + i * 17}`,
+      componentName: p.name,
+      category: p.category,
+      ataChapter: p.ata,
+      aircraftReg: AIRCRAFT_REGS[i % AIRCRAFT_REGS.length],
+      position: p.position,
+      serialNumber: `SN-${894000 + i * 231}`,
+      installedDate: iso(-900 - i * 45),
+      lifeLimitHours: p.lifeLimitHours,
+      lifeRemainingHours,
+      cyclesRemaining: p.lifeLimitHours != null ? Math.round((lifeRemainingHours ?? 0) * 0.62) : null,
+      nextRemovalDue: p.lifeLimitHours != null ? iso(30 + i * 60) : null,
+      status
+    };
+  });
+}
+
 export function seedPilots() {
   const names = [
     'Sam Whitfield', 'Priya Nandy', 'Diego Salas', 'Elena Cross', 'Marcus Lee',
@@ -453,6 +504,64 @@ export function seedHazardReports() {
       closedDate: status === 'Closed' ? iso(-10 - i * 2) : null,
       closedBy: status === 'Closed' ? 'Safety Manager' : '',
       verifiedEffective: status === 'Closed'
+    };
+  });
+}
+
+type BaggageStatus = 'Checked In' | 'Screened' | 'Sorted' | 'Loaded' | 'In Transfer' | 'Arrived' | 'Delivered' | 'Mishandled';
+type BagRouteType = 'Origin' | 'Transfer' | 'Transit';
+type BagType = 'Checked' | 'Priority' | 'Oversize' | 'Fragile';
+
+export function seedBaggageHandling() {
+  const iso = (hoursFromNow: number) => new Date(Date.now() + hoursFromNow * 3600000).toISOString();
+  const passengers = [
+    'J. Whitfield', 'P. Nandy', 'D. Salas', 'E. Cross', 'M. Lee', 'N. Hussain',
+    'C. Wei', 'F. Haddad', 'L. Ferreira', 'Y. Tanaka', 'H. Osei', 'L. Kowalski', 'S. Okafor', 'R. Alvarez'
+  ];
+  const flights = ['AV107', 'AV114', 'AV121', 'AV128', 'AV135', 'AV142', 'AV149'];
+  const bagTypes: BagType[] = ['Checked', 'Checked', 'Priority', 'Checked', 'Oversize', 'Checked', 'Fragile'];
+  const routeTypes: BagRouteType[] = ['Origin', 'Origin', 'Transfer', 'Origin', 'Transit', 'Transfer', 'Origin'];
+
+  const rows: Array<{
+    status: BaggageStatus;
+    hasLoaded: boolean;
+    hasTransfer: boolean;
+    hasArrived: boolean;
+  }> = [
+    { status: 'Delivered', hasLoaded: true, hasTransfer: false, hasArrived: true },
+    { status: 'Arrived', hasLoaded: true, hasTransfer: false, hasArrived: true },
+    { status: 'In Transfer', hasLoaded: true, hasTransfer: true, hasArrived: false },
+    { status: 'Loaded', hasLoaded: true, hasTransfer: false, hasArrived: false },
+    { status: 'Sorted', hasLoaded: false, hasTransfer: false, hasArrived: false },
+    { status: 'Screened', hasLoaded: false, hasTransfer: false, hasArrived: false },
+    { status: 'Checked In', hasLoaded: false, hasTransfer: false, hasArrived: false },
+    { status: 'Delivered', hasLoaded: true, hasTransfer: false, hasArrived: true },
+    { status: 'Mishandled', hasLoaded: true, hasTransfer: false, hasArrived: false },
+    { status: 'In Transfer', hasLoaded: true, hasTransfer: false, hasArrived: false },
+    { status: 'Arrived', hasLoaded: true, hasTransfer: false, hasArrived: true },
+    { status: 'Delivered', hasLoaded: true, hasTransfer: false, hasArrived: true },
+    { status: 'Mishandled', hasLoaded: true, hasTransfer: true, hasArrived: false },
+    { status: 'Loaded', hasLoaded: true, hasTransfer: false, hasArrived: false }
+  ];
+
+  return rows.map((r, i) => {
+    const routeType = routeTypes[i % routeTypes.length];
+    const checkedInTime = iso(-6 - i * 0.4);
+    return {
+      id: `bag-${String(i + 1).padStart(4, '0')}`,
+      tagNo: `0125-${840000 + i * 733}`,
+      passengerName: passengers[i % passengers.length],
+      pnr: `PNR${100 + i * 7}`,
+      flightNo: flights[i % flights.length],
+      bagType: bagTypes[i % bagTypes.length],
+      routeType,
+      beltNo: `Belt ${1 + (i % 6)}`,
+      weightKg: Number((14 + ((i * 3.7) % 15)).toFixed(1)),
+      checkedInTime,
+      loadedTime: r.hasLoaded ? iso(-4 - i * 0.3) : null,
+      transferTime: r.hasTransfer && routeType === 'Transfer' ? iso(-2 - i * 0.2) : null,
+      arrivedTime: r.hasArrived ? iso(-1) : null,
+      status: r.status
     };
   });
 }

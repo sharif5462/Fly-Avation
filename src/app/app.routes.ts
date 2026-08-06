@@ -21,6 +21,15 @@ const FLAGSHIP_LOADERS: Record<string, Route['loadComponent']> = {
   'aircraft-registration': () =>
     import('./features/fleet-management/aircraft-registration/aircraft-registration').then((m) => m.AircraftRegistrationPage),
   'work-orders': () => import('./features/aircraft-maintenance/work-orders/work-orders').then((m) => m.WorkOrdersPage),
+  'mro-dashboard': () => import('./features/aircraft-maintenance/mro-dashboard/mro-dashboard').then((m) => m.MroDashboardPage),
+  'component-tracking': () =>
+    import('./features/aircraft-maintenance/component-tracking/component-tracking').then((m) => m.ComponentTrackingPage),
+  'baggage-handling-dashboard': () =>
+    import('./features/airport-operations/baggage-handling-dashboard/baggage-handling-dashboard').then(
+      (m) => m.BaggageHandlingDashboardPage
+    ),
+  'baggage-handling': () =>
+    import('./features/airport-operations/baggage-handling/baggage-handling').then((m) => m.BaggageHandlingPage),
   'pilot-management': () =>
     import('./features/crew-management/pilot-management/pilot-management').then((m) => m.PilotManagementPage),
   'spare-parts-inventory': () =>

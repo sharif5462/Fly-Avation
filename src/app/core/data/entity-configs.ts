@@ -7,11 +7,11 @@ import { EntityConfig, EntityField, FieldType, TagSeverity } from '../models/ent
  * dialog form, and validation — without a bespoke component per item.
  *
  * Flagship items (flight-scheduling, aircraft-registration, work-orders,
- * pilot-management, spare-parts-inventory, purchase-orders, user-roles,
- * access-control, dashboard, warehouse-dashboard, item-master,
- * facility-dashboard, asset-master, sms-dashboard, hazard-reporting)
- * intentionally have no entry here: they have hand-built components under
- * features/ instead.
+ * mro-dashboard, component-tracking, pilot-management, spare-parts-inventory,
+ * purchase-orders, user-roles, access-control, dashboard, warehouse-dashboard,
+ * item-master, facility-dashboard, asset-master, sms-dashboard, hazard-reporting,
+ * baggage-handling-dashboard, baggage-handling) intentionally have no entry
+ * here: they have hand-built components under features/ instead.
  */
 
 function f(key: string, label: string, type: FieldType = 'text', extra: Partial<EntityField> = {}): EntityField {
@@ -135,14 +135,6 @@ const ENTITY_LIST: EntityConfig[] = [
     date('plannedDate', 'Planned Date'),
     statusField([['Planned', 'info'], ['Confirmed', 'success'], ['Deferred', 'warn']])
   ]),
-  entity('component-tracking', 'Component', 'Component Tracking', 'pi-microchip', 'Life-limited and rotable component installation history.', [
-    f('componentNo', 'Component No.'),
-    f('componentName', 'Component Name'),
-    f('aircraftReg', 'Aircraft Reg.'),
-    date('installedDate', 'Installed Date'),
-    num('lifeRemainingHrs', 'Life Remaining (hrs)'),
-    statusField([['Installed', 'success'], ['Removed', 'secondary'], ['In Repair', 'warn']])
-  ]),
   entity('aircraft-logbook', 'Logbook Entry', 'Aircraft Logbook', 'pi-book', 'Chronological record of flight and maintenance events per tail.', [
     f('entryNo', 'Entry No.'),
     f('aircraftReg', 'Aircraft Reg.'),
@@ -171,6 +163,34 @@ const ENTITY_LIST: EntityConfig[] = [
     f('aircraftReg', 'Aircraft Reg.'),
     date('complianceDeadline', 'Compliance Deadline'),
     statusField([['Compliant', 'success'], ['Pending', 'warn'], ['Overdue', 'danger']])
+  ]),
+  entity('mel-cdl-tracking', 'MEL/CDL Item', 'MEL / CDL Tracking', 'pi-list-check', 'Deferred defects flown under the Minimum Equipment List / Configuration Deviation List, with rectification deadlines.', [
+    f('melItemNo', 'MEL Item No.'),
+    f('aircraftReg', 'Aircraft Reg.'),
+    f('ataChapter', 'ATA Chapter'),
+    f('description', 'Item Description'),
+    f('category', 'MEL Category', 'select', { badge: true, options: [['Category A', 'danger'], ['Category B', 'warn'], ['Category C', 'info'], ['Category D', 'secondary']].map(([v, s]) => ({ label: v, value: v, severity: s as TagSeverity })) }),
+    date('deferredDate', 'Deferred Date'),
+    date('rectificationDueDate', 'Rectification Due'),
+    statusField([['Deferred', 'warn'], ['Extended', 'info'], ['Rectified', 'success']])
+  ]),
+  entity('reliability-program', 'Reliability Report', 'Reliability Program', 'pi-chart-line', 'Fleet component and system reliability trend monitoring against manufacturer alert levels.', [
+    f('reportNo', 'Report No.'),
+    f('systemAta', 'System / ATA Chapter'),
+    f('componentName', 'Component / System'),
+    f('reportingPeriod', 'Reporting Period'),
+    num('removalRate', 'Removal Rate (per 1000 FH)', { min: 0 }),
+    f('alertLevel', 'Alert Level', 'select', { badge: true, options: [['Below Alert', 'success'], ['Watch', 'info'], ['Alert', 'warn'], ['Action Required', 'danger']].map(([v, s]) => ({ label: v, value: v, severity: s as TagSeverity })) }),
+    statusField([['Monitoring', 'info'], ['Under Review', 'warn'], ['Corrective Action', 'danger'], ['Closed', 'success']])
+  ]),
+  entity('tooling-calibration', 'Tool', 'Tooling & Calibration', 'pi-wrench', 'Special tools and test equipment tracked against periodic calibration due dates.', [
+    f('toolNo', 'Tool No.'),
+    f('toolName', 'Tool Name'),
+    f('toolType', 'Tool Type', 'select', { options: ['Special Tool', 'Test Equipment', 'Torque Wrench', 'Gauge'].map((v) => ({ label: v, value: v })) }),
+    f('custodian', 'Custodian'),
+    date('lastCalibratedDate', 'Last Calibrated'),
+    date('calibrationDueDate', 'Calibration Due'),
+    statusField([['Calibrated', 'success'], ['Due Soon', 'warn'], ['Overdue', 'danger'], ['Out of Service', 'secondary']])
   ]),
 
   // ───────────────────────── Fleet Management ─────────────────────────
@@ -613,19 +633,38 @@ const ENTITY_LIST: EntityConfig[] = [
     f('shift', 'Shift', 'select', { options: ['Morning', 'Afternoon', 'Night'].map((v) => ({ label: v, value: v })) }),
     statusField([['Normal', 'success'], ['Congested', 'warn'], ['Closed', 'danger']])
   ]),
-  entity('baggage-handling', 'Baggage Belt Op', 'Baggage Handling', 'pi-briefcase', 'Baggage belt operations per arriving/departing flight.', [
-    f('beltNo', 'Belt No.'),
-    f('flightNo', 'Flight No.'),
-    f('handler', 'Handler'),
-    datetime('startTime', 'Start Time'),
-    statusField([['In Progress', 'info'], ['Completed', 'success'], ['Delayed', 'warn']])
-  ]),
   entity('ground-handling', 'Ground Service', 'Ground Handling', 'pi-car', 'Pushback, de-icing, catering, and cleaning services per flight.', [
     f('serviceNo', 'Service No.'),
     f('flightNo', 'Flight No.'),
     f('serviceType', 'Service Type', 'select', { options: ['Pushback', 'De-icing', 'Catering', 'Cleaning'].map((v) => ({ label: v, value: v })) }),
     f('provider', 'Provider'),
     statusField([['Scheduled', 'info'], ['In Progress', 'warn'], ['Completed', 'success']])
+  ]),
+  entity('baggage-reconciliation', 'BRS Record', 'Baggage Reconciliation', 'pi-verified', 'Matches every checked bag to its load authority before departure, per IATA Resolution 753.', [
+    f('reconciliationNo', 'Reconciliation No.'),
+    f('flightNo', 'Flight No.'),
+    f('tagNo', 'Bag Tag No.'),
+    f('loadAuthorizedBy', 'Load Authorized By'),
+    datetime('reconciledAt', 'Reconciled At'),
+    statusField([['Pending', 'info'], ['Matched', 'success'], ['Discrepancy', 'danger'], ['Cleared', 'secondary']])
+  ]),
+  entity('baggage-screening', 'Screening Record', 'Baggage Screening', 'pi-shield', 'Hold baggage security screening results (EDS/ETD) before sortation.', [
+    f('screeningNo', 'Screening No.'),
+    f('tagNo', 'Bag Tag No.'),
+    f('flightNo', 'Flight No.'),
+    f('screeningLevel', 'Screening Level', 'select', { options: ['EDS Level 1', 'EDS Level 2', 'ETD', 'Manual Search'].map((v) => ({ label: v, value: v })) }),
+    datetime('screenedAt', 'Screened At'),
+    statusField([['Clear', 'success'], ['Alarm', 'danger'], ['Resolved', 'warn'], ['Escalated', 'secondary']], 'result', 'Result')
+  ]),
+  entity('mishandled-baggage', 'Baggage Case', 'Mishandled Baggage / Lost & Found', 'pi-search', 'WorldTracer-style tracing file for delayed, damaged, pilfered, or lost baggage.', [
+    f('caseNo', 'Case No.'),
+    f('passengerName', 'Passenger Name'),
+    f('flightNo', 'Flight No.'),
+    f('tagNo', 'Bag Tag No.'),
+    f('category', 'Category', 'select', { badge: true, options: [['Delayed', 'warn'], ['Damaged', 'danger'], ['Pilfered', 'danger'], ['Lost', 'contrast']].map(([v, s]) => ({ label: v, value: v, severity: s as TagSeverity })) }),
+    date('reportedDate', 'Reported Date'),
+    f('aholLocation', 'AHL / Current Location'),
+    statusField([['Open', 'danger'], ['Tracing', 'warn'], ['Located', 'info'], ['Delivered', 'success'], ['Closed', 'secondary']])
   ]),
   entity('aircraft-parking', 'Parking Assignment', 'Aircraft Parking', 'pi-map-marker', 'Apron stand allocation per aircraft turnaround.', [
     f('standNo', 'Stand No.'),

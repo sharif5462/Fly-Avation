@@ -1,0 +1,131 @@
+<div class="page-container">
+  <app-page-header icon="pi-briefcase" title="Baggage Handling" description="Belt/sortation operations with IATA Resolution 753 four-point bag tracking — check-in, load, transfer, arrival.">
+    <p-button label="New Baggage Record" icon="pi pi-plus" (onClick)="openNew()" />
+  </app-page-header>
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-briefcase" [value]="stats().total" label="Total Bags" />
+    <app-stat-card icon="pi-check-circle" [value]="stats().fullyTracked" label="Fully Tracked (Res. 753)" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+    <app-stat-card icon="pi-sync" [value]="stats().inTransfer" label="In Transfer" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+    <app-stat-card icon="pi-exclamation-triangle" [value]="stats().mishandled" label="Mishandled" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+  </div>
+
+  <div class="surface-card">
+    <p-table #dt [value]="bags()" [loading]="loading()" [paginator]="true" [rows]="10" dataKey="id" [rowHover]="true" [stripedRows]="true" [globalFilterFields]="['tagNo', 'passengerName', 'flightNo', 'pnr', 'status']" responsiveLayout="scroll">
+      <ng-template #caption>
+        <div class="table-toolbar">
+          <p-iconfield iconPosition="left" class="table-toolbar__search">
+            <p-inputicon class="pi pi-search" />
+            <input pInputText type="text" placeholder="Search bag tag, passenger, flight…" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+          </p-iconfield>
+          <span class="text-muted table-toolbar__count">{{ bags().length }} bag{{ bags().length === 1 ? '' : 's' }}</span>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="tagNo">Tag No. <p-sortIcon field="tagNo" /></th>
+          <th>Passenger</th>
+          <th pSortableColumn="flightNo">Flight <p-sortIcon field="flightNo" /></th>
+          <th>Type</th>
+          <th>Belt</th>
+          <th style="width: 13rem">IATA 753 Tracking</th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status" /></th>
+          <th style="width: 6.5rem">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-bag>
+        <tr>
+          <td><strong>{{ bag.tagNo }}</strong></td>
+          <td>{{ bag.passengerName }}</td>
+          <td>{{ bag.flightNo }}</td>
+          <td>{{ bag.bagType }} · {{ bag.routeType }}</td>
+          <td>{{ bag.beltNo }}</td>
+          <td>
+            <div class="tracking-steps">
+              @for (step of trackingSteps(bag); track step.label) {
+                @if (step.na) {
+                  <span class="pi pi-minus-circle tracking-steps__na" [pTooltip]="step.label + ' — not applicable'"></span>
+                } @else if (step.done) {
+                  <span class="pi pi-check-circle tracking-steps__done" [pTooltip]="step.label + ' — captured'"></span>
+                } @else {
+                  <span class="pi pi-circle tracking-steps__pending" [pTooltip]="step.label + ' — pending'"></span>
+                }
+              }
+            </div>
+          </td>
+          <td><p-tag [value]="bag.status" [severity]="statusSeverity(bag.status)" /></td>
+          <td>
+            <div class="row-actions">
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(bag)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(bag)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="8" class="table-empty">No baggage records yet.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [header]="editingBag() ? 'Edit Baggage Record' : 'New Baggage Record'" [style]="{ width: '40rem' }" [draggable]="false" [dismissableMask]="true">
+  <form [formGroup]="form" class="entity-form">
+    <div class="entity-form__field">
+      <label for="tagNo">Bag Tag No.</label>
+      <input pInputText id="tagNo" formControlName="tagNo" placeholder="0125-847293" />
+    </div>
+    <div class="entity-form__field">
+      <label for="passengerName">Passenger Name</label>
+      <input pInputText id="passengerName" formControlName="passengerName" placeholder="J. Whitfield" />
+    </div>
+    <div class="entity-form__field">
+      <label for="pnr">PNR</label>
+      <input pInputText id="pnr" formControlName="pnr" placeholder="ABCDEF" />
+    </div>
+    <div class="entity-form__field">
+      <label for="flightNo">Flight No.</label>
+      <input pInputText id="flightNo" formControlName="flightNo" placeholder="AV107" />
+    </div>
+    <div class="entity-form__field">
+      <label for="bagType">Bag Type</label>
+      <p-select inputId="bagType" formControlName="bagType" [options]="bagTypes" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="routeType">Route Type</label>
+      <p-select inputId="routeType" formControlName="routeType" [options]="routeTypes" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="beltNo">Belt / Carousel No.</label>
+      <input pInputText id="beltNo" formControlName="beltNo" placeholder="Belt 4" />
+    </div>
+    <div class="entity-form__field">
+      <label for="weightKg">Weight (kg)</label>
+      <p-inputnumber inputId="weightKg" formControlName="weightKg" [min]="0" />
+    </div>
+    <div class="entity-form__field">
+      <label for="checkedInTime">Check-in Time</label>
+      <p-datepicker inputId="checkedInTime" formControlName="checkedInTime" [showTime]="true" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="loadedTime">Loaded Time</label>
+      <p-datepicker inputId="loadedTime" formControlName="loadedTime" [showTime]="true" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="transferTime">Transfer Time</label>
+      <p-datepicker inputId="transferTime" formControlName="transferTime" [showTime]="true" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="arrivedTime">Arrived Time</label>
+      <p-datepicker inputId="arrivedTime" formControlName="arrivedTime" [showTime]="true" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="status">Status</label>
+      <p-select inputId="status" formControlName="status" [options]="statuses" appendTo="body" />
+    </div>
+  </form>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button [label]="editingBag() ? 'Save Changes' : 'Create'" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
+  </ng-template>
+</p-dialog>

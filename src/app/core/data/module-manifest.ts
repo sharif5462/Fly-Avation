@@ -36,15 +36,19 @@ export const MODULES: ModuleDef[] = [
     icon: 'pi-wrench',
     role: 'Maintenance',
     items: [
+      { key: 'mro-dashboard', label: 'Dashboard', icon: 'pi-th-large', flagship: true },
       { key: 'preventive-maintenance', label: 'Preventive Maintenance', icon: 'pi-shield' },
       { key: 'corrective-maintenance', label: 'Corrective Maintenance', icon: 'pi-hammer' },
       { key: 'work-orders', label: 'Work Orders', icon: 'pi-clipboard', flagship: true },
       { key: 'maintenance-planning', label: 'Maintenance Planning', icon: 'pi-calendar-clock' },
-      { key: 'component-tracking', label: 'Component Tracking', icon: 'pi-microchip' },
+      { key: 'component-tracking', label: 'Component Tracking', icon: 'pi-microchip', flagship: true },
       { key: 'aircraft-logbook', label: 'Aircraft Logbook', icon: 'pi-book' },
       { key: 'airworthiness-certificate', label: 'Airworthiness Certificate', icon: 'pi-verified' },
       { key: 'service-bulletin-management', label: 'Service Bulletin Management', icon: 'pi-megaphone' },
-      { key: 'ad-compliance', label: 'AD (Airworthiness Directive) Compliance', icon: 'pi-exclamation-triangle' }
+      { key: 'ad-compliance', label: 'AD (Airworthiness Directive) Compliance', icon: 'pi-exclamation-triangle' },
+      { key: 'mel-cdl-tracking', label: 'MEL / CDL Tracking', icon: 'pi-list-check' },
+      { key: 'reliability-program', label: 'Reliability Program', icon: 'pi-chart-line' },
+      { key: 'tooling-calibration', label: 'Tooling & Calibration', icon: 'pi-wrench' }
     ]
   },
   {
@@ -181,7 +185,11 @@ export const MODULES: ModuleDef[] = [
       { key: 'gate-management', label: 'Gate Management', icon: 'pi-sitemap' },
       { key: 'runway-scheduling', label: 'Runway Scheduling', icon: 'pi-directions-alt' },
       { key: 'terminal-operations', label: 'Terminal Operations', icon: 'pi-building-columns' },
-      { key: 'baggage-handling', label: 'Baggage Handling', icon: 'pi-briefcase' },
+      { key: 'baggage-handling-dashboard', label: 'Baggage Handling Dashboard', icon: 'pi-th-large', flagship: true },
+      { key: 'baggage-handling', label: 'Baggage Handling', icon: 'pi-briefcase', flagship: true },
+      { key: 'baggage-reconciliation', label: 'Baggage Reconciliation (BRS)', icon: 'pi-verified' },
+      { key: 'baggage-screening', label: 'Baggage Screening', icon: 'pi-shield' },
+      { key: 'mishandled-baggage', label: 'Mishandled Baggage / Lost & Found', icon: 'pi-search' },
       { key: 'ground-handling', label: 'Ground Handling', icon: 'pi-car' },
       { key: 'aircraft-parking', label: 'Aircraft Parking', icon: 'pi-map-marker' },
       { key: 'boarding-management', label: 'Boarding Management', icon: 'pi-users' }
