@@ -9,6 +9,7 @@ import { TooltipModule } from 'primeng/tooltip';
 
 import { AuthService } from '../../core/auth/auth.service';
 import { CompanyContextService } from '../../core/auth/company-context.service';
+import { CommandPaletteService } from '../../core/services/command-palette.service';
 import { MOCK_BACKEND_AVAILABLE, resetMockDatabase } from '../../core/mock';
 import { ROLE_LABELS } from '../../core/models/role.model';
 
@@ -25,6 +26,10 @@ export class Topbar {
   private readonly company = inject(CompanyContextService);
   private readonly confirmation = inject(ConfirmationService);
   private readonly router = inject(Router);
+  private readonly palette = inject(CommandPaletteService);
+
+  /** Mac shows ⌘K, everyone else Ctrl+K. */
+  readonly shortcutLabel = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
 
   readonly menuToggle = output<void>();
 
@@ -70,6 +75,10 @@ export class Topbar {
   roleLabel(): string {
     const roles = this.user()?.roles ?? [];
     return roles.map((r) => ROLE_LABELS[r]).join(' · ');
+  }
+
+  openSearch(): void {
+    this.palette.show();
   }
 
   logout(): void {

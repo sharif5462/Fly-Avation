@@ -13,7 +13,8 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test:contrast": "node tools/check-contrast.mjs",
     "test:routes": "node tools/smoke-routes.mjs",
-    "test:company": "node tools/verify-multi-company.mjs"
+    "test:company": "node tools/verify-multi-company.mjs",
+    "test:palette": "node tools/verify-palette.mjs"
   },
   "prettier": {
     "printWidth": 100,

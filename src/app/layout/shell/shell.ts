@@ -4,13 +4,14 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 
 import { Breadcrumb } from '../breadcrumb/breadcrumb';
+import { CommandPalette } from '../command-palette/command-palette';
 import { Sidebar } from '../sidebar/sidebar';
 import { Topbar } from '../topbar/topbar';
 
 /** Authenticated app shell: sidebar + topbar + breadcrumb around the routed page. */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, ToastModule, ConfirmDialogModule, Sidebar, Topbar, Breadcrumb],
+  imports: [RouterOutlet, ToastModule, ConfirmDialogModule, Sidebar, Topbar, Breadcrumb, CommandPalette],
   templateUrl: './shell.html',
   styleUrl: './shell.scss'
 })

@@ -28,6 +28,12 @@
     <p-menu #companyMenu [model]="companyMenuItems()" [popup]="true" />
   }
 
+  <button class="topbar__search" type="button" aria-label="Search screens" (click)="openSearch()">
+    <span class="pi pi-search" aria-hidden="true"></span>
+    <span class="topbar__search-label">Search screens…</span>
+    <kbd>{{ shortcutLabel }}</kbd>
+  </button>
+
   <div class="topbar__spacer"></div>
 
   <button

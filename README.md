@@ -53,6 +53,7 @@ npm run test:ci        # headless, single run, with coverage
 npm run test:contrast  # WCAG contrast audit (see below)
 npm run test:routes    # visits every route in a browser (needs a dev server)
 npm run test:company   # multi-company switch/scope/persist check (needs a dev server)
+npm run test:palette   # command palette keyboard/search check (needs a dev server)
 ```
 
 These run on every push and pull request — see `.github/workflows/ci.yml`.
@@ -71,14 +72,15 @@ src/app/
     auth/              AuthService, ModuleAccessService, CompanyContextService,
                        authGuard, roleGuard, authInterceptor, companyInterceptor
     interceptors/      errorInterceptor (401/403/5xx handling)
-    services/          ApiService — the one place that knows request URLs
+    services/          ApiService (request URLs), ScreenSearchService,
+                       RecentScreensService, CommandPaletteService
     models/            Role, User, Company, EntityConfig, ModuleDef — shared types
     data/              module-manifest.ts, entity-configs/ (see below)
     mock/              mock API interceptor + seed data (dev/demo only)
     utils/             date.util.ts (date-only vs. instant),
                        dashboard-loader.ts (load/error/retry state)
     theme/             PrimeNG theme preset
-  layout/             Shell, Sidebar, Topbar, Breadcrumb — the authenticated app frame
+  layout/             Shell, Sidebar, Topbar, Breadcrumb, CommandPalette
   shared/
     components/        PageHeader, StatCard, LoadError — small reused pieces
     scaffold/           FeatureListPage — the generic CRUD engine (below)
@@ -283,6 +285,29 @@ mode too — so `color: var(--p-surface-900)` on a card rendered dark-on-dark at
 a 1.00:1 ratio and made the dashboard KPI numbers invisible. `npm run
 test:contrast` fails the build if the raw scale reappears. Reasoning in
 `docs/adr/0004-semantic-colour-tokens.md`.
+
+## Getting around 431 screens
+
+The sidebar lists 432 entries across 43 collapsible groups. That is fine for
+browsing and hopeless for arriving, so **Ctrl/Cmd+K** opens a command palette
+that searches every screen the signed-in user can reach.
+
+- Results are **ranked**, not just filtered: an exact label match beats a
+  prefix, which beats a word-start, which beats a substring; the module name
+  is the weakest signal. Typing `bag` surfaces *Bag Tracking* above
+  *Mishandled Baggage*.
+- Each result carries its **module name**, because labels repeat — *Incident
+  Reporting* exists under four modules and is otherwise indistinguishable.
+- Only screens the user can open are offered, so the palette never leads to
+  a `/403`.
+- With no query it shows **recently visited** screens, kept per user; ERP work
+  returns to the same handful of screens all day.
+- The topbar carries a visible search button — a shortcut nobody knows about
+  is a shortcut nobody uses.
+
+Keyboard: `↑`/`↓` move (wrapping), `Home`/`End` jump, `↵` opens, `Esc` closes.
+Focus stays in the search box and the active option is announced via
+`aria-activedescendant`, which is the WAI-ARIA combobox pattern.
 
 ## Multi-company
 

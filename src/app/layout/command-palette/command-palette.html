@@ -1,0 +1,80 @@
+<p-dialog
+  [visible]="open()"
+  (visibleChange)="$event ? show() : close()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [showHeader]="false"
+  [dismissableMask]="true"
+  styleClass="command-palette__dialog"
+  [style]="{ width: '38rem', maxWidth: '94vw' }"
+  [contentStyle]="{ padding: '0' }"
+>
+  <div class="command-palette" role="combobox" aria-expanded="true" aria-haspopup="listbox" aria-controls="palette-results">
+    <div class="command-palette__search">
+      <span class="pi pi-search" aria-hidden="true"></span>
+      <input
+        #searchInput
+        type="text"
+        role="searchbox"
+        [attr.aria-label]="'Search ' + totalScreens() + ' screens'"
+        aria-controls="palette-results"
+        [attr.aria-activedescendant]="results().length ? 'palette-option-' + activeIndex() : null"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Search screens…"
+        [value]="query()"
+        (input)="onQueryInput($any($event.target).value)"
+        (keydown)="onKeydown($event)"
+      />
+      <kbd class="command-palette__hint">Esc</kbd>
+    </div>
+
+    @if (results().length) {
+      <p class="command-palette__section" id="palette-section">
+        {{ showingRecent() ? 'Recent' : results().length + ' of ' + totalScreens() + ' screens' }}
+      </p>
+      <ul class="command-palette__results" id="palette-results" role="listbox" aria-labelledby="palette-section">
+        @for (screen of results(); track screen.path; let i = $index) {
+          <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus --
+               Keyboard interaction lives on the search input via
+               aria-activedescendant (the WAI-ARIA combobox pattern); listbox
+               options are deliberately not focusable. The click handler serves
+               mouse users only. -->
+          <li
+            class="command-palette__item"
+            [class.command-palette__item--active]="i === activeIndex()"
+            role="option"
+            [id]="'palette-option-' + i"
+            [attr.aria-selected]="i === activeIndex()"
+            (mouseenter)="activeIndex.set(i)"
+            (click)="go(screen)"
+          >
+            <span class="command-palette__icon pi {{ screen.icon }}" aria-hidden="true"></span>
+            <span class="command-palette__text">
+              <strong>{{ screen.label }}</strong>
+              <!-- Labels repeat across modules, so the module name is what
+                   tells two otherwise identical hits apart. -->
+              <small>{{ screen.moduleLabel }}</small>
+            </span>
+            <span class="pi pi-arrow-right command-palette__go" aria-hidden="true"></span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="command-palette__empty" role="status">
+        @if (showingRecent()) {
+          Start typing to search {{ totalScreens() }} screens.
+        } @else {
+          No screen matches “{{ query() }}”.
+        }
+      </p>
+    }
+
+    <div class="command-palette__footer">
+      <span><kbd>↑</kbd><kbd>↓</kbd> to navigate</span>
+      <span><kbd>↵</kbd> to open</span>
+      <span><kbd>Ctrl</kbd><kbd>K</kbd> anytime</span>
+    </div>
+  </div>
+</p-dialog>

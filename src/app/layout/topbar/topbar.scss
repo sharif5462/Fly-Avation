@@ -150,3 +150,44 @@
     display: none;
   }
 }
+
+.topbar__search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.75rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--p-text-muted-color);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+  min-width: 12rem;
+
+  &:hover {
+    background: var(--p-content-hover-background);
+  }
+
+  kbd {
+    margin-left: auto;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 4px;
+    padding: 0 0.3rem;
+    font-family: inherit;
+    font-size: 0.6875rem;
+  }
+}
+
+// Below the breakpoint the label and shortcut go; the icon still opens it.
+@media (max-width: 900px) {
+  .topbar__search {
+    min-width: 0;
+
+    .topbar__search-label,
+    kbd {
+      display: none;
+    }
+  }
+}
