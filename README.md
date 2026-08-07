@@ -1,6 +1,6 @@
 # Aviation ERP — Angular Frontend
 
-Angular 20 frontend for a full aviation ERP: 25 modules, 240 screens, JWT
+Angular 20 frontend for a full aviation ERP: 42 modules, 398 screens, JWT
 authentication with role-based authorization, running today on mock data and
 built to drop onto a .NET Web API + Oracle backend with no component changes.
 
@@ -51,6 +51,7 @@ npm run typecheck      # tsc --noEmit
 npm test               # Karma/Jasmine, watch mode
 npm run test:ci        # headless, single run, with coverage
 npm run test:contrast  # WCAG contrast audit (see below)
+npm run test:routes    # visits all 425 routes in a browser (needs a dev server)
 ```
 
 These run on every push and pull request — see `.github/workflows/ci.yml`.
@@ -71,7 +72,7 @@ src/app/
     interceptors/      errorInterceptor (401/403/5xx handling)
     services/          ApiService — the one place that knows request URLs
     models/            Role, User, EntityConfig, ModuleDef — shared types
-    data/              module-manifest.ts, entity-configs.ts (see below)
+    data/              module-manifest.ts, entity-configs/ (see below)
     mock/              mock API interceptor + seed data (dev/demo only)
     utils/             date.util.ts (date-only vs. instant),
                        dashboard-loader.ts (load/error/retry state)
@@ -102,9 +103,40 @@ src/app/
     security-management/        user-roles, access-control
 ```
 
+### The 42 modules
+
+**Flight & network** — Flight Operations · Flight Planning & Dispatch ·
+Disruption Management (IROPS) · Load Control & Weight/Balance
+
+**Fleet & engineering** — Fleet Management · Aircraft Maintenance (MRO) ·
+Continuing Airworthiness (CAMO) · Aircraft Leasing & Finance
+
+**Crew** — Crew Management · Crew Training & Licensing
+
+**Commercial** — Passenger Reservation · Revenue Management & Pricing ·
+Ancillary Revenue & Retailing · Distribution (GDS/NDC) · Special Services
+(SSR/PRM) · CRM
+
+**Airport & ground** — Airport Operations · Resource & Gate Management ·
+Baggage Handling (BHS) · Landside Operations · Ground Handling Agreements ·
+Cargo Management
+
+**Supply chain** — Inventory & Spare Parts · Warehouse Management ·
+Procurement · Fuel Management · Facilities & Assets
+
+**Finance** — Finance & Accounting · Revenue Accounting & Settlement
+
+**People & governance** — Human Resource · Compliance & Safety · Safety
+Management System (SMS) · Quality Assurance · Aviation Security (AVSEC) ·
+Sustainability & Emissions
+
+**Platform** — Workflow & Approvals · Document Management · Business
+Intelligence · IT & Application Security · Self-Service Portals ·
+Integration Hub · Notification System
+
 ### Flagship pages vs. the generic scaffold
 
-Hand-building 240 unique screens up front isn't a good use of time before
+Hand-building 398 unique screens up front isn't a good use of time before
 there's a real backend to wire them to. Instead:
 
 - **21 flagship pages** are fully hand-built: typed models, bespoke table
@@ -116,36 +148,47 @@ there's a real backend to wire them to. Instead:
   Registration, Work Orders, Component Tracking, Pilot Management, Spare
   Parts Inventory, Item Master, Purchase Orders, Bag Tracking (Res. 753),
   Asset Master, Hazard Reporting, User Roles and Access Control.
-- **The other 219 screens** are all real, working CRUD screens too — search,
+- **The other 377 screens** are all real, working CRUD screens too — search,
   sortable table, add/edit dialog with validation, delete confirmation —
   just rendered by one shared component, `FeatureListPage`, configured
   per-entity instead of hand-coded per-entity.
 
-**How the scaffold works:** `core/data/module-manifest.ts` defines all 25
+**How the scaffold works:** `core/data/module-manifest.ts` defines all 42
 modules and their sub-items (label, icon, route key, which ones are
-flagship). `core/data/entity-configs.ts` defines the table columns + form
-fields for every non-flagship item, keyed by the same route key. In
+flagship). `core/data/entity-configs/` defines the table columns + form
+fields for every non-flagship item, keyed by the same route key — split into
+`core-modules.ts` (the original 25 modules) and `extended-modules.ts`
+(everything added since), merged by `index.ts`. In
 `app.routes.ts`, every non-flagship item routes to the same lazy-loaded
 `FeatureListPage` chunk with `data: { entityKey }` — so there's exactly one
-extra chunk for all 219 pages, not 219 chunks.
+extra chunk for all 377 pages, not 377 chunks.
 
-**Screens vs. nav entries:** the sidebar has 259 entries across the 25
-modules, but only 240 distinct screens. Some sub-items are deliberately
+**Screens vs. nav entries:** the sidebar has 425 entries across the 42
+modules, but only 398 distinct screens. Some sub-items are deliberately
 reused across modules because they're the same real-world record viewed
 from a different desk — Incident Reporting appears under Compliance &
 Safety, SMS, Facilities and Landside; Vendor Management under Procurement,
 Warehouse and Facilities; Purchase Orders under Procurement and Warehouse;
 Gate Management and Aircraft Parking under both Airport Operations and
-Resource & Gate Management. A reused key means one route, one entity config
-and one dataset, not a copy.
+Resource & Gate Management; Training Records under Crew Management and Crew
+Training; AD Compliance under Aircraft Maintenance and CAMO. A reused key
+means one route, one entity config and one dataset, not a copy — 22 of the
+425 nav entries are reuses of this kind.
 
-**To add a new field to an existing scaffold page:** edit its entry in
-`entity-configs.ts`. The table column and the form field both update; no
+**Nullability is a schema decision, not just form validation.** `f(...)`
+marks a field required and `optional(...)` does not; that flag is what the
+database's NOT NULL constraints will be generated from. Use `optional` for
+anything a user should be able to leave blank — notes, findings, secondary
+dates — or the API ends up rejecting records that ought to be saveable while
+still incomplete.
+
+**To add a new field to an existing scaffold page:** edit its entry under
+`entity-configs/`. The table column and the form field both update; no
 other file changes.
 
 **To add a brand-new sub-item to a module:** add one line to its `items`
 array in `module-manifest.ts` and one `entity(...)` call in
-`entity-configs.ts`. It gets a working route, a nav entry, and a full CRUD
+`entity-configs/extended-modules.ts`. It gets a working route, a nav entry, and a full CRUD
 screen immediately — no new component, no new route file.
 
 **To promote a scaffold page to a flagship page:** copy the pattern from
@@ -274,7 +317,7 @@ drop-in stand-in, not a parallel code path components need to know about.
   11 flagship resources that own a dataset. (The eight dashboards don't —
   they read the other resources; User Roles and Access Control are backed
   by the `users` and `role-permissions` resources in the same file's map.)
-- `core/mock/fake-data.ts` — generates plausible seed rows for the 219
+- `core/mock/fake-data.ts` — generates plausible seed rows for the 377
   generic scaffold resources from their `entity-configs.ts` field
   definitions (heuristic — a field named/labeled with "cost" gets a
   dollar-ish number, "airport"/"origin" gets an IATA-style code, etc.). Not
@@ -340,7 +383,7 @@ calling `.slice()` — the landing dashboard's "recent purchase orders" panel
 asks for five rows sorted by date. Against the seeded mock the difference is
 invisible; against Oracle it is one page versus a full table scan.
 
-**Still outstanding on the frontend:** the 219 scaffold CRUD screens page,
+**Still outstanding on the frontend:** the 377 scaffold CRUD screens page,
 sort and filter *client-side* over a full unfiltered fetch. That is fine at
 the current seed sizes and will not survive real data. The fix is one
 component (`shared/scaffold/feature-list-page`) switching `p-table` to lazy

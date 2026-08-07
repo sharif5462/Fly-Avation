@@ -11,7 +11,8 @@
     "test:ci": "ng test --watch=false --browsers=ChromeHeadlessNoSandbox --code-coverage",
     "lint": "ng lint",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
-    "test:contrast": "node tools/check-contrast.mjs"
+    "test:contrast": "node tools/check-contrast.mjs",
+    "test:routes": "node tools/smoke-routes.mjs"
   },
   "prettier": {
     "printWidth": 100,

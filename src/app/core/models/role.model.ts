@@ -29,6 +29,13 @@ export type Role =
   | 'BI'
   | 'Security'
   | 'Facilities'
+  | 'LoadControl'
+  | 'RevenueManagement'
+  | 'AviationSecurity'
+  | 'Sustainability'
+  | 'Distribution'
+  | 'Portals'
+  | 'Integration'
   | 'ReadOnly';
 
 export const ALL_ROLES: Role[] = [
@@ -56,6 +63,13 @@ export const ALL_ROLES: Role[] = [
   'BI',
   'Security',
   'Facilities',
+  'LoadControl',
+  'RevenueManagement',
+  'AviationSecurity',
+  'Sustainability',
+  'Distribution',
+  'Portals',
+  'Integration',
   'ReadOnly'
 ];
 
@@ -82,7 +96,16 @@ export const ROLE_LABELS: Record<Role, string> = {
   CRM: 'Customer Relationship Management',
   DocumentControl: 'Document Management',
   BI: 'Business Intelligence',
-  Security: 'Security Management',
+  // Application/IT security — user accounts, roles, MFA. Physical and
+  // passenger security is AviationSecurity, a separate function entirely.
+  Security: 'IT & Application Security',
   Facilities: 'Facilities & Assets',
+  LoadControl: 'Load Control & Weight/Balance',
+  RevenueManagement: 'Revenue Management & Pricing',
+  AviationSecurity: 'Aviation Security (AVSEC)',
+  Sustainability: 'Sustainability & Emissions',
+  Distribution: 'Distribution (GDS/NDC)',
+  Portals: 'Self-Service Portals',
+  Integration: 'Integration Hub',
   ReadOnly: 'Read Only'
 };

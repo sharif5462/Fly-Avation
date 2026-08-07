@@ -1,4 +1,5 @@
-import { EntityConfig, EntityField, FieldType, TagSeverity } from '../models/entity-config.model';
+import { EntityConfig, TagSeverity } from '../../models/entity-config.model';
+import { date, datetime, entity, f, money, num, statusField } from './builders';
 
 /**
  * Field/table/form configuration for every *generic* (non-flagship) sub-item
@@ -14,50 +15,7 @@ import { EntityConfig, EntityField, FieldType, TagSeverity } from '../models/ent
  * intentionally have no entry here: they have hand-built components under features/ instead.
  */
 
-function f(key: string, label: string, type: FieldType = 'text', extra: Partial<EntityField> = {}): EntityField {
-  return { key, label, type, required: true, ...extra };
-}
-
-function num(key: string, label: string, extra: Partial<EntityField> = {}): EntityField {
-  return f(key, label, 'number', extra);
-}
-
-function money(key: string, label: string, extra: Partial<EntityField> = {}): EntityField {
-  return f(key, label, 'number', { prefix: '$', min: 0, ...extra });
-}
-
-function date(key: string, label: string, extra: Partial<EntityField> = {}): EntityField {
-  return f(key, label, 'date', extra);
-}
-
-function datetime(key: string, label: string, extra: Partial<EntityField> = {}): EntityField {
-  return f(key, label, 'datetime', extra);
-}
-
-function statusField(pairs: [string, TagSeverity][], key = 'status', label = 'Status'): EntityField {
-  return {
-    key,
-    label,
-    type: 'select',
-    required: true,
-    badge: true,
-    options: pairs.map(([value, severity]) => ({ label: value, value, severity }))
-  };
-}
-
-function entity(
-  key: string,
-  label: string,
-  pluralLabel: string,
-  icon: string,
-  description: string,
-  fields: EntityField[],
-  seedCount = 10
-): EntityConfig {
-  return { key, label, pluralLabel, icon, description, fields, seedCount };
-}
-
-const ENTITY_LIST: EntityConfig[] = [
+export const CORE_MODULE_ENTITIES: EntityConfig[] = [
   // ───────────────────────── Flight Operations ─────────────────────────
   entity('route-planning', 'Route', 'Route Planning', 'pi-map', 'Plan and manage flight routes between airport pairs.', [
     f('routeCode', 'Route Code'),
@@ -1783,11 +1741,3 @@ const ENTITY_LIST: EntityConfig[] = [
     statusField([['Pending', 'info'], ['Sent', 'warn'], ['Acknowledged', 'success']])
   ])
 ];
-
-export const ENTITY_CONFIGS: Record<string, EntityConfig> = Object.fromEntries(
-  ENTITY_LIST.map((e) => [e.key, e])
-);
-
-export function getEntityConfig(key: string): EntityConfig | undefined {
-  return ENTITY_CONFIGS[key];
-}
