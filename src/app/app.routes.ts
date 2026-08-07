@@ -2,7 +2,7 @@ import { Route, Routes } from '@angular/router';
 
 import { authGuard, guestGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
-import { MODULES } from './core/data/module-manifest';
+import { MODULES, isRoutedUnderModule } from './core/data/module-manifest';
 import { Shell } from './layout/shell/shell';
 
 /**
@@ -69,7 +69,7 @@ function buildModuleRoutes(): Routes {
     canActivate: [roleGuard],
     data: { moduleKey: mod.key },
     children: mod.items
-      .filter((item) => !(mod.key === 'business-intelligence' && item.key === 'dashboard'))
+      .filter((item) => isRoutedUnderModule(mod.key, item.key))
       .map((item) => {
         const flagshipLoader = FLAGSHIP_LOADERS[item.key];
         return flagshipLoader

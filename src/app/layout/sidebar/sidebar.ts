@@ -9,7 +9,7 @@ import { PanelMenuModule } from 'primeng/panelmenu';
 import { filter, map } from 'rxjs';
 
 import { ModuleAccessService } from '../../core/auth/module-access.service';
-import { MODULES } from '../../core/data/module-manifest';
+import { MODULES, isRoutedUnderModule } from '../../core/data/module-manifest';
 
 @Component({
   selector: 'app-sidebar',
@@ -37,17 +37,15 @@ export class Sidebar {
    * otherwise a user could reach a granted module by URL but never see a link
    * to it.
    *
-   * BI's "Dashboard" sub-item is deliberately excluded here and routed to
-   * the unrestricted top-level `/dashboard` instead of the guarded
-   * `business-intelligence/dashboard` — it's every user's landing page, not
-   * just BI's, so it can't require the BI role. See app.routes.ts.
+   * Items not routed under their own module are filtered out below via
+   * isRoutedUnderModule — see module-manifest.ts for the one case and why.
    */
   private readonly visibleModules = computed(() => MODULES.filter((mod) => this.access.canAccessModule(mod.key)));
 
   /**
    * Rebuilt only when the visible module set changes — not on every
    * navigation. Highlighting the open module is left to routerLinkActive in
-   * the template; recomputing 259 MenuItem objects per NavigationEnd made
+   * the template; recomputing 425 MenuItem objects per NavigationEnd made
    * PanelMenu re-render the whole tree and discard the panels the user had
    * expanded by hand.
    */
@@ -56,7 +54,7 @@ export class Sidebar {
       label: mod.label,
       icon: `pi ${mod.icon}`,
       items: mod.items
-        .filter((item) => !(mod.key === 'business-intelligence' && item.key === 'dashboard'))
+        .filter((item) => isRoutedUnderModule(mod.key, item.key))
         .map((item) => ({
           label: item.label,
           icon: `pi ${item.icon}`,

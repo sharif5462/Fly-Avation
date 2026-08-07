@@ -817,6 +817,23 @@ export const MODULES: ModuleDef[] = [
   }
 ];
 
+/**
+ * BI's "Dashboard" sub-item is the one manifest entry that is *not* routed
+ * under its own module. It is every user's landing page, so it lives at the
+ * top-level `/dashboard` rather than behind `business-intelligence`'s BI role
+ * — see app.routes.ts.
+ *
+ * The rule lives here, once, because three separate places need it: the
+ * router (skip generating the child route), the sidebar (skip the nav entry,
+ * since a pinned Dashboard link sits above the menu) and the route smoke test
+ * (skip asserting a route that intentionally does not exist). It was
+ * duplicated as an inline condition in each until the smoke test tripped over
+ * the copy it did not have.
+ */
+export function isRoutedUnderModule(moduleKey: string, itemKey: string): boolean {
+  return !(moduleKey === 'business-intelligence' && itemKey === 'dashboard');
+}
+
 export function findModuleByItemKey(itemKey: string): ModuleDef | undefined {
   return MODULES.find((m) => m.items.some((i) => i.key === itemKey));
 }

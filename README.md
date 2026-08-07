@@ -51,7 +51,7 @@ npm run typecheck      # tsc --noEmit
 npm test               # Karma/Jasmine, watch mode
 npm run test:ci        # headless, single run, with coverage
 npm run test:contrast  # WCAG contrast audit (see below)
-npm run test:routes    # visits all 425 routes in a browser (needs a dev server)
+npm run test:routes    # visits all 424 routes in a browser (needs a dev server)
 ```
 
 These run on every push and pull request — see `.github/workflows/ci.yml`.
@@ -174,6 +174,12 @@ Resource & Gate Management; Training Records under Crew Management and Crew
 Training; AD Compliance under Aircraft Maintenance and CAMO. A reused key
 means one route, one entity config and one dataset, not a copy — 22 of the
 425 nav entries are reuses of this kind.
+
+One manifest item is deliberately **not** routed under its own module: BI's
+Dashboard is every user's landing page at `/dashboard`, so it cannot sit
+behind the BI role. `isRoutedUnderModule()` in `module-manifest.ts` is the
+single source of that rule — the router, the sidebar and the route smoke test
+all consult it instead of repeating the condition.
 
 **Nullability is a schema decision, not just form validation.** `f(...)`
 marks a field required and `optional(...)` does not; that flag is what the

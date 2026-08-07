@@ -1,9 +1,10 @@
-import { MODULES, findModuleByItemKey } from './module-manifest';
+import { MODULES, findModuleByItemKey, isRoutedUnderModule } from './module-manifest';
 import { ENTITY_CONFIGS, getEntityConfig } from './entity-configs';
+import { ALL_ROLES } from '../models/role.model';
 
 /**
  * The manifest and the entity configs are two hand-maintained lists joined on
- * a string key, driving 240 routes between them. Nothing in the type system
+ * a string key, driving 424 routes between them. Nothing in the type system
  * connects them, so a typo in either file produces a nav entry that routes to
  * a blank page — and, because the scaffold renders "No entity configuration
  * found", it fails quietly rather than crashing.
@@ -73,6 +74,25 @@ describe('module manifest ↔ entity configs', () => {
     );
 
     expect(invalid).toEqual([]);
+  });
+
+  it('routes every manifest item under its module, bar the documented exception', () => {
+    // BI's Dashboard is the only item deliberately not routed under its own
+    // module — it lives at the top-level /dashboard so it is not gated by the
+    // BI role. If a second exception is ever added, this spec should be the
+    // thing that forces a decision about it rather than a page 404ing.
+    const notRouted = allItems
+      .filter(({ mod, item }) => !isRoutedUnderModule(mod.key, item.key))
+      .map(({ mod, item }) => `${mod.key}/${item.key}`);
+
+    expect(notRouted).toEqual(['business-intelligence/dashboard']);
+  });
+
+  it('keeps every module inside the role vocabulary', () => {
+    const declared = new Set(ALL_ROLES);
+    const unknown = MODULES.filter((mod) => mod.role && !declared.has(mod.role)).map((mod) => `${mod.key} -> ${mod.role}`);
+
+    expect(unknown).toEqual([]);
   });
 
   it('finds the owning module for any item key', () => {

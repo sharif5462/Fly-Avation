@@ -42,8 +42,10 @@ function manifestRoutes() {
     const src = join(dir, 'routes.ts');
     writeFileSync(
       src,
-      `import { MODULES } from '${join(ROOT, 'src/app/core/data/module-manifest')}';\n` +
-        `console.log(JSON.stringify(MODULES.flatMap((m) => m.items.map((i) => '/' + m.key + '/' + i.key))));\n`
+      `import { MODULES, isRoutedUnderModule } from '${join(ROOT, 'src/app/core/data/module-manifest')}';\n` +
+        `const routes = MODULES.flatMap((m) =>\n` +
+        `  m.items.filter((i) => isRoutedUnderModule(m.key, i.key)).map((i) => '/' + m.key + '/' + i.key));\n` +
+        `console.log(JSON.stringify(routes));\n`
     );
     const out = join(dir, 'routes.cjs');
     execFileSync(join(ROOT, 'node_modules/.bin/esbuild'), [src, '--bundle', '--platform=node', '--format=cjs', `--outfile=${out}`], {
