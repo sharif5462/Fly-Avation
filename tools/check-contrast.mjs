@@ -24,6 +24,8 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
+import { resolveChromeBin } from './chrome.mjs';
+
 const ROOT = new URL('..', import.meta.url).pathname;
 const SRC = join(ROOT, 'src');
 const URL_ARG = process.argv.indexOf('--url');
@@ -194,7 +196,7 @@ async function renderedCheck() {
   }
 
   const browser = await chromium.launch({
-    executablePath: process.env.CHROME_BIN || undefined,
+    executablePath: await resolveChromeBin(),
     args: ['--no-sandbox']
   });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1200 } });

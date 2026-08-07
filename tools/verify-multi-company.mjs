@@ -7,6 +7,8 @@
  */
 import { chromium } from 'playwright';
 
+import { resolveChromeBin } from './chrome.mjs';
+
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(name);
   return i > -1 ? process.argv[i + 1] : fallback;
@@ -21,7 +23,7 @@ const check = (label, ok, detail = '') => {
 };
 
 const browser = await chromium.launch({
-  executablePath: process.env.CHROME_BIN || undefined,
+  executablePath: await resolveChromeBin(),
   args: ['--no-sandbox']
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });

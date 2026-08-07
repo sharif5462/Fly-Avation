@@ -45,8 +45,10 @@ jobs:
         run: npm run typecheck
 
       - name: Unit tests
-        # ubuntu-latest ships Chrome; the runner executes as a user without
-        # namespace privileges, hence the no-sandbox launcher.
+        # The runner executes as a user without namespace privileges, hence the
+        # no-sandbox launcher. `tools/ng-test.mjs` locates a Chromium and hands
+        # it to Karma through CHROME_BIN — ubuntu-latest ships one at
+        # /usr/bin/google-chrome, so nothing has to be downloaded here.
         run: npm run test:ci
 
       - name: Production build

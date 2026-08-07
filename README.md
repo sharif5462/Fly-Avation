@@ -58,6 +58,21 @@ npm run test:palette   # command palette keyboard/search check (needs a dev serv
 
 These run on every push and pull request — see `.github/workflows/ci.yml`.
 
+The four checks marked *needs a dev server* expect one at
+`http://127.0.0.1:4200`. Use **`npm run serve`** rather than `npm start` to
+start it in a container or over SSH: `start` passes `--open`, which throws
+`spawn xdg-open ENOENT` where there is no desktop.
+
+**Finding a browser.** Every browser-backed check resolves Chromium through
+`tools/chrome.mjs` instead of trusting a default, because neither available
+default is reliable: Karma reads only `CHROME_BIN`, and Playwright's
+`executablePath()` returns a *computed* path for the installed Playwright
+version, which points at nothing when the image was built against a different
+one. The resolver tries `CHROME_BIN`, then Playwright, then the browser cache
+under `PLAYWRIGHT_BROWSERS_PATH`, then the usual system paths, checking that
+each candidate exists — and throws naming all four if none does. Set
+`CHROME_BIN` to override. Never run `playwright install`.
+
 **`test:contrast`** has two halves. The static half greps the stylesheets for
 the raw `--p-surface-N` scale used as a colour and needs nothing else, so it
 runs in CI. The rendered half drives Chromium over a sample of routes in both
@@ -286,7 +301,7 @@ a 1.00:1 ratio and made the dashboard KPI numbers invisible. `npm run
 test:contrast` fails the build if the raw scale reappears. Reasoning in
 `docs/adr/0004-semantic-colour-tokens.md`.
 
-## Getting around 431 screens
+## Getting around 404 screens
 
 The sidebar lists 432 entries across 43 collapsible groups. That is fine for
 browsing and hopeless for arriving, so **Ctrl/Cmd+K** opens a command palette
