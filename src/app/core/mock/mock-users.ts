@@ -1,4 +1,5 @@
 import { User } from '../models/user.model';
+import { DEFAULT_COMPANY_ID, MOCK_COMPANIES } from './mock-companies';
 
 /**
  * DEMO CREDENTIALS ONLY. The mock interceptor compares plaintext passwords
@@ -16,6 +17,8 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
     password: 'super123',
     user: {
       id: 'usr-001',
+      companies: MOCK_COMPANIES,
+      defaultCompanyId: DEFAULT_COMPANY_ID,
       username: 'superadmin',
       fullName: 'Alex Morgan',
       email: 'alex.morgan@aviation-erp.test',
@@ -29,6 +32,8 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
     password: 'admin123',
     user: {
       id: 'usr-002',
+      companies: MOCK_COMPANIES,
+      defaultCompanyId: DEFAULT_COMPANY_ID,
       username: 'admin',
       fullName: 'Jordan Blake',
       email: 'jordan.blake@aviation-erp.test',
@@ -42,6 +47,8 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
     password: 'ops123',
     user: {
       id: 'usr-003',
+      companies: MOCK_COMPANIES.filter((c) => ['cmp-001'].includes(c.id)),
+      defaultCompanyId: DEFAULT_COMPANY_ID,
       username: 'ops.manager',
       fullName: 'Sam Whitfield',
       email: 'sam.whitfield@aviation-erp.test',
@@ -55,6 +62,8 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
     password: 'maint123',
     user: {
       id: 'usr-004',
+      companies: MOCK_COMPANIES.filter((c) => ['cmp-001', 'cmp-003'].includes(c.id)),
+      defaultCompanyId: DEFAULT_COMPANY_ID,
       username: 'maint.lead',
       fullName: 'Priya Nandy',
       email: 'priya.nandy@aviation-erp.test',
@@ -68,6 +77,8 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
     password: 'crew123',
     user: {
       id: 'usr-005',
+      companies: MOCK_COMPANIES.filter((c) => ['cmp-001'].includes(c.id)),
+      defaultCompanyId: DEFAULT_COMPANY_ID,
       username: 'crew.sched',
       fullName: 'Morgan Reyes',
       email: 'morgan.reyes@aviation-erp.test',
@@ -81,6 +92,8 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
     password: 'inv123',
     user: {
       id: 'usr-006',
+      companies: MOCK_COMPANIES.filter((c) => ['cmp-001', 'cmp-002', 'cmp-003'].includes(c.id)),
+      defaultCompanyId: DEFAULT_COMPANY_ID,
       username: 'inventory.mgr',
       fullName: 'Diego Salas',
       email: 'diego.salas@aviation-erp.test',
@@ -94,6 +107,8 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
     password: 'fin123',
     user: {
       id: 'usr-007',
+      companies: MOCK_COMPANIES,
+      defaultCompanyId: DEFAULT_COMPANY_ID,
       username: 'finance.mgr',
       fullName: 'Elena Cross',
       email: 'elena.cross@aviation-erp.test',
@@ -107,6 +122,8 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
     password: 'hr123',
     user: {
       id: 'usr-008',
+      companies: MOCK_COMPANIES.filter((c) => ['cmp-001', 'cmp-002'].includes(c.id)),
+      defaultCompanyId: DEFAULT_COMPANY_ID,
       username: 'hr.mgr',
       fullName: 'Nadia Hussain',
       email: 'nadia.hussain@aviation-erp.test',
@@ -120,6 +137,8 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
     password: 'sec123',
     user: {
       id: 'usr-009',
+      companies: MOCK_COMPANIES.filter((c) => ['cmp-001', 'cmp-002'].includes(c.id)),
+      defaultCompanyId: DEFAULT_COMPANY_ID,
       username: 'security.officer',
       fullName: 'Marcus Lee',
       email: 'marcus.lee@aviation-erp.test',

@@ -3,6 +3,7 @@ import { Observable, delay, of, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ENTITY_CONFIGS } from '../data/entity-configs';
+import { COMPANY_HEADER } from '../models/company.model';
 import { ALL_ROLES } from '../models/role.model';
 import { generateSeedRows } from './fake-data';
 import {
@@ -18,6 +19,7 @@ import {
   seedSpareParts,
   seedWorkOrders
 } from './flagship-seeds';
+import { DEFAULT_COMPANY_ID, MOCK_COMPANIES } from './mock-companies';
 import { loadCollection, saveCollection } from './mock-db';
 import { createMockJwt } from './mock-jwt';
 import { MOCK_CREDENTIALS, findCredential } from './mock-users';
@@ -37,9 +39,51 @@ const FLAGSHIP_SEEDS: Record<string, () => Row[]> = {
   'item-master': seedItemMaster as () => Row[],
   'asset-master': seedAssetMaster as () => Row[],
   'hazard-reporting': seedHazardReports as () => Row[],
+  companies: () => MOCK_COMPANIES.map((c) => ({ ...c }) as unknown as Row),
   users: () => MOCK_CREDENTIALS.map((c) => ({ ...c.user }) as unknown as Row),
   'role-permissions': () => ALL_ROLES.map((role) => ({ id: role, role, extraModules: [] as string[] }) as unknown as Row)
 };
+
+/**
+ * Resources that are NOT partitioned by company.
+ *
+ * `companies` is the list of partitions itself, and `users`/`role-permissions`
+ * are group-wide identity records — a person exists once and may work in
+ * several companies. Everything else belongs to exactly one company, which is
+ * the same split the Oracle schema needs: these tables get no `company_id`.
+ */
+const COMPANY_AGNOSTIC_RESOURCES = new Set(['companies', 'users', 'role-permissions']);
+
+function isCompanyScoped(resource: string): boolean {
+  return !COMPANY_AGNOSTIC_RESOURCES.has(resource);
+}
+
+/**
+ * The company a request is for. Mirrors what the real API must do — except
+ * the real one has to *validate* this against the token's user rather than
+ * trusting it, or any client can read another company's data by changing one
+ * header.
+ */
+function requestedCompanyId(req: HttpRequest<unknown>): string {
+  return req.headers.get(COMPANY_HEADER) ?? DEFAULT_COMPANY_ID;
+}
+
+/**
+ * Spreads seeded rows across the demo companies so switching company visibly
+ * changes the data, instead of every company showing an identical list.
+ */
+function stampCompanies(resource: string, rows: Row[]): Row[] {
+  if (!isCompanyScoped(resource)) return rows;
+  return rows.map((row, i) => ({
+    ...row,
+    companyId: (row['companyId'] as string) ?? MOCK_COMPANIES[i % MOCK_COMPANIES.length].id
+  }));
+}
+
+function scopedRows(resource: string, rows: Row[], companyId: string): Row[] {
+  if (!isCompanyScoped(resource)) return rows;
+  return rows.filter((row) => row['companyId'] === companyId);
+}
 
 function seedResource(resource: string): Row[] {
   if (FLAGSHIP_SEEDS[resource]) return FLAGSHIP_SEEDS[resource]();
@@ -49,7 +93,7 @@ function seedResource(resource: string): Row[] {
 }
 
 function getCollection(resource: string): Row[] {
-  return loadCollection<Row>(resource, () => seedResource(resource));
+  return loadCollection<Row>(resource, () => stampCompanies(resource, seedResource(resource)));
 }
 
 function jsonResponse(req: HttpRequest<unknown>, body: unknown, status = 200): Observable<HttpEvent<unknown>> {
@@ -124,14 +168,20 @@ function handleForgotPassword(req: HttpRequest<unknown>): Observable<HttpEvent<u
 
 function handleResourceRequest(req: HttpRequest<unknown>, resource: string, id?: string): Observable<HttpEvent<unknown>> {
   const rows = getCollection(resource);
+  const companyId = requestedCompanyId(req);
+  // What this request is allowed to see. Every read and every write below
+  // works from this, never from `rows`, so a row belonging to another company
+  // is invisible rather than merely un-listed — a 404 on a direct id lookup,
+  // exactly as the real API must behave.
+  const visible = scopedRows(resource, rows, companyId);
 
   switch (req.method) {
     case 'GET': {
       if (id) {
-        const row = rows.find((r) => r['id'] === id);
+        const row = visible.find((r) => r['id'] === id);
         return row ? jsonResponse(req, row) : errorResponse(req, 404, `${resource} '${id}' not found.`);
       }
-      return jsonResponse(req, buildListResult(rows, req.params));
+      return jsonResponse(req, buildListResult(visible, req.params));
     }
     case 'POST': {
       const body = (req.body ?? {}) as Record<string, unknown>;
@@ -143,7 +193,10 @@ function handleResourceRequest(req: HttpRequest<unknown>, resource: string, id?:
       const newRow: Row = {
         ...body,
         id: `${resource}-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        // Ownership comes from the request context, never from the payload —
+        // otherwise a client could create records inside another company.
+        ...(isCompanyScoped(resource) ? { companyId } : {})
       };
       saveCollection(resource, [newRow, ...rows]);
       return jsonResponse(req, newRow, 201);
@@ -151,10 +204,22 @@ function handleResourceRequest(req: HttpRequest<unknown>, resource: string, id?:
     case 'PUT':
     case 'PATCH': {
       if (!id) return errorResponse(req, 400, 'Missing id for update.');
+      // Visibility is checked before the write index is taken, so a record
+      // belonging to another company 404s rather than being silently updated
+      // across the partition.
+      if (!visible.some((r) => r['id'] === id)) {
+        return errorResponse(req, 404, `${resource} '${id}' not found.`);
+      }
       const idx = rows.findIndex((r) => r['id'] === id);
-      if (idx === -1) return errorResponse(req, 404, `${resource} '${id}' not found.`);
       const body = (req.body ?? {}) as Record<string, unknown>;
-      const updated: Row = { ...rows[idx], ...body, id };
+      const updated: Row = {
+        ...rows[idx],
+        ...body,
+        id,
+        // Ownership is not editable. Without this, a PUT carrying a different
+        // companyId would move the record into another company's books.
+        ...(isCompanyScoped(resource) ? { companyId: rows[idx]['companyId'] } : {})
+      };
       const next = [...rows];
       next[idx] = updated;
       saveCollection(resource, next);
@@ -162,7 +227,7 @@ function handleResourceRequest(req: HttpRequest<unknown>, resource: string, id?:
     }
     case 'DELETE': {
       if (!id) return errorResponse(req, 400, 'Missing id for delete.');
-      if (!rows.some((r) => r['id'] === id)) {
+      if (!visible.some((r) => r['id'] === id)) {
         return errorResponse(req, 404, `${resource} '${id}' not found.`);
       }
       saveCollection(resource, rows.filter((r) => r['id'] !== id));

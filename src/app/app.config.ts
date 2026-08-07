@@ -8,6 +8,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { routes } from './app.routes';
 import { AviationPreset } from './core/theme/aviation-preset';
 import { authInterceptor } from './core/auth/auth.interceptor';
+import { companyInterceptor } from './core/auth/company.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { mockApiInterceptor } from './core/mock';
 
@@ -25,11 +26,13 @@ export const appConfig: ApplicationConfig = {
     // actually working reliably.
     provideAnimations(),
     // Order matters: errorInterceptor is outermost so it sees failures from
-    // everything below it; mockApiInterceptor short-circuits requests when
-    // environment.useMockApi is true (no .NET/Oracle backend yet) and is
-    // replaced by a pass-through in production builds; authInterceptor
-    // attaches the bearer token to whatever actually goes out.
-    provideHttpClient(withInterceptors([errorInterceptor, authInterceptor, mockApiInterceptor])),
+    // everything below it; authInterceptor attaches the bearer token and
+    // companyInterceptor the active company, both of which must be set before
+    // mockApiInterceptor answers, since the mock scopes its data by company
+    // exactly as the real API will.
+    provideHttpClient(
+      withInterceptors([errorInterceptor, authInterceptor, companyInterceptor, mockApiInterceptor])
+    ),
     providePrimeNG({
       theme: {
         preset: AviationPreset,

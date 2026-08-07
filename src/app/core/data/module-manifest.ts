@@ -803,6 +803,26 @@ export const MODULES: ModuleDef[] = [
     ]
   },
   {
+    key: 'organization',
+    label: 'Organization',
+    icon: 'pi-building-columns',
+    // Admin/SuperAdmin bypass every role check, so naming Admin here means
+    // exactly them — which is right for the records that define the group's
+    // legal entities and their accounting periods.
+    role: 'Admin',
+    items: [
+      { key: 'companies', label: 'Company Setup', icon: 'pi-building' },
+      { key: 'company-branches', label: 'Branches & Divisions', icon: 'pi-sitemap' },
+      { key: 'fiscal-year', label: 'Fiscal Year', icon: 'pi-calendar' },
+      { key: 'company-tax-registration', label: 'Tax Registrations', icon: 'pi-file' },
+      { key: 'company-bank-accounts', label: 'Company Bank Accounts', icon: 'pi-credit-card' },
+      { key: 'inter-company-transactions', label: 'Inter-Company Transactions', icon: 'pi-arrow-right-arrow-left' },
+      // Reuses Security Management's User Roles — a person exists once across
+      // the group and is granted access per company.
+      { key: 'user-roles', label: 'Group Users', icon: 'pi-users', flagship: true }
+    ]
+  },
+  {
     key: 'notification-system',
     label: 'Notification System',
     icon: 'pi-bell',

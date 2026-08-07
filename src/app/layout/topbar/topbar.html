@@ -8,6 +8,26 @@
     (click)="menuToggle.emit()"
   ></button>
 
+  <!-- Which legal entity's books the user is looking at. Hidden entirely when
+       they belong to one company — a switcher with a single option is noise. -->
+  @if (showCompanySwitcher()) {
+    <button
+      class="topbar__company"
+      type="button"
+      [attr.aria-label]="'Active company: ' + (activeCompany()?.name ?? 'none') + '. Switch company.'"
+      aria-haspopup="menu"
+      (click)="companyMenu.toggle($event)"
+    >
+      <span class="pi pi-building" aria-hidden="true"></span>
+      <span class="topbar__company-text">
+        <strong>{{ activeCompany()?.code }}</strong>
+        <small>{{ activeCompany()?.name }}</small>
+      </span>
+      <span class="pi pi-angle-down" aria-hidden="true"></span>
+    </button>
+    <p-menu #companyMenu [model]="companyMenuItems()" [popup]="true" />
+  }
+
   <div class="topbar__spacer"></div>
 
   <button

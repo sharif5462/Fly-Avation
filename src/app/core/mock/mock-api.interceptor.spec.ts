@@ -3,6 +3,8 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 
 import { mockApiInterceptor } from './mock-api.interceptor';
 import { resetMockDatabase } from './mock-db';
+import { COMPANY_HEADER } from '../models/company.model';
+import { MOCK_COMPANIES } from './mock-companies';
 import { environment } from '../../../environments/environment';
 import { ListResult } from '../services/api.service';
 
@@ -187,6 +189,119 @@ describe('mockApiInterceptor', () => {
       settle();
 
       expect(statuses).toEqual([404, 404, 404]);
+    }));
+  });
+
+  describe('company scoping', () => {
+    const [companyA, companyB] = MOCK_COMPANIES;
+    const headersFor = (companyId: string) => ({ [COMPANY_HEADER]: companyId });
+
+    /** Creates a row owned by `companyId` and returns it. */
+    function createIn(companyId: string, body: Record<string, unknown>): Row {
+      let created!: Row;
+      http.post<Row>(RESOURCE_URL, body, { headers: headersFor(companyId) }).subscribe((r) => (created = r));
+      settle();
+      return created;
+    }
+
+    it('stamps a created row with the requesting company, not the payload', fakeAsync(() => {
+      // Ownership must come from the request context. Honouring a companyId in
+      // the body would let a client plant records inside another company.
+      const row = createIn(companyA.id, { routeName: 'Owned by A', companyId: companyB.id });
+
+      expect(row['companyId']).toBe(companyA.id);
+    }));
+
+    it('lists only the requesting company’s rows', fakeAsync(() => {
+      createIn(companyA.id, { routeName: 'BELONGS-TO-A' });
+      createIn(companyB.id, { routeName: 'BELONGS-TO-B' });
+
+      let result: ListResult<Row> | undefined;
+      http
+        .get<ListResult<Row>>(RESOURCE_URL, { headers: headersFor(companyA.id), params: { search: 'belongs-to' } })
+        .subscribe((r) => (result = r));
+      settle();
+
+      expect(result?.data.map((r) => r['routeName'])).toEqual(['BELONGS-TO-A']);
+    }));
+
+    it('404s a direct read of another company’s row', fakeAsync(() => {
+      const row = createIn(companyB.id, { routeName: 'Private to B' });
+
+      let status: number | undefined;
+      http
+        .get(`${RESOURCE_URL}/${row.id}`, { headers: headersFor(companyA.id) })
+        .subscribe({ error: (e) => (status = e.status) });
+      settle();
+
+      // Not merely hidden from the list — invisible, so an id guessed or
+      // leaked from elsewhere still yields nothing.
+      expect(status).toBe(404);
+    }));
+
+    it('404s an update of another company’s row', fakeAsync(() => {
+      const row = createIn(companyB.id, { routeName: 'Private to B' });
+
+      let status: number | undefined;
+      http
+        .put(`${RESOURCE_URL}/${row.id}`, { routeName: 'hijacked' }, { headers: headersFor(companyA.id) })
+        .subscribe({ error: (e) => (status = e.status) });
+      settle();
+
+      expect(status).toBe(404);
+    }));
+
+    it('404s a delete of another company’s row', fakeAsync(() => {
+      const row = createIn(companyB.id, { routeName: 'Private to B' });
+
+      let status: number | undefined;
+      http
+        .delete(`${RESOURCE_URL}/${row.id}`, { headers: headersFor(companyA.id) })
+        .subscribe({ error: (e) => (status = e.status) });
+      settle();
+
+      expect(status).toBe(404);
+
+      // And the row survives.
+      let stillThere: Row | undefined;
+      http.get<Row>(`${RESOURCE_URL}/${row.id}`, { headers: headersFor(companyB.id) }).subscribe((r) => (stillThere = r));
+      settle();
+      expect(stillThere?.id).toBe(row.id);
+    }));
+
+    it('refuses to move a row between companies on update', fakeAsync(() => {
+      const row = createIn(companyA.id, { routeName: 'Stays with A' });
+
+      let updated: Row | undefined;
+      http
+        .put<Row>(`${RESOURCE_URL}/${row.id}`, { companyId: companyB.id }, { headers: headersFor(companyA.id) })
+        .subscribe((r) => (updated = r));
+      settle();
+
+      expect(updated?.['companyId']).toBe(companyA.id);
+    }));
+
+    it('keeps group-wide resources visible from every company', fakeAsync(() => {
+      // Users and the company list itself are not partitioned — a person
+      // exists once across the group.
+      for (const company of [companyA, companyB]) {
+        let result: ListResult<Row> | undefined;
+        http
+          .get<ListResult<Row>>(`${environment.apiUrl}/companies`, { headers: headersFor(company.id) })
+          .subscribe((r) => (result = r));
+        settle();
+        expect(result?.total).toBe(MOCK_COMPANIES.length);
+      }
+    }));
+
+    it('returns the user’s companies at login', fakeAsync(() => {
+      let body: { user: { companies: unknown[] } } | undefined;
+      http
+        .post<typeof body>(`${environment.apiUrl}/auth/login`, { username: 'superadmin', password: 'super123' })
+        .subscribe((res) => (body = res));
+      settle();
+
+      expect(body?.user.companies.length).toBe(MOCK_COMPANIES.length);
     }));
   });
 

@@ -103,3 +103,50 @@
     display: none;
   }
 }
+
+.topbar__company {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--p-text-color);
+  cursor: pointer;
+  font: inherit;
+  max-width: 16rem;
+
+  &:hover {
+    background: var(--p-content-hover-background);
+  }
+}
+
+.topbar__company-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  text-align: left;
+  min-width: 0;
+
+  strong {
+    font-size: 0.8125rem;
+  }
+
+  small {
+    font-size: 0.6875rem;
+    color: var(--p-text-muted-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// The company name is the first thing to go on a narrow screen; the code
+// alone still tells the user which books they are in.
+@media (max-width: 767px) {
+  .topbar__company-text small {
+    display: none;
+  }
+}

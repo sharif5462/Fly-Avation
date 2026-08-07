@@ -12,7 +12,8 @@
     "lint": "ng lint",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test:contrast": "node tools/check-contrast.mjs",
-    "test:routes": "node tools/smoke-routes.mjs"
+    "test:routes": "node tools/smoke-routes.mjs",
+    "test:company": "node tools/verify-multi-company.mjs"
   },
   "prettier": {
     "printWidth": 100,

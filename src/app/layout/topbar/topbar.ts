@@ -1,5 +1,5 @@
-import { Component, inject, output, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, inject, output, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { AvatarModule } from 'primeng/avatar';
 import { BadgeModule } from 'primeng/badge';
 import { ButtonModule } from 'primeng/button';
@@ -8,6 +8,7 @@ import { MenuModule } from 'primeng/menu';
 import { TooltipModule } from 'primeng/tooltip';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { CompanyContextService } from '../../core/auth/company-context.service';
 import { MOCK_BACKEND_AVAILABLE, resetMockDatabase } from '../../core/mock';
 import { ROLE_LABELS } from '../../core/models/role.model';
 
@@ -21,11 +22,37 @@ const DARK_MODE_KEY = 'aviation_erp_dark_mode';
 })
 export class Topbar {
   private readonly auth = inject(AuthService);
+  private readonly company = inject(CompanyContextService);
   private readonly confirmation = inject(ConfirmationService);
+  private readonly router = inject(Router);
 
   readonly menuToggle = output<void>();
 
   user = this.auth.user;
+
+  activeCompany = this.company.activeCompany;
+  showCompanySwitcher = this.company.hasMultipleCompanies;
+
+  companyMenuItems = computed<MenuItem[]>(() =>
+    this.company.companies().map((c) => ({
+      label: `${c.code} — ${c.name}`,
+      icon: c.id === this.company.activeCompanyId() ? 'pi pi-check' : 'pi pi-building',
+      disabled: c.id === this.company.activeCompanyId(),
+      command: () => this.switchCompany(c.id)
+    }))
+  );
+
+  /**
+   * Every page on screen is showing the previous company's records, so the
+   * switch is followed by a full reload of the current route rather than
+   * leaving stale rows visible until the user happens to navigate.
+   */
+  private switchCompany(companyId: string): void {
+    if (!this.company.setActiveCompany(companyId)) return;
+
+    const url = this.router.url;
+    this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => this.router.navigateByUrl(url));
+  }
   darkMode = signal(typeof localStorage !== 'undefined' && localStorage.getItem(DARK_MODE_KEY) === 'true');
 
   // "Reset Demo Data" only exists where there is a mock database to reset;

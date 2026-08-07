@@ -1,6 +1,6 @@
 # Aviation ERP — Angular Frontend
 
-Angular 20 frontend for a full aviation ERP: 42 modules, 398 screens, JWT
+Angular 20 frontend for a full aviation ERP: 43 modules, 404 screens, JWT
 authentication with role-based authorization, running today on mock data and
 built to drop onto a .NET Web API + Oracle backend with no component changes.
 
@@ -51,7 +51,8 @@ npm run typecheck      # tsc --noEmit
 npm test               # Karma/Jasmine, watch mode
 npm run test:ci        # headless, single run, with coverage
 npm run test:contrast  # WCAG contrast audit (see below)
-npm run test:routes    # visits all 424 routes in a browser (needs a dev server)
+npm run test:routes    # visits every route in a browser (needs a dev server)
+npm run test:company   # multi-company switch/scope/persist check (needs a dev server)
 ```
 
 These run on every push and pull request — see `.github/workflows/ci.yml`.
@@ -67,11 +68,11 @@ server (`npm start`) and skips itself when one is not reachable.
 ```
 src/app/
   core/               # framework-agnostic app plumbing, no UI
-    auth/              AuthService, ModuleAccessService, authGuard, roleGuard,
-                       authInterceptor
+    auth/              AuthService, ModuleAccessService, CompanyContextService,
+                       authGuard, roleGuard, authInterceptor, companyInterceptor
     interceptors/      errorInterceptor (401/403/5xx handling)
     services/          ApiService — the one place that knows request URLs
-    models/            Role, User, EntityConfig, ModuleDef — shared types
+    models/            Role, User, Company, EntityConfig, ModuleDef — shared types
     data/              module-manifest.ts, entity-configs/ (see below)
     mock/              mock API interceptor + seed data (dev/demo only)
     utils/             date.util.ts (date-only vs. instant),
@@ -103,7 +104,7 @@ src/app/
     security-management/        user-roles, access-control
 ```
 
-### The 42 modules
+### The 43 modules
 
 **Flight & network** — Flight Operations · Flight Planning & Dispatch ·
 Disruption Management (IROPS) · Load Control & Weight/Balance
@@ -130,13 +131,13 @@ Procurement · Fuel Management · Facilities & Assets
 Management System (SMS) · Quality Assurance · Aviation Security (AVSEC) ·
 Sustainability & Emissions
 
-**Platform** — Workflow & Approvals · Document Management · Business
-Intelligence · IT & Application Security · Self-Service Portals ·
-Integration Hub · Notification System
+**Platform** — Organization (multi-company setup) · Workflow & Approvals ·
+Document Management · Business Intelligence · IT & Application Security ·
+Self-Service Portals · Integration Hub · Notification System
 
 ### Flagship pages vs. the generic scaffold
 
-Hand-building 398 unique screens up front isn't a good use of time before
+Hand-building 404 unique screens up front isn't a good use of time before
 there's a real backend to wire them to. Instead:
 
 - **21 flagship pages** are fully hand-built: typed models, bespoke table
@@ -148,12 +149,12 @@ there's a real backend to wire them to. Instead:
   Registration, Work Orders, Component Tracking, Pilot Management, Spare
   Parts Inventory, Item Master, Purchase Orders, Bag Tracking (Res. 753),
   Asset Master, Hazard Reporting, User Roles and Access Control.
-- **The other 377 screens** are all real, working CRUD screens too — search,
+- **The other 383 screens** are all real, working CRUD screens too — search,
   sortable table, add/edit dialog with validation, delete confirmation —
   just rendered by one shared component, `FeatureListPage`, configured
   per-entity instead of hand-coded per-entity.
 
-**How the scaffold works:** `core/data/module-manifest.ts` defines all 42
+**How the scaffold works:** `core/data/module-manifest.ts` defines all 43
 modules and their sub-items (label, icon, route key, which ones are
 flagship). `core/data/entity-configs/` defines the table columns + form
 fields for every non-flagship item, keyed by the same route key — split into
@@ -161,10 +162,10 @@ fields for every non-flagship item, keyed by the same route key — split into
 (everything added since), merged by `index.ts`. In
 `app.routes.ts`, every non-flagship item routes to the same lazy-loaded
 `FeatureListPage` chunk with `data: { entityKey }` — so there's exactly one
-extra chunk for all 377 pages, not 377 chunks.
+extra chunk for all 383 pages, not 383 chunks.
 
-**Screens vs. nav entries:** the sidebar has 425 entries across the 42
-modules, but only 398 distinct screens. Some sub-items are deliberately
+**Screens vs. nav entries:** the sidebar has 432 entries across the 43
+modules, but only 404 distinct screens. Some sub-items are deliberately
 reused across modules because they're the same real-world record viewed
 from a different desk — Incident Reporting appears under Compliance &
 Safety, SMS, Facilities and Landside; Vendor Management under Procurement,
@@ -173,7 +174,7 @@ Gate Management and Aircraft Parking under both Airport Operations and
 Resource & Gate Management; Training Records under Crew Management and Crew
 Training; AD Compliance under Aircraft Maintenance and CAMO. A reused key
 means one route, one entity config and one dataset, not a copy — 22 of the
-425 nav entries are reuses of this kind.
+432 nav entries are reuses of this kind.
 
 One manifest item is deliberately **not** routed under its own module: BI's
 Dashboard is every user's landing page at `/dashboard`, so it cannot sit
@@ -283,6 +284,39 @@ a 1.00:1 ratio and made the dashboard KPI numbers invisible. `npm run
 test:contrast` fails the build if the raw scale reappears. Reasoning in
 `docs/adr/0004-semantic-colour-tokens.md`.
 
+## Multi-company
+
+The app serves several legal entities from one deployment — an airline, its
+ground handling arm, its maintenance organisation — keeping their records
+apart. Almost every table is partitioned by company.
+
+- **`CompanyContextService`** holds the active company, resolved as last-used
+  → the user's default → first available, each re-checked against the
+  companies the login response returned. A company the user has lost access to
+  is discarded, not restored.
+- **`companyInterceptor`** sends it as `X-Company-Id` on every API request
+  except `/auth/*`. A header rather than a URL segment, so none of the ~400
+  resource paths change.
+- **Switching reloads the current route** and resets per-company caches —
+  access can legitimately differ between entities, and every row on screen
+  belongs to the company being left.
+- The switcher hides itself for users who belong to one company.
+
+**Not partitioned:** `companies` (the list of partitions itself), `users` and
+`role-permissions` — a person exists once across the group and is granted
+access per company.
+
+> **The header is client-controlled.** The API must validate it against the
+> companies the *token's* user belongs to and reject anything else with 403 —
+> never fall back to a default. An API that trusts the header lets anyone read
+> another company's data by editing one value. The mock backend models the
+> correct behaviour: another company's row 404s on read, update and delete;
+> `POST` takes ownership from the request context, not the payload; and `PUT`
+> cannot move a record between companies.
+
+Full reasoning and the schema consequences in
+`docs/adr/0005-multi-company.md`.
+
 ## Dates
 
 Two shapes travel over the wire and they are **not** interchangeable:
@@ -323,7 +357,7 @@ drop-in stand-in, not a parallel code path components need to know about.
   11 flagship resources that own a dataset. (The eight dashboards don't —
   they read the other resources; User Roles and Access Control are backed
   by the `users` and `role-permissions` resources in the same file's map.)
-- `core/mock/fake-data.ts` — generates plausible seed rows for the 377
+- `core/mock/fake-data.ts` — generates plausible seed rows for the 383
   generic scaffold resources from their `entity-configs.ts` field
   definitions (heuristic — a field named/labeled with "cost" gets a
   dollar-ish number, "airport"/"origin" gets an IATA-style code, etc.). Not
@@ -376,6 +410,24 @@ it once per session to decide which modules to route to and render in the nav.
 **The API must apply the same table server-side** — the frontend check is UX,
 not enforcement.
 
+### Company scoping
+
+Every request except `/auth/*` carries `X-Company-Id`. The API must:
+
+1. read the company from the header;
+2. **validate it against the companies the token's user belongs to** — 403 if
+   not, never a silent fallback;
+3. filter every query by it;
+4. take ownership on `POST` from the request context, ignoring any `companyId`
+   in the payload;
+5. reject a `PUT` that would move a record to another company.
+
+Reads of another company's row must 404, not 403 — a 403 confirms the row
+exists, which is itself a leak.
+
+`companies`, `users` and `role-permissions` are group-wide and are not
+filtered by company.
+
 ### List query parameters
 
 `ApiService.list(resource, query?)` sends `search`, `sortField`, `sortOrder`,
@@ -389,7 +441,7 @@ calling `.slice()` — the landing dashboard's "recent purchase orders" panel
 asks for five rows sorted by date. Against the seeded mock the difference is
 invisible; against Oracle it is one page versus a full table scan.
 
-**Still outstanding on the frontend:** the 377 scaffold CRUD screens page,
+**Still outstanding on the frontend:** the 383 scaffold CRUD screens page,
 sort and filter *client-side* over a full unfiltered fetch. That is fine at
 the current seed sizes and will not survive real data. The fix is one
 component (`shared/scaffold/feature-list-page`) switching `p-table` to lazy
@@ -432,3 +484,4 @@ form (Access Control's per-row inline multiselects) · ESLint with
 - [ADR 0002 — The demo backend is removed at build time, not switched off at runtime](docs/adr/0002-demo-build-separate-from-production.md)
 - [ADR 0003 — Authorization resolves a module key, not a role list](docs/adr/0003-module-access-service.md)
 - [ADR 0004 — Styling uses semantic theme tokens, never the raw surface scale](docs/adr/0004-semantic-colour-tokens.md)
+- [ADR 0005 — Multi-company: one deployment, several legal entities](docs/adr/0005-multi-company.md)

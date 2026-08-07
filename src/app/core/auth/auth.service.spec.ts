@@ -18,7 +18,8 @@ const testUser: User = {
   jobTitle: 'Tester',
   roles: ['Finance'],
   avatarColor: '#000000',
-  initials: 'TU'
+  initials: 'TU',
+  companies: [{ id: 'cmp-1', code: 'AVE', name: 'Airline', baseCurrency: 'USD', country: 'BD', isDefault: true }]
 };
 
 function loginResponse(overrides: Partial<LoginResponse> = {}): LoginResponse {

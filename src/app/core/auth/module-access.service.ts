@@ -5,6 +5,7 @@ import { MODULES } from '../data/module-manifest';
 import { Role } from '../models/role.model';
 import { ApiService } from '../services/api.service';
 import { AuthService } from './auth.service';
+import { CompanyContextService } from './company-context.service';
 
 /** One row per role on the `role-permissions` resource. */
 export interface RolePermission {
@@ -39,21 +40,26 @@ export const ROLE_PERMISSIONS_RESOURCE = 'role-permissions';
 export class ModuleAccessService {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
+  private readonly company = inject(CompanyContextService);
 
   private readonly _grants = signal<Map<Role, string[]>>(new Map());
   private request$: Observable<Map<Role, string[]>> | null = null;
 
   constructor() {
-    // Grants are per-user, and there are several ways to end a session: the
-    // user menu, a 401 from errorInterceptor, an expired token discarded on
-    // startup. Watching the identity covers all of them, so the next person
-    // to sign in on this browser can't inherit the previous user's grants
-    // for the moment before the fetch completes.
-    let currentUserId: string | null = null;
+    // Grants are per-user *and* per-company: the same person can hold
+    // different access in the airline than in the ground handling entity.
+    //
+    // There are several ways either can change — the user menu, a 401 from
+    // errorInterceptor, an expired token discarded on startup, the company
+    // switcher. Watching both identities covers all of them, so neither the
+    // next person to sign in on this browser nor the next company switched
+    // into inherits the previous grants for the moment before the fetch
+    // completes.
+    let current: string | null = null;
     effect(() => {
-      const userId = this.auth.user()?.id ?? null;
-      if (userId === currentUserId) return;
-      currentUserId = userId;
+      const key = `${this.auth.user()?.id ?? ''}:${this.company.activeCompanyId() ?? ''}`;
+      if (key === current) return;
+      current = key;
       this.reset();
     });
   }

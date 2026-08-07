@@ -1392,5 +1392,55 @@ export const EXTENDED_MODULE_ENTITIES: EntityConfig[] = [
     num('durationMinutes', 'Duration', { suffix: 'min' }),
     num('rowsProcessed', 'Rows Processed'),
     statusField([['Succeeded', 'success'], ['Running', 'info'], ['Failed', 'danger'], ['Disabled', 'secondary']])
+  ]),
+  // ═══════════════════ Organization (multi-company master data) ═══════════════════
+  entity('companies', 'Company', 'Company Setup', 'pi-building', 'The legal entities this ERP keeps separate. Every other record belongs to exactly one of them.', [
+    f('code', 'Code'),
+    f('name', 'Company Name'),
+    optional('airlineDesignator', 'Airline Designator'),
+    f('baseCurrency', 'Base Currency'),
+    f('country', 'Country'),
+    optional('registrationNo', 'Registration No.'),
+    statusField([['Active', 'success'], ['Dormant', 'warn'], ['Closed', 'secondary']])
+  ], 3),
+  entity('company-branches', 'Branch', 'Branches & Divisions', 'pi-sitemap', 'Branches, stations and divisions within a company.', [
+    f('branchCode', 'Branch Code'),
+    f('branchName', 'Branch Name'),
+    choice('branchType', 'Branch Type', ['Head Office', 'Station', 'Division', 'Warehouse', 'Hangar']),
+    f('location', 'Location'),
+    optional('manager', 'Manager'),
+    statusField([['Active', 'success'], ['Closed', 'secondary']])
+  ]),
+  entity('fiscal-year', 'Fiscal Year', 'Fiscal Year', 'pi-calendar', 'Accounting periods per company, and whether each is open for posting.', [
+    f('fiscalYearCode', 'Fiscal Year'),
+    date('startDate', 'Start Date'),
+    date('endDate', 'End Date'),
+    num('periodCount', 'Periods'),
+    statusField([['Open', 'success'], ['Current', 'info'], ['Closed', 'secondary'], ['Locked', 'danger']])
+  ]),
+  entity('company-tax-registration', 'Tax Registration', 'Tax Registrations', 'pi-file', 'Tax and regulatory registrations held by each company.', [
+    f('registrationNo', 'Registration No.'),
+    choice('registrationType', 'Type', ['VAT', 'Corporate Tax', 'Withholding', 'Customs', 'Aviation Authority']),
+    f('authority', 'Authority'),
+    f('country', 'Country'),
+    date('validUntil', 'Valid Until'),
+    statusField([['Valid', 'success'], ['Expiring', 'warn'], ['Expired', 'danger']])
+  ]),
+  entity('company-bank-accounts', 'Bank Account', 'Company Bank Accounts', 'pi-credit-card', 'Bank accounts held per company and currency.', [
+    f('accountNo', 'Account No.'),
+    f('bankName', 'Bank'),
+    f('currency', 'Currency'),
+    optional('iban', 'IBAN'),
+    optional('swiftCode', 'SWIFT'),
+    statusField([['Active', 'success'], ['Dormant', 'warn'], ['Closed', 'secondary']])
+  ]),
+  entity('inter-company-transactions', 'Inter-Company Transaction', 'Inter-Company Transactions', 'pi-arrow-right-arrow-left', 'Charges between group companies, which must net to zero on consolidation.', [
+    f('transactionNo', 'Transaction No.'),
+    f('fromCompany', 'From Company'),
+    f('toCompany', 'To Company'),
+    choice('transactionType', 'Type', ['Service Charge', 'Cost Allocation', 'Loan', 'Asset Transfer', 'Recharge']),
+    money('amount', 'Amount'),
+    date('transactionDate', 'Transaction Date'),
+    statusField([['Draft', 'secondary'], ['Posted', 'info'], ['Reconciled', 'success'], ['Disputed', 'danger']])
   ])
 ];

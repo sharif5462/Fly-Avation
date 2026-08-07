@@ -20,7 +20,8 @@ function userWith(roles: Role[]): User {
     jobTitle: 'Tester',
     roles,
     avatarColor: '#000000',
-    initials: 'TU'
+    initials: 'TU',
+    companies: [{ id: 'cmp-1', code: 'AVE', name: 'Airline', baseCurrency: 'USD', country: 'BD', isDefault: true }]
   };
 }
 
