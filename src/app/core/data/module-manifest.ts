@@ -166,8 +166,15 @@ export const MODULES: ModuleDef[] = [
     icon: 'pi-ticket',
     role: 'Reservations',
     items: [
+      { key: 'pnr-management', label: 'PNR Management', icon: 'pi-database' },
       { key: 'ticket-booking', label: 'Ticket Booking', icon: 'pi-ticket' },
+      { key: 'fare-rules-engine', label: 'Fare Rules Engine', icon: 'pi-list-check' },
+      { key: 'seat-map-configuration', label: 'Seat Map Configuration', icon: 'pi-th-large' },
       { key: 'seat-reservation', label: 'Seat Reservation', icon: 'pi-th-large' },
+      { key: 'group-booking', label: 'Group Booking', icon: 'pi-users' },
+      { key: 'waitlist-management', label: 'Waitlist Management', icon: 'pi-list' },
+      { key: 'ancillary-services-booking', label: 'Ancillary Services Booking', icon: 'pi-plus-circle' },
+      { key: 'unaccompanied-minor-booking', label: 'Unaccompanied Minor Booking', icon: 'pi-user' },
       { key: 'check-in', label: 'Check-in', icon: 'pi-check-square' },
       { key: 'boarding-pass', label: 'Boarding Pass', icon: 'pi-id-card' },
       { key: 'baggage-management', label: 'Baggage Management', icon: 'pi-briefcase' },
@@ -379,9 +386,14 @@ export const MODULES: ModuleDef[] = [
     items: [
       { key: 'icao-compliance', label: 'ICAO Compliance', icon: 'pi-globe' },
       { key: 'iata-compliance', label: 'IATA Compliance', icon: 'pi-globe' },
+      { key: 'certificate-of-authorization', label: 'Certificate of Authorization / AOC', icon: 'pi-verified' },
+      { key: 'compliance-calendar', label: 'Compliance Calendar', icon: 'pi-calendar' },
+      { key: 'regulatory-report-submission', label: 'Regulatory Report Submission', icon: 'pi-send' },
+      { key: 'regulator-correspondence', label: 'Regulator Correspondence Log', icon: 'pi-envelope' },
       { key: 'risk-assessment', label: 'Risk Assessment', icon: 'pi-exclamation-triangle' },
       { key: 'incident-reporting', label: 'Incident Reporting', icon: 'pi-flag' },
       { key: 'audit-management', label: 'Audit Management', icon: 'pi-search' },
+      { key: 'compliance-finding-tracker', label: 'Compliance Finding Tracker', icon: 'pi-search' },
       { key: 'document-control', label: 'Document Control', icon: 'pi-file' }
     ]
   },
@@ -455,7 +467,12 @@ export const MODULES: ModuleDef[] = [
       { key: 'contracts', label: 'Contracts', icon: 'pi-file-edit' },
       { key: 'manuals', label: 'Manuals', icon: 'pi-book' },
       { key: 'digital-signature', label: 'Digital Signature', icon: 'pi-pencil' },
-      { key: 'version-control', label: 'Version Control', icon: 'pi-history' }
+      { key: 'e-signature-request', label: 'E-Signature Request', icon: 'pi-pencil' },
+      { key: 'document-approval-workflow', label: 'Document Approval Workflow', icon: 'pi-check-square' },
+      { key: 'version-control', label: 'Version Control', icon: 'pi-history' },
+      { key: 'document-expiry-tracking', label: 'Document Expiry Tracking', icon: 'pi-calendar-times' },
+      { key: 'document-retention-schedule', label: 'Retention Schedule', icon: 'pi-calendar-times' },
+      { key: 'document-access-log', label: 'Document Access Log', icon: 'pi-eye' }
     ]
   },
   {
@@ -481,9 +498,14 @@ export const MODULES: ModuleDef[] = [
     items: [
       { key: 'user-roles', label: 'User Roles', icon: 'pi-users', flagship: true },
       { key: 'access-control', label: 'Access Control', icon: 'pi-key', flagship: true },
+      { key: 'field-level-permission', label: 'Field-Level Permission Matrix', icon: 'pi-lock' },
+      { key: 'session-management', label: 'Active Session Management', icon: 'pi-desktop' },
       { key: 'audit-logs', label: 'Audit Logs', icon: 'pi-history' },
+      { key: 'security-incident-log', label: 'Security Incident Log', icon: 'pi-exclamation-triangle' },
       { key: 'mfa', label: 'Multi-factor Authentication', icon: 'pi-shield' },
-      { key: 'data-encryption', label: 'Data Encryption', icon: 'pi-lock' }
+      { key: 'data-encryption', label: 'Data Encryption', icon: 'pi-lock' },
+      { key: 'data-retention-policy', label: 'Data Retention Policy', icon: 'pi-calendar-times' },
+      { key: 'data-subject-request', label: 'Data Subject Request', icon: 'pi-user' }
     ]
   },
   {
@@ -840,11 +862,146 @@ export const MODULES: ModuleDef[] = [
     icon: 'pi-bell',
     // No `role` — every authenticated user gets this module, no single team "owns" alerts.
     items: [
+      { key: 'notification-template', label: 'Notification Templates', icon: 'pi-file-edit' },
+      { key: 'notification-provider-config', label: 'Delivery Provider Configuration', icon: 'pi-cog' },
       { key: 'email-alerts', label: 'Email Alerts', icon: 'pi-envelope' },
       { key: 'sms-alerts', label: 'SMS Alerts', icon: 'pi-mobile' },
       { key: 'push-notifications', label: 'Push Notifications', icon: 'pi-bell' },
+      { key: 'in-app-notification', label: 'In-App Notification Center', icon: 'pi-bell' },
+      { key: 'notification-delivery-log', label: 'Delivery Log & Status', icon: 'pi-history' },
+      { key: 'notification-escalation-rule', label: 'Escalation Rules', icon: 'pi-exclamation-triangle' },
+      { key: 'notification-subscription-preference', label: 'User Subscription Preferences', icon: 'pi-user' },
       { key: 'maintenance-reminders', label: 'Maintenance Reminders', icon: 'pi-wrench' },
       { key: 'license-expiry-alerts', label: 'License Expiry Alerts', icon: 'pi-exclamation-triangle' }
+    ]
+  },
+  {
+    key: 'master-data-management',
+    label: 'Master Data Management',
+    icon: 'pi-database',
+    role: 'MasterData',
+    items: [
+      { key: 'airport-master', label: 'Airport / Station Master', icon: 'pi-map-marker' },
+      { key: 'aircraft-type-master', label: 'Aircraft Type Master', icon: 'pi-compass' },
+      { key: 'carrier-airline-master', label: 'Carrier / Airline Master', icon: 'pi-send' },
+      { key: 'country-region-master', label: 'Country & Region Master', icon: 'pi-globe' },
+      { key: 'currency-master', label: 'Currency Master', icon: 'pi-dollar' },
+      { key: 'exchange-rate-management', label: 'Exchange Rate Management', icon: 'pi-sync' },
+      { key: 'unit-of-measure-master', label: 'Unit of Measure Master', icon: 'pi-calculator' },
+      { key: 'language-locale-master', label: 'Language & Locale Master', icon: 'pi-globe' },
+      { key: 'holiday-calendar', label: 'Holiday & Blackout Calendar', icon: 'pi-calendar' },
+      { key: 'data-change-request', label: 'Master Data Change Request', icon: 'pi-file-edit' },
+      { key: 'master-data-audit-log', label: 'Master Data Audit Log', icon: 'pi-history' }
+    ]
+  },
+  {
+    key: 'workflow-approval-engine',
+    label: 'Workflow & Approval Engine',
+    icon: 'pi-sitemap',
+    role: 'Workflow',
+    items: [
+      { key: 'workflow-template', label: 'Workflow Template', icon: 'pi-sitemap' },
+      { key: 'approval-matrix', label: 'Approval Matrix', icon: 'pi-table' },
+      { key: 'approval-step-configuration', label: 'Approval Step Configuration', icon: 'pi-list' },
+      { key: 'pending-approvals', label: 'Pending Approvals', icon: 'pi-clock' },
+      { key: 'approval-history', label: 'Approval History', icon: 'pi-verified' },
+      { key: 'delegation-of-authority', label: 'Delegation of Authority', icon: 'pi-user-edit' },
+      { key: 'escalation-rule', label: 'Escalation Rules', icon: 'pi-exclamation-triangle' },
+      { key: 'sla-timer-configuration', label: 'Approval SLA Timers', icon: 'pi-stopwatch' },
+      { key: 'workflow-instance-tracking', label: 'Workflow Instance Tracking', icon: 'pi-sync' },
+      { key: 'rejection-reason-code', label: 'Rejection Reason Codes', icon: 'pi-ban' }
+    ]
+  },
+  {
+    key: 'revenue-management',
+    label: 'Revenue Management & Pricing',
+    icon: 'pi-chart-line',
+    role: 'RevenueManagement',
+    items: [
+      { key: 'fare-class-inventory', label: 'Fare Class Inventory', icon: 'pi-th-large' },
+      { key: 'booking-class-mapping', label: 'Booking Class (RBD) Mapping', icon: 'pi-sitemap' },
+      { key: 'inventory-control-rule', label: 'Inventory Control (Nested/Non-Nested)', icon: 'pi-list-check' },
+      { key: 'demand-forecast', label: 'Demand Forecasting', icon: 'pi-chart-line' },
+      { key: 'fare-optimization-rule', label: 'Fare Optimization Rules', icon: 'pi-sliders-h' },
+      { key: 'overbooking-strategy', label: 'Overbooking Strategy', icon: 'pi-percentage' },
+      { key: 'seasonal-pricing-calendar', label: 'Seasonal Pricing Calendar', icon: 'pi-calendar' },
+      { key: 'group-fare-management', label: 'Group Fare Management', icon: 'pi-users' },
+      { key: 'competitor-fare-monitoring', label: 'Competitor Fare Monitoring', icon: 'pi-eye' },
+      { key: 'yield-performance', label: 'Yield & RASK Performance', icon: 'pi-chart-bar' },
+      { key: 'revenue-management-alert', label: 'RM Alerts & Exceptions', icon: 'pi-bell' }
+    ]
+  },
+  {
+    key: 'operations-control-center',
+    label: 'Operations Control Center (AOCC)',
+    icon: 'pi-desktop',
+    role: 'FlightOps',
+    items: [
+      { key: 'network-status-board', label: 'Network Status Board', icon: 'pi-desktop' },
+      { key: 'ops-control-shift-log', label: 'Shift Handover Log', icon: 'pi-book' },
+      { key: 'duty-manager-roster', label: 'Duty Manager Roster', icon: 'pi-user' },
+      { key: 'watch-item-tracking', label: 'Watch Items & Escalations', icon: 'pi-eye' },
+      { key: 'critical-event-briefing', label: 'Critical Event Briefing', icon: 'pi-megaphone' },
+      { key: 'ops-control-directive', label: 'Operations Control Directive', icon: 'pi-flag' },
+      { key: 'cross-functional-coordination', label: 'Cross-Functional Coordination Log', icon: 'pi-share-alt' },
+      { key: 'contingency-plan-activation', label: 'Contingency Plan Activation', icon: 'pi-shield' },
+      { key: 'weather-advisory-log', label: 'Weather Advisory Log', icon: 'pi-cloud' },
+      { key: 'notam-tracking', label: 'NOTAM Tracking', icon: 'pi-exclamation-triangle' },
+      // Reuses IRROPS & Passenger Care's Disruption Decision Log — the control room's own decision journal.
+      { key: 'irrops-decision-log', label: 'IRROPS Command Log', icon: 'pi-book' }
+    ]
+  },
+  {
+    key: 'crew-pairing-optimization',
+    label: 'Crew Pairing & Rostering Optimization',
+    icon: 'pi-sync',
+    role: 'Crew',
+    items: [
+      { key: 'crew-pairing-construction', label: 'Pairing Construction', icon: 'pi-link' },
+      { key: 'pairing-optimization-run', label: 'Optimization Run', icon: 'pi-sync' },
+      { key: 'rule-violation-check', label: 'FTL/FDP Rule Violation Check', icon: 'pi-exclamation-triangle' },
+      { key: 'crew-bidding', label: 'Crew Bidding (PBS)', icon: 'pi-file-edit' },
+      { key: 'base-and-fleet-bidding', label: 'Base & Fleet Assignment Bidding', icon: 'pi-map-marker' },
+      { key: 'roster-publication', label: 'Roster Publication', icon: 'pi-check-circle' },
+      { key: 'open-time-trip-trade', label: 'Open Time & Trip Trading', icon: 'pi-arrow-right-arrow-left' },
+      { key: 'reserve-crew-planning', label: 'Reserve / Standby Crew Planning', icon: 'pi-shield' },
+      { key: 'disruption-recovery-crew-plan', label: 'Crew Recovery Planning', icon: 'pi-refresh' },
+      { key: 'crew-cost-optimization', label: 'Crew Cost Optimization', icon: 'pi-chart-bar' }
+    ]
+  },
+  {
+    key: 'slot-atfm-coordination',
+    label: 'Airport Slot & ATFM Coordination',
+    icon: 'pi-clock',
+    role: 'AirportOps',
+    items: [
+      { key: 'schedule-facilitated-airport', label: 'Schedule-Facilitated Airport List', icon: 'pi-list' },
+      { key: 'seasonal-schedule-submission', label: 'Seasonal Schedule Submission (SSIM)', icon: 'pi-send' },
+      { key: 'slot-request', label: 'Slot Request', icon: 'pi-file-edit' },
+      { key: 'slot-allocation', label: 'Slot Allocation', icon: 'pi-check-square' },
+      { key: 'slot-compliance-monitoring', label: 'Slot Compliance (Use-It-or-Lose-It)', icon: 'pi-check-circle' },
+      { key: 'slot-historic-precedence', label: 'Historic Precedence Register', icon: 'pi-history' },
+      { key: 'atfm-regulation-tracking', label: 'ATFM Regulation Tracking', icon: 'pi-directions-alt' },
+      { key: 'ctot-management', label: 'CTOT Management', icon: 'pi-clock' },
+      { key: 'airport-coordination-committee', label: 'Coordination Committee Minutes', icon: 'pi-book' }
+    ]
+  },
+  {
+    key: 'integration-hub',
+    label: 'Integration Hub',
+    icon: 'pi-sitemap',
+    role: 'Integration',
+    items: [
+      { key: 'external-system-registry', label: 'External System Registry', icon: 'pi-sitemap' },
+      { key: 'integration-endpoint-config', label: 'Integration Endpoint Configuration', icon: 'pi-link' },
+      { key: 'message-mapping', label: 'Message / Field Mapping', icon: 'pi-table' },
+      { key: 'gds-ndc-connection', label: 'GDS / NDC Connection', icon: 'pi-share-alt' },
+      { key: 'iata-type-b-message-log', label: 'IATA Type B Message Log', icon: 'pi-envelope' },
+      { key: 'weather-notam-feed-config', label: 'Weather & NOTAM Feed Configuration', icon: 'pi-cloud' },
+      { key: 'api-integration-log', label: 'API Integration Log', icon: 'pi-history' },
+      { key: 'integration-error-queue', label: 'Integration Error Queue', icon: 'pi-exclamation-triangle' },
+      { key: 'webhook-subscription', label: 'Webhook Subscription', icon: 'pi-bell' },
+      { key: 'data-sync-schedule', label: 'Data Sync Schedule', icon: 'pi-calendar-clock' }
     ]
   }
 ];

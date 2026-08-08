@@ -1,5 +1,5 @@
 import { EntityConfig } from '../models/entity-config.model';
-import { choice, date, datetime, entity, f, money, num, statusField } from './entity-field-helpers';
+import { choice, date, datetime, entity, f, file, lookup, money, num, statusField } from './entity-field-helpers';
 
 /**
  * Entity configs for the ten modules added after the original 25 — the
@@ -28,7 +28,7 @@ export const EXTENDED_ENTITY_LIST: EntityConfig[] = [
     f('supplierCode', 'Supplier Code'),
     f('supplierName', 'Supplier Name'),
     choice('supplierType', 'Supplier Type', ['OEM', 'Distributor', 'MRO Provider', 'Service Provider', 'Fuel Supplier', 'Catering', 'Logistics']),
-    f('country', 'Country'),
+    lookup('country', 'Country', 'country-region-master', 'countryName'),
     f('contactPerson', 'Contact Person'),
     f('email', 'Email', 'email'),
     f('phone', 'Phone'),
@@ -89,7 +89,7 @@ export const EXTENDED_ENTITY_LIST: EntityConfig[] = [
     f('partNumber', 'Part Number'),
     f('itemDescription', 'Item Description'),
     money('unitPrice', 'Unit Price'),
-    choice('currency', 'Currency', ['USD', 'EUR', 'GBP', 'AED', 'SGD', 'BDT']),
+    lookup('currency', 'Currency', 'currency-master', 'currencyCode'),
     date('validFrom', 'Valid From'),
     date('validTo', 'Valid To'),
     statusField([['Active', 'success'], ['Expiring Soon', 'warn'], ['Expired', 'danger']])
@@ -213,7 +213,7 @@ export const EXTENDED_ENTITY_LIST: EntityConfig[] = [
     f('buyerCode', 'Buyer Code'),
     f('buyerName', 'Buyer Name'),
     choice('buyerType', 'Buyer Type', ['Corporate', 'Travel Agency', 'Cargo Agent', 'Charter Client', 'Interline Partner', 'MRO Customer', 'Government']),
-    f('country', 'Country'),
+    lookup('country', 'Country', 'country-region-master', 'countryName'),
     f('contactPerson', 'Contact Person'),
     f('email', 'Email', 'email'),
     f('phone', 'Phone'),
@@ -655,7 +655,7 @@ export const EXTENDED_ENTITY_LIST: EntityConfig[] = [
   entity('hotel-partner-registry', 'Hotel Partner', 'Hotel Partner Registry', 'pi-building', 'Contracted hotels per station used to accommodate disrupted passengers.', [
     f('hotelCode', 'Hotel Code'),
     f('hotelName', 'Hotel Name'),
-    f('station', 'Station'),
+    lookup('station', 'Station', 'airport-master', 'iataCode'),
     num('starRating', 'Star Rating', { min: 1, max: 5 }),
     num('distanceFromAirportKm', 'Distance (km)', { max: 60 }),
     num('totalRooms', 'Total Rooms', { max: 800 }),
@@ -1057,7 +1057,7 @@ export const EXTENDED_ENTITY_LIST: EntityConfig[] = [
   entity('gha-registry', 'Ground Handler', 'Ground Handler (GHA) Registry', 'pi-building', 'The handling agents contracted at each station.', [
     f('ghaCode', 'GHA Code'),
     f('ghaName', 'Handler Name'),
-    f('station', 'Station'),
+    lookup('station', 'Station', 'airport-master', 'iataCode'),
     choice('handlingScope', 'Handling Scope', ['Full Handling', 'Ramp Only', 'Passenger Only', 'Cargo Only', 'Self-Handled']),
     f('stationManager', 'Station Manager'),
     date('licenceExpiryDate', 'Licence Expiry'),
@@ -2016,3 +2016,45 @@ export const EXTENDED_ENTITY_LIST: EntityConfig[] = [
     statusField([['Published', 'success'], ['In Preparation', 'info'], ['Under Assurance', 'warn'], ['Overdue', 'danger']])
   ])
 ];
+
+/**
+ * Entities filtered to the signed-in user's stationScope (EntityConfig.scopeField
+ * — see mock-api.interceptor.ts). Applied by key here, against entities that
+ * already carry a `station` field, rather than threading a param through
+ * every entity() call above — keeps the full scoped set auditable in one
+ * place instead of scattered across ~1000 lines.
+ */
+const STATION_SCOPED_ENTITIES: string[] = [
+  'catering-kitchen-registry', 'catering-supplier', 'catering-order', 'beverage-management',
+  'lounge-catering', 'catering-inventory',
+  'hotel-partner-registry', 'hotel-rate-contract', 'hotel-room-inventory', 'hotel-service-quality',
+  'crew-layover-hotel', 'crew-hotel-contract', 'crew-transport', 'crew-visa-gendec',
+  'accommodation-facility', 'crew-rest-facility',
+  'gha-registry', 'gha-sgha-contract', 'ground-service-catalogue', 'turnaround-service-order',
+  'ground-staff-roster', 'ramp-safety-inspection', 'gha-sla-performance', 'ground-handling-billing',
+  'charter-ground-arrangement', 'handling-charges-verification', 'fuel-invoice-verification', 'saf-management'
+];
+
+/**
+ * Entities that get an optional file-attachment field bolted on — proving
+ * out the 'file' field type against real document-centric records without
+ * hand-editing every one of their (long) fields arrays above.
+ */
+const FILE_ATTACHMENT_ENTITIES: Record<string, string> = {
+  'supplier-document-vault': 'Document Scan',
+  'supplier-certifications': 'Certificate Scan',
+  'supplier-audit': 'Audit Report',
+  'kitchen-hygiene-audit': 'Audit Report',
+  'visa-passport-tracking': 'Document Scan',
+  'crew-visa-gendec': 'Document Scan',
+  'training-certificate-issue': 'Certificate Scan',
+  'lease-technical-record': 'Records Package',
+  'insurance-certificate': 'Policy Document',
+  'environmental-permit': 'Permit Document'
+};
+
+for (const cfg of EXTENDED_ENTITY_LIST) {
+  if (STATION_SCOPED_ENTITIES.includes(cfg.key)) cfg.scopeField = 'station';
+  const attachmentLabel = FILE_ATTACHMENT_ENTITIES[cfg.key];
+  if (attachmentLabel) cfg.fields.push(file('attachmentFile', attachmentLabel));
+}

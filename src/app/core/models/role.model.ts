@@ -39,6 +39,10 @@ export type Role =
   | 'Charter'
   | 'RevenueAccounting'
   | 'Sustainability'
+  | 'MasterData'
+  | 'Workflow'
+  | 'RevenueManagement'
+  | 'Integration'
   | 'ReadOnly';
 
 export const ALL_ROLES: Role[] = [
@@ -76,6 +80,10 @@ export const ALL_ROLES: Role[] = [
   'Charter',
   'RevenueAccounting',
   'Sustainability',
+  'MasterData',
+  'Workflow',
+  'RevenueManagement',
+  'Integration',
   'ReadOnly'
 ];
 
@@ -104,6 +112,10 @@ export const ROLE_LABELS: Record<Role, string> = {
   BI: 'Business Intelligence',
   Security: 'Security Management',
   Facilities: 'Facilities & Assets',
+  MasterData: 'Master Data Management',
+  Workflow: 'Workflow & Approval Engine',
+  RevenueManagement: 'Revenue Management & Pricing',
+  Integration: 'Integration Hub',
   Supplier: 'Supplier & Vendor Management',
   Sales: 'Sales & Buyer Management',
   Catering: 'Catering & Food Services',

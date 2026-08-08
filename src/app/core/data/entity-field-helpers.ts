@@ -44,6 +44,27 @@ export function choice(key: string, label: string, values: string[], extra: Part
   return f(key, label, 'select', { options: values.map((v) => ({ label: v, value: v })), ...extra });
 }
 
+/**
+ * A dropdown populated at runtime from another entity's live rows instead of
+ * a static option list — the FK-style relationship builder. `lookupEntity`
+ * is the referenced resource key (usually a Master Data entity); the stored
+ * value is the referenced row's `id`, and `lookupLabelField` names which of
+ * its fields to display (e.g. an airport's `iataCode`). Resolved in
+ * FeatureListPage.loadLookups() via `api.list(lookupEntity)`.
+ */
+export function lookup(key: string, label: string, lookupEntity: string, lookupLabelField: string, extra: Partial<EntityField> = {}): EntityField {
+  return f(key, label, 'lookup', { lookupEntity, lookupLabelField, ...extra });
+}
+
+/**
+ * A file attachment field. The mock layer has no real object storage, so
+ * only metadata (name/size/timestamp) is kept — see FeatureListPage.onFileSelected().
+ * Always optional: attaching a document is rarely mandatory to save a record.
+ */
+export function file(key: string, label: string, extra: Partial<EntityField> = {}): EntityField {
+  return f(key, label, 'file', { required: false, ...extra });
+}
+
 export function entity(
   key: string,
   label: string,

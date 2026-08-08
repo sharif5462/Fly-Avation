@@ -1,6 +1,6 @@
 # Aviation ERP — Angular Frontend
 
-Angular 20 frontend for a full aviation ERP: 35 modules, 454 screens, JWT
+Angular 20 frontend for a full aviation ERP: 42 modules, 552 screens, JWT
 authentication with role-based authorization, running today on mock data and
 built to drop onto a .NET Web API + Oracle backend with no component changes.
 
@@ -28,7 +28,13 @@ below). Sign in with any of the demo accounts shown on the login screen
 
 ```bash
 npm run build     # production build → dist/aviation-erp
+npm test          # karma/jasmine unit tests, watches by default — `ng test --watch=false` for a single run
 ```
+
+Headless/CI environments that run as root (Chrome refuses `--sandbox` as
+root) can use the `ChromeHeadlessCI` launcher already defined in
+`karma.conf.js`: `CHROME_BIN=<path> ng test --watch=false --browsers=ChromeHeadlessCI`.
+Local dev keeps the default `Chrome` launcher unchanged.
 
 ## Architecture
 
@@ -68,18 +74,30 @@ src/app/
     security-management/        user-roles, access-control
 ```
 
-Ten later modules cover the commercial and passenger-care side of the
-business and are 100% scaffold (no flagship pages of their own): Supplier &
-Vendor Management, Sales & Buyer Management, Catering & Food Services,
-IRROPS & Passenger Care (delay/cancellation hotel, transport and duty-of-care
+Ten modules cover the commercial and passenger-care side of the business and
+are 100% scaffold (no flagship pages of their own): Supplier & Vendor
+Management, Sales & Buyer Management, Catering & Food Services, IRROPS &
+Passenger Care (delay/cancellation hotel, transport and duty-of-care
 handling), Crew & Staff Travel (HOTAC — crew layover hotels, staff travel
 tickets, per diem), Ground Handling Services, Training & Simulator
 Management, Charter & Aircraft Leasing, Revenue Accounting & Billing, and
 Environment & Sustainability.
 
+Seven more are the platform/infrastructure layer the rest of the app leans
+on rather than another operational desk, also 100% scaffold: **Master Data
+Management** (Airport, Aircraft Type, Carrier, Country, Currency, UOM — the
+shared masters `lookup` fields elsewhere resolve against, see below),
+**Workflow & Approval Engine**, **Revenue Management & Pricing** (pricing/
+forecasting — commercially distinct from Revenue Accounting's billing/
+settlement), **Operations Control Center (AOCC)**, **Crew Pairing &
+Rostering Optimization**, **Airport Slot & ATFM Coordination**, and
+**Integration Hub** (management screens for external system connections —
+GDS/NDC, SITA/ARINC Type B, weather/NOTAM feeds — readiness for the
+API-binding phase, not a live integration itself).
+
 ### Flagship pages vs. the generic scaffold
 
-Hand-building 454 unique screens up front isn't a good use of time before
+Hand-building 552 unique screens up front isn't a good use of time before
 there's a real backend to wire them to. Instead:
 
 - **21 flagship pages** are fully hand-built: typed models, bespoke table
@@ -91,28 +109,33 @@ there's a real backend to wire them to. Instead:
   Registration, Work Orders, Component Tracking, Pilot Management, Spare
   Parts Inventory, Item Master, Purchase Orders, Bag Tracking (Res. 753),
   Asset Master, Hazard Reporting, User Roles and Access Control.
-- **The other 433 screens** are all real, working CRUD screens too — search,
+- **The other 531 screens** are all real, working CRUD screens too — search,
   sortable table, add/edit dialog with validation, delete confirmation —
   just rendered by one shared component, `FeatureListPage`, configured
   per-entity instead of hand-coded per-entity.
 
-**How the scaffold works:** `core/data/module-manifest.ts` defines all 35
+**How the scaffold works:** `core/data/module-manifest.ts` defines all 42
 modules and their sub-items (label, icon, route key, which ones are
 flagship). Their entity configs — table columns + form fields for every
-non-flagship item, keyed by the same route key — are split across two
+non-flagship item, keyed by the same route key — are split across three
 files: `core/data/entity-configs.ts` holds the original 25 modules,
-`core/data/entity-configs-extended.ts` holds the ten added later (Supplier,
-Sales/Buyer, Catering, IRROPS, Crew & Staff Travel, Ground Handling,
-Training, Charter & Leasing, Revenue Accounting, Sustainability). Both
-files share the same field-builder helpers (`core/data/entity-field-helpers.ts`)
-and are concatenated into one `ENTITY_CONFIGS` lookup at the bottom of
-`entity-configs.ts` — nothing downstream (routes, sidebar, mock API) knows
-there are two files. In `app.routes.ts`, every non-flagship item routes to
-the same lazy-loaded `FeatureListPage` chunk with `data: { entityKey }` — so
-there's exactly one extra chunk for all 433 pages, not 433 chunks.
+`core/data/entity-configs-extended.ts` holds the ten commercial/
+passenger-care modules, `core/data/entity-configs-platform.ts` holds the
+seven platform modules above plus deepening batches for five modules that
+started out thin (Notification System, Document Management, Passenger
+Reservation, Compliance & Safety, Security Management — each originally
+5-8 flat items, since fleshed out with the templates/approval-workflow/
+retention/inventory machinery a module with that name would actually need).
+All three files share the same field-builder helpers
+(`core/data/entity-field-helpers.ts`) and are concatenated into one
+`ENTITY_CONFIGS` lookup at the bottom of `entity-configs.ts` — nothing
+downstream (routes, sidebar, mock API) knows there are three files. In
+`app.routes.ts`, every non-flagship item routes to the same lazy-loaded
+`FeatureListPage` chunk with `data: { entityKey }` — so there's exactly one
+extra chunk for all 531 pages, not 531 chunks.
 
-**Screens vs. nav entries:** the sidebar has 477 entries across the 35
-modules, but only 454 distinct screens. Some sub-items are deliberately
+**Screens vs. nav entries:** the sidebar has 578 entries across the 42
+modules, but only 552 distinct screens. Some sub-items are deliberately
 reused across modules because they're the same real-world record viewed
 from a different desk — Incident Reporting appears under Compliance &
 Safety, SMS, Facilities and Landside; Vendor Management under Procurement,
@@ -122,19 +145,90 @@ Resource & Gate Management; RFQ under Procurement and Supplier & Vendor
 Management; GSE Fleet Registry under Facilities & Assets and Ground
 Handling Services; Training Records under Crew Management and Training &
 Simulator Management; Delay Management under Flight Operations and IRROPS
-& Passenger Care. A reused key means one route, one entity config and one
-dataset, not a copy.
+& Passenger Care; IRROPS Decision Log under IRROPS & Passenger Care and
+Operations Control Center. A reused key means one route, one entity config
+and one dataset, not a copy.
 
 **To add a new field to an existing scaffold page:** edit its entry in
-`entity-configs.ts` or `entity-configs-extended.ts` (wherever that key
-lives). The table column and the form field both update; no other file
-changes.
+whichever of the three `entity-configs*.ts` files that key lives in. The
+table column and the form field both update; no other file changes.
 
 **To add a brand-new sub-item to a module:** add one line to its `items`
-array in `module-manifest.ts` and one `entity(...)` call in
-`entity-configs.ts` or `entity-configs-extended.ts`. It gets a working
-route, a nav entry, and a full CRUD screen immediately — no new component,
-no new route file.
+array in `module-manifest.ts` and one `entity(...)` call in the relevant
+`entity-configs*.ts` file. It gets a working route, a nav entry, and a full
+CRUD screen immediately — no new component, no new route file.
+
+### Field/entity relationships: the `lookup` field type
+
+Every field used to be either free text or a static `select` — nothing
+modeled an actual foreign-key relationship to another entity's rows, and
+nothing enforced that e.g. every "Station" field on 28 different entities
+used the same set of airport codes. `EntityField.type: 'lookup'` fixes
+this: `lookup('origin', 'Origin Airport', 'airport-master', 'iataCode')`
+renders a searchable dropdown populated at runtime from `airport-master`'s
+live rows (`FeatureListPage.loadLookups()` calls `api.list(lookupEntity)`),
+storing the referenced row's `id` — a real foreign key, not a copy of its
+label — and displaying `lookupLabelField` (`iataCode`) wherever the raw
+value would otherwise show. The mock seed generator (`fake-data.ts`)
+resolves lookups the same way: seeding a Route Planning row picks a real
+`airport-master` row id, recursively seeding Airport Master first if
+nothing has touched it yet this session (`mock-api.interceptor.ts`'s
+`getCollection` closure, threaded into `generateSeedRows`).
+
+Only a representative set of high-traffic fields have been converted so far
+(Route Planning's origin/destination, Supplier/Buyer Registry's country,
+Supplier Price List's currency, and the `station` field on Ground Handler
+Registry and Hotel Partner Registry) — proving the mechanism end-to-end
+rather than mechanically rewriting all ~530 entities' reference-shaped
+fields. The remaining ones are still free text deliberately: converting a
+field to `lookup` before the entities on both ends have stable, real
+primary keys (i.e. before the .NET/Oracle backend exists) just produces
+brittle mappings that get redone anyway once real IDs exist — this is
+exactly the kind of thing to finish once the API-binding phase starts, not
+before.
+
+### Row-level access: `scopeField` / `User.stationScope`
+
+Role-based access here has always been module-level (a user with the
+`Catering` role sees every Catering screen, at every station). Real
+airline ops usually also need row-level scoping — a station manager should
+only see their own station's records, not every station's. `EntityConfig`
+now supports an optional `scopeField` naming which field on that entity
+holds a station/airport code; `User.stationScope` is the signed-in user's
+allowed list. `core/mock/mock-api.interceptor.ts` filters every list
+response through `applyScopeFilter()`, resolving lookup-typed scope fields
+back to their code first (`resolveScopeValue()` — a Ground Handler
+Registry row stores an `airport-master` id, not a bare "JFK") so the
+comparison always happens against the same human-readable codes regardless
+of whether the underlying field is free text or a normalized foreign key.
+SuperAdmin/Admin bypass it, same convention as module-role checks; a user
+with no `stationScope` set (the default) is unrestricted, so nothing about
+existing accounts changes. It's applied today to the 28 entities across
+Ground Handling, Catering, IRROPS (hotel) and Crew & Staff Travel that
+carry a real `station` field — see the `STATION_SCOPED_ENTITIES`/
+`FILE_ATTACHMENT_ENTITIES` lists at the bottom of
+`entity-configs-extended.ts`, which apply `scopeField`/an attachment field
+by key rather than threading extra parameters through ~1000 lines of
+`entity(...)` calls. The demo account `pax.services.mgr` (password
+`ops2-123`) is scoped to `['JFK', 'LHR']`; every other demo account is
+unrestricted, for contrast. This is a mock-layer stand-in only — the real
+.NET API must enforce the equivalent server-side, the same way it must
+re-derive module-role checks rather than trust the JWT alone.
+
+### File attachments: the `file` field type
+
+`EntityField.type: 'file'` renders a real file input
+(`FeatureListPage.onFileSelected()`); since the mock layer has no object
+storage, only metadata (name, size, upload timestamp) is kept in
+`localStorage`, not the file's bytes — a deliberate simplification, not an
+oversight. Applied to ten document-centric entities today (Supplier
+Document Vault, Supplier Certifications, Supplier Audit, Kitchen Hygiene
+Audit, Visa & Passport Tracking, Crew Visa & GENDEC, Training Certificate
+Issuance, Lease Technical Records, Insurance Certificates, Environmental
+Permits) plus the new Document Management and Master Data Change Request
+screens. When the real API lands, swap the metadata-only upload handler for
+one that actually uploads to blob storage (S3/Azure Blob/Oracle BLOB) and
+stores the resulting URL — the field type and form rendering don't change.
 
 **To add a brand-new module:** add a `ModuleDef` to `module-manifest.ts`
 with a unique `key`, a role (add it to `Role` in `core/models/role.model.ts`
@@ -171,11 +265,15 @@ set `flagship: true` on that item in `module-manifest.ts`.
 
 Demo accounts (see the login screen for the full set with job titles):
 `superadmin` / `super123` has every role; the other ten are scoped to
-1–6 modules each so role-gating is actually visible when testing —
+1–7 modules each so role-gating is actually visible when testing —
 including `commercial.mgr` / `comm123` (Supplier, Sales, Charter, Revenue
-Accounting) and `pax.services.mgr` / `ops2-123` (IRROPS, Catering, Ground
-Handling, Crew & Staff Travel, Training, Sustainability) for the ten
-newer modules.
+Accounting, **Revenue Management**) and `pax.services.mgr` / `ops2-123`
+(IRROPS, Catering, Ground Handling, Crew & Staff Travel, Training,
+Sustainability — and **`stationScope: ['JFK', 'LHR']`**, the row-level
+scoping demo, see above) for the ten commercial/passenger-care modules, plus
+`admin` / `admin123` additionally carrying **Master Data**, **Workflow** and
+**Integration** (governance/IT-adjacent roles that cluster naturally under
+the ERP admin) for the platform layer.
 
 ## Mock data layer (dev only — this is what to remove/bypass for production)
 
@@ -190,13 +288,19 @@ drop-in stand-in, not a parallel code path components need to know about.
   11 flagship resources that own a dataset. (The eight dashboards don't —
   they read the other resources; User Roles and Access Control are backed
   by the `users` and `role-permissions` resources in the same file's map.)
-- `core/mock/fake-data.ts` — generates plausible seed rows for the 433
-  generic scaffold resources from their `entity-configs.ts` /
-  `entity-configs-extended.ts` field definitions (heuristic — a field
-  named/labeled with "cost" gets a dollar-ish number, "airport"/"origin"
-  gets an IATA-style code, etc.). Not perfect for every field name, but
-  good enough to make every one of the 454 pages demoable with
-  realistic-looking data on first load.
+- `core/mock/fake-data.ts` — generates plausible seed rows for the 531
+  generic scaffold resources from their `entity-configs*.ts` field
+  definitions (heuristic — a field named/labeled with "cost" gets a
+  dollar-ish number, "airport"/"origin"/"iata" gets an IATA-style code, a
+  Master Data "Country Name"/"Currency Name"/"Carrier Name" field gets a
+  real-looking one instead of colliding with the generic person-name
+  heuristic, etc.). A `'lookup'` field resolves against its referenced
+  entity's actual seeded rows rather than generating a value in isolation
+  (see `generateSeedRows`'s `resolveLookupRows` parameter), and a `'file'`
+  field seeds as unattached (`null`) since most demo records wouldn't have
+  one uploaded yet. Not perfect for every field name, but good enough to
+  make every one of the 552 pages demoable with realistic-looking data on
+  first load.
 - `core/mock/mock-db.ts` — thin `localStorage` persistence so anything
   created/edited/deleted while clicking around survives a refresh. A
   "Reset Demo Data" option lives in the user menu (top-right avatar).

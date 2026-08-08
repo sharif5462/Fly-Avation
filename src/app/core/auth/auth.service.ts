@@ -6,8 +6,7 @@ import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { LoginRequest, LoginResponse, User } from '../models/user.model';
 import { Role } from '../models/role.model';
-
-const USER_STORAGE_KEY = 'aviation_erp_user';
+import { USER_STORAGE_KEY } from './storage-keys';
 
 /**
  * Session state lives in signals (not a BehaviorSubject) so templates and

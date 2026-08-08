@@ -8,9 +8,17 @@ const LAST_NAMES = [
   'Carter', 'Nguyen', 'Okafor', 'Rossi', 'Kowalski', 'Hussain', 'Silva', 'Tanaka', 'Novak', 'Reyes',
   'Whitfield', 'Salas', 'Cross', 'Blake', 'Morgan', 'Lindqvist', 'Haddad', 'Ferreira', 'Kim', 'Osei'
 ];
-const AIRPORTS = ['JFK', 'LHR', 'DXB', 'SIN', 'CDG', 'FRA', 'HND', 'ORD', 'DFW', 'AMS', 'HKG', 'SYD', 'DEL', 'GRU', 'IST'];
+// JFK/LHR appear twice — real hub traffic is concentrated at a handful of
+// major airports, so weighting them higher is more realistic than a flat
+// distribution (and keeps the JFK/LHR-scoped demo account's row-level
+// filtering reliably visible instead of depending on a lucky random draw).
+const AIRPORTS = ['JFK', 'LHR', 'JFK', 'LHR', 'DXB', 'SIN', 'CDG', 'FRA', 'HND', 'ORD', 'DFW', 'AMS', 'HKG', 'SYD', 'DEL', 'GRU', 'IST'];
 const COMPANY_WORDS = ['Global', 'Sky', 'Atlas', 'Pacific', 'Meridian', 'Horizon', 'Summit', 'Vertex', 'Nordic', 'Continental'];
 const COMPANY_SUFFIX = ['Aviation', 'Logistics', 'Aerospace', 'Supply Co.', 'Industries', 'Parts Ltd.', 'Systems', 'Group'];
+const COUNTRY_NAMES = ['United States', 'United Kingdom', 'United Arab Emirates', 'Singapore', 'France', 'Germany', 'Japan', 'Bangladesh', 'India', 'Australia', 'Canada', 'Brazil', 'Turkey', 'Netherlands', 'China'];
+const CURRENCY_CODES = ['USD', 'EUR', 'GBP', 'AED', 'SGD', 'BDT', 'JPY', 'INR', 'AUD', 'CAD', 'CNY', 'TRY'];
+const CURRENCY_NAMES = ['US Dollar', 'Euro', 'British Pound', 'UAE Dirham', 'Singapore Dollar', 'Bangladeshi Taka', 'Japanese Yen', 'Indian Rupee', 'Australian Dollar', 'Canadian Dollar', 'Chinese Yuan', 'Turkish Lira'];
+const CARRIER_NAMES = ['Meridian Airways', 'Atlas Air Connect', 'Pacific Wings', 'Horizon Aviation', 'Nordic Air', 'Continental Skyways', 'Summit Airlines', 'Vertex Air'];
 const PLATE_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
 const AIRLINE_CODES = ['AV', 'BA', 'EK', 'LH', 'QR', 'SQ', 'AF', 'KL', 'TK', 'DL', 'UA', 'AA', 'CX', 'QF', 'EY'];
 const EQUIPMENT_PREFIX = ['CNV', 'SRT', 'ATR', 'EDS', 'CAR', 'CHT', 'DCV', 'VLF'];
@@ -53,12 +61,28 @@ function looksLike(field: EntityField, ...needles: string[]): boolean {
   return needles.some((n) => haystack.includes(n));
 }
 
-function generateFieldValue(field: EntityField, entityKey: string, rowIndex: number): unknown {
+function generateFieldValue(
+  field: EntityField,
+  entityKey: string,
+  rowIndex: number,
+  resolveLookupRows: (lookupEntityKey: string) => Array<Record<string, unknown>>
+): unknown {
   if (field.options && field.options.length > 0) {
     return pick(field.options).value;
   }
 
   switch (field.type) {
+    case 'lookup': {
+      // Picks a real id from the referenced entity's own (possibly just-seeded)
+      // rows, so a fresh Route Planning row's "Origin Airport" already points
+      // at a real Airport Master row instead of an orphan reference.
+      if (!field.lookupEntity) return null;
+      const refRows = resolveLookupRows(field.lookupEntity);
+      return refRows.length > 0 ? pick(refRows)['id'] : null;
+    }
+    case 'file':
+      // Most demo records start with nothing attached; a user can upload one via the form.
+      return null;
     case 'boolean':
       return rng() > 0.5;
     case 'number': {
@@ -89,10 +113,25 @@ function generateFieldValue(field: EntityField, entityKey: string, rowIndex: num
       if (looksLike(field, 'plate')) {
         return `${pick(PLATE_LETTERS)}${pick(PLATE_LETTERS)}${pick(PLATE_LETTERS)}-${randomInt(1000, 9999)}`;
       }
+      // These three run before the generic 'name' rule below, which would
+      // otherwise hand a Master Data country/currency/carrier "Name" field a
+      // random person's name.
+      if (looksLike(field, 'country') && looksLike(field, 'name')) {
+        return pick(COUNTRY_NAMES);
+      }
+      if (looksLike(field, 'currency') && looksLike(field, 'code')) {
+        return pick(CURRENCY_CODES);
+      }
+      if (looksLike(field, 'currency') && looksLike(field, 'name')) {
+        return pick(CURRENCY_NAMES);
+      }
+      if (looksLike(field, 'carrier') && looksLike(field, 'name')) {
+        return pick(CARRIER_NAMES);
+      }
       if (looksLike(field, 'name') || looksLike(field, 'employee', 'pilot', 'crew', 'engineer', 'officer', 'agent', 'contact', 'person')) {
         return `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
       }
-      if (looksLike(field, 'airport', 'origin', 'destination', 'station', 'route')) {
+      if (looksLike(field, 'airport', 'origin', 'destination', 'station', 'route', 'iata')) {
         return pick(AIRPORTS);
       }
       if (looksLike(field, 'phone')) {
@@ -124,7 +163,18 @@ function generateFieldValue(field: EntityField, entityKey: string, rowIndex: num
   }
 }
 
-export function generateSeedRows(config: EntityConfig): Array<Record<string, unknown>> {
+/**
+ * `resolveLookupRows` fetches (and, on first touch, triggers seeding of) the
+ * rows behind a 'lookup' field's `lookupEntity`. Defaults to "no rows" so
+ * existing callers/tests that don't care about lookups still work — the
+ * real wiring is core/mock/mock-api.interceptor.ts passing its own
+ * `getCollection`, which recursively seeds the referenced entity the first
+ * time it's needed.
+ */
+export function generateSeedRows(
+  config: EntityConfig,
+  resolveLookupRows: (lookupEntityKey: string) => Array<Record<string, unknown>> = () => []
+): Array<Record<string, unknown>> {
   const count = config.seedCount ?? 12;
   const rows: Array<Record<string, unknown>> = [];
 
@@ -133,7 +183,7 @@ export function generateSeedRows(config: EntityConfig): Array<Record<string, unk
       id: `${config.key}-${String(i + 1).padStart(4, '0')}`
     };
     for (const field of config.fields) {
-      row[field.key] = generateFieldValue(field, config.key, i);
+      row[field.key] = generateFieldValue(field, config.key, i, resolveLookupRows);
     }
     row['createdAt'] = randomDateIso(90, 0);
     rows.push(row);

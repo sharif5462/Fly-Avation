@@ -1,6 +1,7 @@
 import { EntityConfig, TagSeverity } from '../models/entity-config.model';
 import { EXTENDED_ENTITY_LIST } from './entity-configs-extended';
-import { date, datetime, entity, f, money, num, statusField } from './entity-field-helpers';
+import { PLATFORM_ENTITY_LIST } from './entity-configs-platform';
+import { date, datetime, entity, f, lookup, money, num, statusField } from './entity-field-helpers';
 
 /**
  * Field/table/form configuration for every *generic* (non-flagship) sub-item
@@ -8,12 +9,19 @@ import { date, datetime, entity, f, money, num, statusField } from './entity-fie
  * render a real, working CRUD screen for each — table columns, the add/edit
  * dialog form, and validation — without a bespoke component per item.
  *
- * This file covers the original 25 modules; the ten later modules (supplier,
- * sales/buyer, catering, IRROPS, crew & staff travel, ground handling,
- * training, charter & leasing, revenue accounting, sustainability) live in
- * entity-configs-extended.ts and are concatenated at the bottom. Both use the
- * same helpers from entity-field-helpers.ts, and both feed one flat
- * `ENTITY_CONFIGS` lookup — nothing downstream knows there are two files.
+ * This file covers the original 25 modules. Two more files are concatenated
+ * at the bottom into the same flat `ENTITY_CONFIGS` lookup — nothing
+ * downstream knows there's more than one file:
+ *   - entity-configs-extended.ts — ten commercial/passenger-care modules
+ *     (supplier, sales/buyer, catering, IRROPS, crew & staff travel, ground
+ *     handling, training, charter & leasing, revenue accounting, sustainability)
+ *   - entity-configs-platform.ts — platform/infrastructure modules (Master
+ *     Data, Workflow & Approval, Revenue Management, Operations Control
+ *     Center, Crew Pairing & Rostering, Slot & ATFM Coordination, Integration
+ *     Hub) plus deepening batches for five modules that started out thin
+ *     (Notification System, Document Management, Passenger Reservation,
+ *     Compliance & Safety, Security Management)
+ * All three use the same helpers from entity-field-helpers.ts.
  *
  * Flagship items (flight-scheduling, aircraft-registration, work-orders,
  * mro-dashboard, component-tracking, pilot-management, spare-parts-inventory,
@@ -27,8 +35,8 @@ const ENTITY_LIST: EntityConfig[] = [
   // ───────────────────────── Flight Operations ─────────────────────────
   entity('route-planning', 'Route', 'Route Planning', 'pi-map', 'Plan and manage flight routes between airport pairs.', [
     f('routeCode', 'Route Code'),
-    f('origin', 'Origin Airport'),
-    f('destination', 'Destination Airport'),
+    lookup('origin', 'Origin Airport', 'airport-master', 'iataCode'),
+    lookup('destination', 'Destination Airport', 'airport-master', 'iataCode'),
     num('distanceNm', 'Distance (NM)'),
     f('estFlightTime', 'Est. Flight Time'),
     statusField([['Active', 'success'], ['Under Review', 'warn'], ['Suspended', 'danger']])
@@ -1754,7 +1762,7 @@ const ENTITY_LIST: EntityConfig[] = [
 ];
 
 export const ENTITY_CONFIGS: Record<string, EntityConfig> = Object.fromEntries(
-  [...ENTITY_LIST, ...EXTENDED_ENTITY_LIST].map((e) => [e.key, e])
+  [...ENTITY_LIST, ...EXTENDED_ENTITY_LIST, ...PLATFORM_ENTITY_LIST].map((e) => [e.key, e])
 );
 
 export function getEntityConfig(key: string): EntityConfig | undefined {
