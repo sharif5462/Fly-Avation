@@ -1,6 +1,6 @@
 # Aviation ERP — Angular Frontend
 
-Angular 20 frontend for a full aviation ERP: 25 modules, 240 screens, JWT
+Angular 20 frontend for a full aviation ERP: 35 modules, 454 screens, JWT
 authentication with role-based authorization, running today on mock data and
 built to drop onto a .NET Web API + Oracle backend with no component changes.
 
@@ -68,9 +68,18 @@ src/app/
     security-management/        user-roles, access-control
 ```
 
+Ten later modules cover the commercial and passenger-care side of the
+business and are 100% scaffold (no flagship pages of their own): Supplier &
+Vendor Management, Sales & Buyer Management, Catering & Food Services,
+IRROPS & Passenger Care (delay/cancellation hotel, transport and duty-of-care
+handling), Crew & Staff Travel (HOTAC — crew layover hotels, staff travel
+tickets, per diem), Ground Handling Services, Training & Simulator
+Management, Charter & Aircraft Leasing, Revenue Accounting & Billing, and
+Environment & Sustainability.
+
 ### Flagship pages vs. the generic scaffold
 
-Hand-building 240 unique screens up front isn't a good use of time before
+Hand-building 454 unique screens up front isn't a good use of time before
 there's a real backend to wire them to. Instead:
 
 - **21 flagship pages** are fully hand-built: typed models, bespoke table
@@ -82,37 +91,56 @@ there's a real backend to wire them to. Instead:
   Registration, Work Orders, Component Tracking, Pilot Management, Spare
   Parts Inventory, Item Master, Purchase Orders, Bag Tracking (Res. 753),
   Asset Master, Hazard Reporting, User Roles and Access Control.
-- **The other 219 screens** are all real, working CRUD screens too — search,
+- **The other 433 screens** are all real, working CRUD screens too — search,
   sortable table, add/edit dialog with validation, delete confirmation —
   just rendered by one shared component, `FeatureListPage`, configured
   per-entity instead of hand-coded per-entity.
 
-**How the scaffold works:** `core/data/module-manifest.ts` defines all 25
+**How the scaffold works:** `core/data/module-manifest.ts` defines all 35
 modules and their sub-items (label, icon, route key, which ones are
-flagship). `core/data/entity-configs.ts` defines the table columns + form
-fields for every non-flagship item, keyed by the same route key. In
-`app.routes.ts`, every non-flagship item routes to the same lazy-loaded
-`FeatureListPage` chunk with `data: { entityKey }` — so there's exactly one
-extra chunk for all 219 pages, not 219 chunks.
+flagship). Their entity configs — table columns + form fields for every
+non-flagship item, keyed by the same route key — are split across two
+files: `core/data/entity-configs.ts` holds the original 25 modules,
+`core/data/entity-configs-extended.ts` holds the ten added later (Supplier,
+Sales/Buyer, Catering, IRROPS, Crew & Staff Travel, Ground Handling,
+Training, Charter & Leasing, Revenue Accounting, Sustainability). Both
+files share the same field-builder helpers (`core/data/entity-field-helpers.ts`)
+and are concatenated into one `ENTITY_CONFIGS` lookup at the bottom of
+`entity-configs.ts` — nothing downstream (routes, sidebar, mock API) knows
+there are two files. In `app.routes.ts`, every non-flagship item routes to
+the same lazy-loaded `FeatureListPage` chunk with `data: { entityKey }` — so
+there's exactly one extra chunk for all 433 pages, not 433 chunks.
 
-**Screens vs. nav entries:** the sidebar has 259 entries across the 25
-modules, but only 240 distinct screens. Some sub-items are deliberately
+**Screens vs. nav entries:** the sidebar has 477 entries across the 35
+modules, but only 454 distinct screens. Some sub-items are deliberately
 reused across modules because they're the same real-world record viewed
 from a different desk — Incident Reporting appears under Compliance &
 Safety, SMS, Facilities and Landside; Vendor Management under Procurement,
 Warehouse and Facilities; Purchase Orders under Procurement and Warehouse;
 Gate Management and Aircraft Parking under both Airport Operations and
-Resource & Gate Management. A reused key means one route, one entity config
-and one dataset, not a copy.
+Resource & Gate Management; RFQ under Procurement and Supplier & Vendor
+Management; GSE Fleet Registry under Facilities & Assets and Ground
+Handling Services; Training Records under Crew Management and Training &
+Simulator Management; Delay Management under Flight Operations and IRROPS
+& Passenger Care. A reused key means one route, one entity config and one
+dataset, not a copy.
 
 **To add a new field to an existing scaffold page:** edit its entry in
-`entity-configs.ts`. The table column and the form field both update; no
-other file changes.
+`entity-configs.ts` or `entity-configs-extended.ts` (wherever that key
+lives). The table column and the form field both update; no other file
+changes.
 
 **To add a brand-new sub-item to a module:** add one line to its `items`
 array in `module-manifest.ts` and one `entity(...)` call in
-`entity-configs.ts`. It gets a working route, a nav entry, and a full CRUD
-screen immediately — no new component, no new route file.
+`entity-configs.ts` or `entity-configs-extended.ts`. It gets a working
+route, a nav entry, and a full CRUD screen immediately — no new component,
+no new route file.
+
+**To add a brand-new module:** add a `ModuleDef` to `module-manifest.ts`
+with a unique `key`, a role (add it to `Role` in `core/models/role.model.ts`
+first if it's new), and its `items`; add matching `entity(...)` configs for
+every item; nothing else needs to change — routing, the sidebar and
+breadcrumbs all derive from `MODULES`.
 
 **To promote a scaffold page to a flagship page:** copy the pattern from
 `features/flight-operations/flight-scheduling/` (typed model, dedicated
@@ -142,8 +170,12 @@ set `flagship: true` on that item in `module-manifest.ts`.
   beyond its default one.
 
 Demo accounts (see the login screen for the full set with job titles):
-`superadmin` / `super123` has every role; the other eight are scoped to
-1–2 modules each so role-gating is actually visible when testing.
+`superadmin` / `super123` has every role; the other ten are scoped to
+1–6 modules each so role-gating is actually visible when testing —
+including `commercial.mgr` / `comm123` (Supplier, Sales, Charter, Revenue
+Accounting) and `pax.services.mgr` / `ops2-123` (IRROPS, Catering, Ground
+Handling, Crew & Staff Travel, Training, Sustainability) for the ten
+newer modules.
 
 ## Mock data layer (dev only — this is what to remove/bypass for production)
 
@@ -153,17 +185,18 @@ in-memory store backed by `localStorage`, when `environment.useMockApi` is
 `true`. It implements the same REST contract documented below, so this is a
 drop-in stand-in, not a parallel code path components need to know about.
 
-- `core/mock/mock-users.ts` — the 9 demo accounts and `/auth/login` logic.
+- `core/mock/mock-users.ts` — the 11 demo accounts and `/auth/login` logic.
 - `core/mock/flagship-seeds.ts` — hand-written realistic seed data for the
   11 flagship resources that own a dataset. (The eight dashboards don't —
   they read the other resources; User Roles and Access Control are backed
   by the `users` and `role-permissions` resources in the same file's map.)
-- `core/mock/fake-data.ts` — generates plausible seed rows for the 219
-  generic scaffold resources from their `entity-configs.ts` field
-  definitions (heuristic — a field named/labeled with "cost" gets a
-  dollar-ish number, "airport"/"origin" gets an IATA-style code, etc.). Not
-  perfect for every field name, but good enough to make every one of the
-  240 pages demoable with realistic-looking data on first load.
+- `core/mock/fake-data.ts` — generates plausible seed rows for the 433
+  generic scaffold resources from their `entity-configs.ts` /
+  `entity-configs-extended.ts` field definitions (heuristic — a field
+  named/labeled with "cost" gets a dollar-ish number, "airport"/"origin"
+  gets an IATA-style code, etc.). Not perfect for every field name, but
+  good enough to make every one of the 454 pages demoable with
+  realistic-looking data on first load.
 - `core/mock/mock-db.ts` — thin `localStorage` persistence so anything
   created/edited/deleted while clicking around survives a refresh. A
   "Reset Demo Data" option lives in the user menu (top-right avatar).

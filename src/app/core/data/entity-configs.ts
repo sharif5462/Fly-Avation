@@ -1,10 +1,19 @@
-import { EntityConfig, EntityField, FieldType, TagSeverity } from '../models/entity-config.model';
+import { EntityConfig, TagSeverity } from '../models/entity-config.model';
+import { EXTENDED_ENTITY_LIST } from './entity-configs-extended';
+import { date, datetime, entity, f, money, num, statusField } from './entity-field-helpers';
 
 /**
  * Field/table/form configuration for every *generic* (non-flagship) sub-item
  * in module-manifest.ts. Consumed by shared/scaffold/feature-list-page to
  * render a real, working CRUD screen for each — table columns, the add/edit
  * dialog form, and validation — without a bespoke component per item.
+ *
+ * This file covers the original 25 modules; the ten later modules (supplier,
+ * sales/buyer, catering, IRROPS, crew & staff travel, ground handling,
+ * training, charter & leasing, revenue accounting, sustainability) live in
+ * entity-configs-extended.ts and are concatenated at the bottom. Both use the
+ * same helpers from entity-field-helpers.ts, and both feed one flat
+ * `ENTITY_CONFIGS` lookup — nothing downstream knows there are two files.
  *
  * Flagship items (flight-scheduling, aircraft-registration, work-orders,
  * mro-dashboard, component-tracking, pilot-management, spare-parts-inventory,
@@ -13,49 +22,6 @@ import { EntityConfig, EntityField, FieldType, TagSeverity } from '../models/ent
  * baggage-handling-dashboard, baggage-handling, landside-dashboard, resource-dashboard)
  * intentionally have no entry here: they have hand-built components under features/ instead.
  */
-
-function f(key: string, label: string, type: FieldType = 'text', extra: Partial<EntityField> = {}): EntityField {
-  return { key, label, type, required: true, ...extra };
-}
-
-function num(key: string, label: string, extra: Partial<EntityField> = {}): EntityField {
-  return f(key, label, 'number', extra);
-}
-
-function money(key: string, label: string, extra: Partial<EntityField> = {}): EntityField {
-  return f(key, label, 'number', { prefix: '$', min: 0, ...extra });
-}
-
-function date(key: string, label: string, extra: Partial<EntityField> = {}): EntityField {
-  return f(key, label, 'date', extra);
-}
-
-function datetime(key: string, label: string, extra: Partial<EntityField> = {}): EntityField {
-  return f(key, label, 'datetime', extra);
-}
-
-function statusField(pairs: Array<[string, TagSeverity]>, key = 'status', label = 'Status'): EntityField {
-  return {
-    key,
-    label,
-    type: 'select',
-    required: true,
-    badge: true,
-    options: pairs.map(([value, severity]) => ({ label: value, value, severity }))
-  };
-}
-
-function entity(
-  key: string,
-  label: string,
-  pluralLabel: string,
-  icon: string,
-  description: string,
-  fields: EntityField[],
-  seedCount = 10
-): EntityConfig {
-  return { key, label, pluralLabel, icon, description, fields, seedCount };
-}
 
 const ENTITY_LIST: EntityConfig[] = [
   // ───────────────────────── Flight Operations ─────────────────────────
@@ -456,8 +422,10 @@ const ENTITY_LIST: EntityConfig[] = [
   entity('vendor-management', 'Vendor', 'Vendor Management', 'pi-building', 'Approved vendor and supplier master records.', [
     f('vendorCode', 'Vendor Code'),
     f('vendorName', 'Vendor Name'),
+    f('category', 'Category'),
     f('contactPerson', 'Contact Person'),
     f('phone', 'Phone'),
+    f('email', 'Email', 'email'),
     statusField([['Active', 'success'], ['Inactive', 'secondary'], ['Blacklisted', 'danger']])
   ]),
   entity('rfq', 'RFQ', 'RFQ (Request for Quotation)', 'pi-file-edit', 'Requests for quotation issued to vendors.', [
@@ -1605,6 +1573,7 @@ const ENTITY_LIST: EntityConfig[] = [
     f('fullName', 'Full Name'),
     f('email', 'Email', 'email'),
     f('phone', 'Phone'),
+    f('country', 'Country'),
     statusField([['Active', 'success'], ['Inactive', 'secondary']])
   ]),
   entity('complaint-management', 'Complaint', 'Complaint Management', 'pi-comment', 'Customer complaints from intake to resolution.', [
@@ -1785,7 +1754,7 @@ const ENTITY_LIST: EntityConfig[] = [
 ];
 
 export const ENTITY_CONFIGS: Record<string, EntityConfig> = Object.fromEntries(
-  ENTITY_LIST.map((e) => [e.key, e])
+  [...ENTITY_LIST, ...EXTENDED_ENTITY_LIST].map((e) => [e.key, e])
 );
 
 export function getEntityConfig(key: string): EntityConfig | undefined {

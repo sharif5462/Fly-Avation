@@ -128,6 +128,32 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       avatarColor: '#334155',
       initials: 'ML'
     }
+  },
+  {
+    password: 'comm123',
+    user: {
+      id: 'usr-010',
+      username: 'commercial.mgr',
+      fullName: 'Layla Haddad',
+      email: 'layla.haddad@aviation-erp.test',
+      jobTitle: 'Commercial & Supply Chain Manager',
+      roles: ['Supplier', 'Sales', 'Charter', 'RevenueAccounting'],
+      avatarColor: '#0d9488',
+      initials: 'LH'
+    }
+  },
+  {
+    password: 'ops2-123',
+    user: {
+      id: 'usr-011',
+      username: 'pax.services.mgr',
+      fullName: 'Henry Osei',
+      email: 'henry.osei@aviation-erp.test',
+      jobTitle: 'Passenger Services & IRROPS Manager',
+      roles: ['Irrops', 'Catering', 'GroundHandling', 'Travel', 'Training', 'Sustainability'],
+      avatarColor: '#9333ea',
+      initials: 'HO'
+    }
   }
 ];
 

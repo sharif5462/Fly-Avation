@@ -487,6 +487,354 @@ export const MODULES: ModuleDef[] = [
     ]
   },
   {
+    key: 'supplier-management',
+    label: 'Supplier & Vendor Management',
+    icon: 'pi-building',
+    role: 'Supplier',
+    items: [
+      // ── Who they are, and whether they're allowed to sell to an airline.
+      { key: 'supplier-registry', label: 'Supplier Registry', icon: 'pi-building' },
+      { key: 'supplier-onboarding', label: 'Onboarding & Prequalification', icon: 'pi-user-plus' },
+      { key: 'supplier-categories', label: 'Supplier Category Setup', icon: 'pi-tags' },
+      { key: 'supplier-contacts', label: 'Supplier Contacts', icon: 'pi-users' },
+      { key: 'supplier-certifications', label: 'Certifications & Approvals', icon: 'pi-verified' },
+      { key: 'approved-supplier-list', label: 'Approved Supplier List (ASL)', icon: 'pi-list-check' },
+      { key: 'supplier-capability-matrix', label: 'Capability & Part Coverage', icon: 'pi-sitemap' },
+      // ── Commercial terms.
+      { key: 'supplier-price-list', label: 'Price Lists & Catalogues', icon: 'pi-tag' },
+      { key: 'supplier-quotations', label: 'Supplier Quotations', icon: 'pi-file-edit' },
+      { key: 'supplier-agreements', label: 'Agreements & SLA', icon: 'pi-file' },
+      // Reuses Procurement's RFQ — the request these quotations answer.
+      { key: 'rfq', label: 'RFQ to Suppliers', icon: 'pi-file-edit' },
+      // ── Performance & risk.
+      { key: 'supplier-lead-time', label: 'Lead Time & AOG Response', icon: 'pi-stopwatch' },
+      { key: 'supplier-performance-kpi', label: 'Performance Scorecard', icon: 'pi-chart-bar' },
+      { key: 'supplier-audit', label: 'Supplier Audit & Surveillance', icon: 'pi-search' },
+      { key: 'supplier-nonconformance', label: 'Non-Conformance (SCAR)', icon: 'pi-ban' },
+      { key: 'supplier-risk-assessment', label: 'Supplier Risk Assessment', icon: 'pi-exclamation-triangle' },
+      { key: 'supplier-blacklist', label: 'Blacklist & Suspension', icon: 'pi-ban' },
+      // ── Money & paperwork.
+      { key: 'supplier-invoice', label: 'Supplier Invoices', icon: 'pi-file-edit' },
+      { key: 'supplier-payment', label: 'Payments & Terms', icon: 'pi-credit-card' },
+      { key: 'supplier-credit-debit-note', label: 'Credit & Debit Notes', icon: 'pi-replay' },
+      { key: 'supplier-document-vault', label: 'Document Vault', icon: 'pi-folder' },
+      { key: 'supplier-portal-access', label: 'Portal Access & Users', icon: 'pi-key' }
+    ]
+  },
+  {
+    key: 'sales-buyer-management',
+    label: 'Sales & Buyer Management',
+    icon: 'pi-users',
+    role: 'Sales',
+    items: [
+      // ── Who buys from us.
+      { key: 'buyer-registry', label: 'Buyer Registry', icon: 'pi-users' },
+      { key: 'buyer-categories', label: 'Buyer Category Setup', icon: 'pi-tags' },
+      { key: 'buyer-contacts', label: 'Buyer Contacts', icon: 'pi-address-book' },
+      { key: 'corporate-accounts', label: 'Corporate Accounts', icon: 'pi-building-columns' },
+      { key: 'travel-agency-management', label: 'Travel Agents & GSA', icon: 'pi-briefcase' },
+      { key: 'cargo-agent-management', label: 'Cargo Agents (CASS)', icon: 'pi-inbox' },
+      { key: 'interline-partners', label: 'Interline & Codeshare Partners', icon: 'pi-share-alt' },
+      { key: 'credit-limit-management', label: 'Credit Limit & Exposure', icon: 'pi-gauge' },
+      // ── Selling to them.
+      { key: 'sales-pipeline', label: 'Opportunity Pipeline', icon: 'pi-chart-line' },
+      { key: 'sales-quotation', label: 'Sales Quotations', icon: 'pi-file-edit' },
+      { key: 'sales-contract', label: 'Sales Contracts', icon: 'pi-file' },
+      { key: 'sales-order', label: 'Sales Orders', icon: 'pi-shopping-bag' },
+      { key: 'tariff-fare-agreement', label: 'Tariff & Fare Agreements', icon: 'pi-percentage' },
+      { key: 'commission-management', label: 'Agent Commission & Incentives', icon: 'pi-dollar' },
+      // ── Getting paid.
+      { key: 'sales-invoice', label: 'Sales Invoices', icon: 'pi-file-edit' },
+      { key: 'sales-receipt', label: 'Receipts & Collections', icon: 'pi-wallet' },
+      { key: 'buyer-outstanding', label: 'Outstanding & Ageing', icon: 'pi-clock' },
+      { key: 'sales-return-credit', label: 'Sales Return & Credit Notes', icon: 'pi-replay' },
+      // ── Selling things other than seats.
+      { key: 'third-party-mro-sales', label: 'Third-Party MRO Sales', icon: 'pi-wrench' },
+      { key: 'parts-sales-exchange', label: 'Parts Sale / Exchange / Loan', icon: 'pi-box' },
+      { key: 'buyer-satisfaction-survey', label: 'Buyer Satisfaction Survey', icon: 'pi-comments' },
+      // Reuses CRM's Customer Database — the retail passenger behind an agency booking.
+      { key: 'customer-database', label: 'Customer Database', icon: 'pi-database' }
+    ]
+  },
+  {
+    key: 'catering-food-services',
+    label: 'Catering & Food Services',
+    icon: 'pi-shopping-bag',
+    role: 'Catering',
+    items: [
+      // ── Who cooks it.
+      { key: 'catering-kitchen-registry', label: 'Flight Kitchen Registry', icon: 'pi-building' },
+      { key: 'catering-supplier', label: 'Catering Suppliers & Contracts', icon: 'pi-briefcase' },
+      // ── What's on the menu.
+      { key: 'menu-planning', label: 'Menu Planning & Cycles', icon: 'pi-calendar' },
+      { key: 'recipe-management', label: 'Recipe & Ingredient Master', icon: 'pi-book' },
+      { key: 'meal-catalogue', label: 'Meal Catalogue', icon: 'pi-list' },
+      { key: 'special-meal-management', label: 'Special Meals (SPML)', icon: 'pi-star' },
+      { key: 'dietary-religious-compliance', label: 'Halal / Kosher / Allergen', icon: 'pi-verified' },
+      // ── Getting it onto the aircraft.
+      { key: 'catering-order', label: 'Catering Order per Flight', icon: 'pi-shopping-cart' },
+      { key: 'catering-uplift-downlift', label: 'Uplift & Downlift Records', icon: 'pi-arrow-right-arrow-left' },
+      { key: 'galley-loading-plan', label: 'Galley Loading Plan', icon: 'pi-th-large' },
+      { key: 'trolley-cart-management', label: 'Trolley & Cart Management', icon: 'pi-box' },
+      { key: 'crew-meal-management', label: 'Crew Meals', icon: 'pi-users' },
+      // ── Stock, bonded goods and onboard retail.
+      { key: 'catering-inventory', label: 'Catering Inventory', icon: 'pi-inbox' },
+      { key: 'beverage-management', label: 'Beverage & Bar Stock', icon: 'pi-box' },
+      { key: 'bonded-store-management', label: 'Bonded Store & Duty-Free', icon: 'pi-lock' },
+      { key: 'onboard-sales', label: 'Onboard Retail Sales', icon: 'pi-shopping-bag' },
+      { key: 'lounge-catering', label: 'Lounge F&B Services', icon: 'pi-home' },
+      // ── Food safety and the money.
+      { key: 'food-safety-haccp', label: 'Food Safety & HACCP', icon: 'pi-shield' },
+      { key: 'kitchen-hygiene-audit', label: 'Kitchen Hygiene Audit', icon: 'pi-search' },
+      { key: 'food-wastage', label: 'Food Wastage & Variance', icon: 'pi-trash' },
+      { key: 'catering-billing', label: 'Catering Billing', icon: 'pi-dollar' },
+      { key: 'meal-complaint', label: 'Meal Complaints & Feedback', icon: 'pi-comment' }
+    ]
+  },
+  {
+    key: 'irregular-operations',
+    label: 'IRROPS & Passenger Care',
+    icon: 'pi-exclamation-triangle',
+    role: 'Irrops',
+    items: [
+      // ── The disruption itself.
+      { key: 'disruption-event', label: 'Disruption Events', icon: 'pi-exclamation-triangle' },
+      { key: 'disruption-cause-code', label: 'Delay & Cancel Cause Codes', icon: 'pi-tags' },
+      { key: 'irrops-decision-log', label: 'IRROPS Decision Log', icon: 'pi-book' },
+      { key: 'diversion-management', label: 'Diversion & Alternate Handling', icon: 'pi-directions-alt' },
+      // Reuses Flight Operations' Delay Management — the ops-side delay record this module reacts to.
+      { key: 'delay-management', label: 'Delay Management', icon: 'pi-clock' },
+      // ── Moving the passengers.
+      { key: 'passenger-impact-list', label: 'Impacted Passenger List', icon: 'pi-users' },
+      { key: 'passenger-reaccommodation', label: 'Re-accommodation & Rebooking', icon: 'pi-sync' },
+      { key: 'misconnection-management', label: 'Misconnection Management', icon: 'pi-sync' },
+      { key: 'denied-boarding', label: 'Denied Boarding & Offload', icon: 'pi-user-minus' },
+      { key: 'stranded-passenger-tracking', label: 'Stranded Passenger Tracking', icon: 'pi-map-marker' },
+      { key: 'special-assistance-irrops', label: 'Special Assistance (PRM/UM)', icon: 'pi-heart' },
+      // ── Where they sleep, eat and how they get there — duty of care.
+      { key: 'duty-of-care-entitlement', label: 'Duty of Care Entitlement Rules', icon: 'pi-list-check' },
+      { key: 'hotel-partner-registry', label: 'Hotel Partner Registry', icon: 'pi-building' },
+      { key: 'hotel-rate-contract', label: 'Hotel Rate Contracts & Allotments', icon: 'pi-file' },
+      { key: 'hotel-room-booking', label: 'Passenger Hotel Booking', icon: 'pi-home' },
+      { key: 'hotel-room-inventory', label: 'Room Block & Availability', icon: 'pi-th-large' },
+      { key: 'passenger-transport', label: 'Passenger Ground Transport', icon: 'pi-car' },
+      { key: 'meal-voucher', label: 'Meal & Refreshment Vouchers', icon: 'pi-ticket' },
+      { key: 'communication-voucher', label: 'Communication Allowance', icon: 'pi-phone' },
+      { key: 'irrops-passenger-notification', label: 'Passenger Notification Log', icon: 'pi-send' },
+      // ── What it costs us.
+      { key: 'ec261-compensation', label: 'Consumer Compensation Claims', icon: 'pi-dollar' },
+      { key: 'irrops-expense-claim', label: 'Disruption Expense Claims', icon: 'pi-file-edit' },
+      { key: 'hotel-invoice-reconciliation', label: 'Hotel Invoice Reconciliation', icon: 'pi-file-edit' },
+      { key: 'irrops-cost-tracking', label: 'Disruption Cost Tracking', icon: 'pi-chart-bar' }
+    ]
+  },
+  {
+    key: 'crew-staff-travel',
+    label: 'Crew & Staff Travel (HOTAC)',
+    icon: 'pi-briefcase',
+    role: 'Travel',
+    items: [
+      // ── Asking to travel.
+      { key: 'travel-request', label: 'Duty Travel Request', icon: 'pi-file-edit' },
+      { key: 'travel-approval', label: 'Travel Approval Workflow', icon: 'pi-check-square' },
+      { key: 'travel-policy', label: 'Travel Policy & Entitlements', icon: 'pi-book' },
+      { key: 'duty-travel-itinerary', label: 'Travel Itinerary', icon: 'pi-map' },
+      { key: 'corporate-travel-agency', label: 'Corporate Travel Agency (TMC)', icon: 'pi-briefcase' },
+      // ── Crew layovers — the HOTAC core.
+      { key: 'crew-hotel-contract', label: 'Crew Hotel Contracts & Rates', icon: 'pi-file' },
+      { key: 'crew-layover-hotel', label: 'Crew Layover Hotel', icon: 'pi-home' },
+      { key: 'crew-room-allocation', label: 'Crew Room Allocation', icon: 'pi-th-large' },
+      { key: 'crew-transport', label: 'Crew Transport', icon: 'pi-car' },
+      { key: 'positioning-deadhead', label: 'Positioning / Deadhead Travel', icon: 'pi-send' },
+      { key: 'accommodation-facility', label: 'Company Accommodation', icon: 'pi-building' },
+      { key: 'crew-rest-facility', label: 'Crew Rest & Fatigue Facility', icon: 'pi-moon' },
+      { key: 'hotel-service-quality', label: 'Hotel Service Quality', icon: 'pi-star' },
+      // ── Staff concessional travel.
+      { key: 'staff-travel-ticket', label: 'Staff Travel Tickets (ID90/ID50)', icon: 'pi-ticket' },
+      { key: 'staff-standby-listing', label: 'Staff Standby Listing', icon: 'pi-list' },
+      // ── Documents that ground a trip.
+      { key: 'visa-passport-tracking', label: 'Visa & Passport Tracking', icon: 'pi-id-card' },
+      { key: 'crew-visa-gendec', label: 'Crew Visa & GENDEC', icon: 'pi-file' },
+      { key: 'travel-insurance', label: 'Travel Insurance', icon: 'pi-shield' },
+      // ── Money.
+      { key: 'per-diem-management', label: 'Per Diem & Allowance', icon: 'pi-money-bill' },
+      { key: 'travel-advance', label: 'Travel Advance', icon: 'pi-wallet' },
+      { key: 'travel-expense-claim', label: 'Travel Expense Claim', icon: 'pi-file-edit' },
+      { key: 'travel-expense-settlement', label: 'Expense Settlement', icon: 'pi-check-circle' },
+      { key: 'travel-cost-analysis', label: 'Travel Cost Tracking', icon: 'pi-chart-bar' }
+    ]
+  },
+  {
+    key: 'ground-handling-services',
+    label: 'Ground Handling Services',
+    icon: 'pi-truck',
+    role: 'GroundHandling',
+    items: [
+      // ── Who handles us, and on what terms.
+      { key: 'gha-registry', label: 'Ground Handler (GHA) Registry', icon: 'pi-building' },
+      { key: 'gha-sgha-contract', label: 'SGHA / Annex B Contracts', icon: 'pi-file' },
+      { key: 'ground-service-catalogue', label: 'Service Catalogue & Rates', icon: 'pi-list' },
+      // ── The turnaround, service by service.
+      { key: 'turnaround-service-order', label: 'Turnaround Service Order', icon: 'pi-clipboard' },
+      { key: 'ramp-handling', label: 'Ramp Handling Operations', icon: 'pi-car' },
+      { key: 'passenger-handling-service', label: 'Passenger Handling Services', icon: 'pi-users' },
+      { key: 'pushback-towing', label: 'Pushback & Towing', icon: 'pi-arrow-left' },
+      { key: 'aircraft-cleaning', label: 'Aircraft Cleaning & Grooming', icon: 'pi-sparkles' },
+      { key: 'lavatory-water-service', label: 'Lavatory & Potable Water', icon: 'pi-filter' },
+      { key: 'deicing-service', label: 'De-icing / Anti-icing Service', icon: 'pi-cloud' },
+      { key: 'gpu-acu-service', label: 'GPU / ACU / Air Start', icon: 'pi-bolt' },
+      { key: 'into-plane-fueling', label: 'Into-Plane Fuelling Service', icon: 'pi-bolt' },
+      // ── The equipment and the people.
+      { key: 'gse-allocation', label: 'GSE Allocation & Dispatch', icon: 'pi-truck' },
+      { key: 'gse-maintenance', label: 'GSE Maintenance', icon: 'pi-wrench' },
+      { key: 'gse-fuel-consumption', label: 'GSE Fuel & Charging', icon: 'pi-bolt' },
+      { key: 'ground-staff-roster', label: 'Ground Staff Roster', icon: 'pi-table' },
+      // Reuses Facilities & Assets' GSE Fleet Registry — the equipment master behind allocation.
+      { key: 'gse-fleet-registry', label: 'GSE Fleet Registry', icon: 'pi-truck' },
+      // ── Load control.
+      { key: 'load-control-sheet', label: 'Load Control & Loadsheet', icon: 'pi-file-edit' },
+      { key: 'weight-balance', label: 'Weight & Balance', icon: 'pi-gauge' },
+      { key: 'uld-management', label: 'ULD Management & Control', icon: 'pi-box' },
+      // ── Safety, performance and billing.
+      { key: 'ramp-safety-inspection', label: 'Ramp Safety Inspection', icon: 'pi-shield' },
+      { key: 'ground-damage-report', label: 'Ground Damage Report', icon: 'pi-exclamation-triangle' },
+      { key: 'gha-sla-performance', label: 'GHA SLA & Performance', icon: 'pi-chart-line' },
+      { key: 'ground-handling-billing', label: 'Ground Handling Billing', icon: 'pi-dollar' }
+    ]
+  },
+  {
+    key: 'training-academy',
+    label: 'Training & Simulator Management',
+    icon: 'pi-graduation-cap',
+    role: 'Training',
+    items: [
+      // ── What we teach.
+      { key: 'training-course-catalogue', label: 'Course Catalogue', icon: 'pi-book' },
+      { key: 'training-curriculum', label: 'Curriculum & Syllabus', icon: 'pi-list' },
+      { key: 'training-program-approval', label: 'Regulatory Program Approval', icon: 'pi-verified' },
+      { key: 'elearning-module', label: 'E-Learning Modules', icon: 'pi-desktop' },
+      // ── Who teaches and who learns.
+      { key: 'instructor-management', label: 'Instructor & Examiner Management', icon: 'pi-user-edit' },
+      { key: 'trainee-enrollment', label: 'Trainee Enrollment', icon: 'pi-user-plus' },
+      { key: 'training-batch', label: 'Training Batch / Class', icon: 'pi-users' },
+      // ── Where and when.
+      { key: 'training-schedule', label: 'Training Schedule', icon: 'pi-calendar' },
+      { key: 'classroom-management', label: 'Classroom & Facility Booking', icon: 'pi-building' },
+      { key: 'simulator-registry', label: 'Simulator Registry', icon: 'pi-desktop' },
+      { key: 'simulator-slot-booking', label: 'Simulator Slot Booking', icon: 'pi-calendar-clock' },
+      { key: 'simulator-maintenance', label: 'Simulator Maintenance & Qualification', icon: 'pi-wrench' },
+      // ── Checks and ratings.
+      { key: 'type-rating-management', label: 'Type Rating Management', icon: 'pi-id-card' },
+      { key: 'line-training-check', label: 'Line Training & Line Check', icon: 'pi-send' },
+      { key: 'proficiency-check', label: 'Proficiency Check (LPC/OPC)', icon: 'pi-check-square' },
+      { key: 'recurrent-training-plan', label: 'Recurrent Training Plan', icon: 'pi-refresh' },
+      { key: 'competency-framework', label: 'Competency (EBT/CBTA) Framework', icon: 'pi-sitemap' },
+      // ── Records and outcomes.
+      { key: 'training-attendance', label: 'Training Attendance', icon: 'pi-calendar-plus' },
+      { key: 'training-assessment', label: 'Assessment & Exam Results', icon: 'pi-check-circle' },
+      { key: 'training-certificate-issue', label: 'Certificate Issuance', icon: 'pi-verified' },
+      { key: 'training-record-file', label: 'Individual Training File', icon: 'pi-folder' },
+      { key: 'training-feedback', label: 'Training Feedback', icon: 'pi-comments' },
+      { key: 'training-cost-billing', label: 'Training Cost & Billing', icon: 'pi-dollar' },
+      // Reuses Crew Management's Training Records — the crew-side completion history.
+      { key: 'training-records', label: 'Crew Training Records', icon: 'pi-graduation-cap' }
+    ]
+  },
+  {
+    key: 'charter-leasing',
+    label: 'Charter & Aircraft Leasing',
+    icon: 'pi-send',
+    role: 'Charter',
+    items: [
+      // ── Selling a charter.
+      { key: 'charter-enquiry', label: 'Charter Enquiry', icon: 'pi-inbox' },
+      { key: 'charter-quotation', label: 'Charter Quotation', icon: 'pi-file-edit' },
+      { key: 'charter-pricing-model', label: 'Charter Pricing & Costing', icon: 'pi-calculator' },
+      { key: 'charter-contract', label: 'Charter Contract', icon: 'pi-file' },
+      { key: 'charter-flight-schedule', label: 'Charter Flight Schedule', icon: 'pi-calendar' },
+      // ── Charter types that need their own handling.
+      { key: 'hajj-umrah-operations', label: 'Hajj / Umrah Operations', icon: 'pi-globe' },
+      { key: 'vip-special-charter', label: 'VIP & Special Charter', icon: 'pi-star' },
+      { key: 'cargo-charter', label: 'Cargo Charter', icon: 'pi-inbox' },
+      // ── Operating it.
+      { key: 'charter-permit-management', label: 'Overflight & Landing Permits', icon: 'pi-globe' },
+      { key: 'charter-ground-arrangement', label: 'Charter Ground Arrangements', icon: 'pi-car' },
+      { key: 'charter-settlement', label: 'Charter Settlement & Payment', icon: 'pi-check-circle' },
+      // ── Leasing aircraft in and out.
+      { key: 'lessor-registry', label: 'Lessor & Lessee Registry', icon: 'pi-building-columns' },
+      { key: 'acmi-agreement', label: 'ACMI / Wet Lease Agreement', icon: 'pi-file' },
+      { key: 'dry-lease-agreement', label: 'Dry Lease Agreement', icon: 'pi-file-edit' },
+      { key: 'lease-rental-invoice', label: 'Lease Rental & Invoicing', icon: 'pi-dollar' },
+      { key: 'maintenance-reserve', label: 'Maintenance Reserves', icon: 'pi-wallet' },
+      { key: 'insurance-certificate', label: 'Insurance & Certificates', icon: 'pi-shield' },
+      // ── Delivery and the expensive end of a lease.
+      { key: 'aircraft-delivery-acceptance', label: 'Delivery & Acceptance', icon: 'pi-check-circle' },
+      { key: 'aircraft-redelivery', label: 'Redelivery & Return Conditions', icon: 'pi-replay' },
+      { key: 'lease-technical-record', label: 'Lease Technical Records', icon: 'pi-folder' }
+    ]
+  },
+  {
+    key: 'revenue-accounting',
+    label: 'Revenue Accounting & Billing',
+    icon: 'pi-calculator',
+    role: 'RevenueAccounting',
+    items: [
+      // ── Recognising what we sold.
+      { key: 'passenger-revenue-accounting', label: 'Passenger Revenue Accounting', icon: 'pi-ticket' },
+      { key: 'cargo-revenue-accounting', label: 'Cargo Revenue Accounting', icon: 'pi-inbox' },
+      { key: 'ticket-coupon-control', label: 'Ticket & Coupon Control', icon: 'pi-list-check' },
+      { key: 'flown-revenue-recognition', label: 'Flown Revenue Recognition', icon: 'pi-check-circle' },
+      { key: 'unearned-revenue-liability', label: 'Unearned Revenue (ATL)', icon: 'pi-wallet' },
+      { key: 'emd-accounting', label: 'EMD & Ancillary Accounting', icon: 'pi-credit-card' },
+      { key: 'refund-accounting', label: 'Refund Accounting', icon: 'pi-replay' },
+      // ── Splitting and settling with partners.
+      { key: 'proration', label: 'Proration', icon: 'pi-percentage' },
+      { key: 'interline-billing', label: 'Interline Billing (SIS)', icon: 'pi-share-alt' },
+      { key: 'bsp-arc-settlement', label: 'BSP / ARC Settlement', icon: 'pi-building-columns' },
+      { key: 'cass-settlement', label: 'CASS Cargo Settlement', icon: 'pi-inbox' },
+      { key: 'agent-commission-settlement', label: 'Agent Commission Settlement', icon: 'pi-dollar' },
+      { key: 'intercompany-settlement', label: 'Intercompany Settlement', icon: 'pi-arrow-right-arrow-left' },
+      // ── Verifying what everyone bills us.
+      { key: 'tax-fee-charges', label: 'Taxes, Fees & Charges', icon: 'pi-percentage' },
+      { key: 'airport-charges-billing', label: 'Airport & ANSP Charges', icon: 'pi-building' },
+      { key: 'navigation-charges', label: 'Route & Navigation Charges', icon: 'pi-map' },
+      { key: 'handling-charges-verification', label: 'Handling Invoice Verification', icon: 'pi-check-square' },
+      { key: 'fuel-invoice-verification', label: 'Fuel Invoice Verification', icon: 'pi-bolt' },
+      // ── Making sure none of it leaked.
+      { key: 'revenue-leakage-audit', label: 'Revenue Leakage & Audit', icon: 'pi-search' },
+      { key: 'revenue-reconciliation', label: 'Revenue Reconciliation', icon: 'pi-sync' }
+    ]
+  },
+  {
+    key: 'environment-sustainability',
+    label: 'Environment & Sustainability',
+    icon: 'pi-globe',
+    role: 'Sustainability',
+    items: [
+      // ── Carbon: measure it, report it, offset it.
+      { key: 'emission-monitoring', label: 'CO2 Emission Monitoring', icon: 'pi-cloud' },
+      { key: 'corsia-reporting', label: 'CORSIA Reporting', icon: 'pi-globe' },
+      { key: 'ets-compliance', label: 'EU / UK ETS Compliance', icon: 'pi-verified' },
+      { key: 'carbon-offset-program', label: 'Carbon Offset Programs', icon: 'pi-heart' },
+      { key: 'saf-management', label: 'Sustainable Aviation Fuel (SAF)', icon: 'pi-bolt' },
+      { key: 'fuel-efficiency-initiative', label: 'Fuel Efficiency Initiatives', icon: 'pi-chart-line' },
+      // ── Local environmental impact.
+      { key: 'noise-monitoring', label: 'Noise Monitoring & Abatement', icon: 'pi-bell' },
+      { key: 'air-quality-monitoring', label: 'Air Quality Monitoring', icon: 'pi-cloud' },
+      { key: 'water-discharge-management', label: 'Water & Discharge Management', icon: 'pi-filter' },
+      { key: 'waste-recycling-program', label: 'Waste & Recycling Program', icon: 'pi-trash' },
+      { key: 'single-use-plastic-reduction', label: 'Single-Use Plastic Reduction', icon: 'pi-ban' },
+      { key: 'energy-consumption-tracking', label: 'Energy Consumption Tracking', icon: 'pi-bolt' },
+      { key: 'wildlife-hazard-management', label: 'Wildlife Hazard Management', icon: 'pi-eye' },
+      // ── Compliance and disclosure.
+      { key: 'environmental-permit', label: 'Environmental Permits & Licences', icon: 'pi-verified' },
+      { key: 'environmental-audit', label: 'Environmental Audit', icon: 'pi-search' },
+      { key: 'environmental-incident', label: 'Environmental Incident', icon: 'pi-exclamation-triangle' },
+      { key: 'sustainability-target', label: 'Sustainability Targets & KPI', icon: 'pi-gauge' },
+      { key: 'esg-reporting', label: 'ESG Disclosure', icon: 'pi-file' }
+    ]
+  },
+  {
     key: 'notification-system',
     label: 'Notification System',
     icon: 'pi-bell',
