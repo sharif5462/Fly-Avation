@@ -29,6 +29,20 @@ export type Role =
   | 'BI'
   | 'Security'
   | 'Facilities'
+  | 'Supplier'
+  | 'Sales'
+  | 'Catering'
+  | 'Irrops'
+  | 'Travel'
+  | 'GroundHandling'
+  | 'Training'
+  | 'Charter'
+  | 'RevenueAccounting'
+  | 'Sustainability'
+  | 'MasterData'
+  | 'Workflow'
+  | 'RevenueManagement'
+  | 'Integration'
   | 'ReadOnly';
 
 export const ALL_ROLES: Role[] = [
@@ -56,6 +70,20 @@ export const ALL_ROLES: Role[] = [
   'BI',
   'Security',
   'Facilities',
+  'Supplier',
+  'Sales',
+  'Catering',
+  'Irrops',
+  'Travel',
+  'GroundHandling',
+  'Training',
+  'Charter',
+  'RevenueAccounting',
+  'Sustainability',
+  'MasterData',
+  'Workflow',
+  'RevenueManagement',
+  'Integration',
   'ReadOnly'
 ];
 
@@ -84,5 +112,19 @@ export const ROLE_LABELS: Record<Role, string> = {
   BI: 'Business Intelligence',
   Security: 'Security Management',
   Facilities: 'Facilities & Assets',
+  MasterData: 'Master Data Management',
+  Workflow: 'Workflow & Approval Engine',
+  RevenueManagement: 'Revenue Management & Pricing',
+  Integration: 'Integration Hub',
+  Supplier: 'Supplier & Vendor Management',
+  Sales: 'Sales & Buyer Management',
+  Catering: 'Catering & Food Services',
+  Irrops: 'IRROPS & Passenger Care',
+  Travel: 'Crew & Staff Travel (HOTAC)',
+  GroundHandling: 'Ground Handling Services',
+  Training: 'Training & Simulator Management',
+  Charter: 'Charter & Aircraft Leasing',
+  RevenueAccounting: 'Revenue Accounting & Billing',
+  Sustainability: 'Environment & Sustainability',
   ReadOnly: 'Read Only'
 };

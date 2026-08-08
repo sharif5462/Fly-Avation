@@ -66,7 +66,7 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "1.5MB",
+                  "maximumWarning": "1.8MB",
                   "maximumError": "2.5MB"
                 },
                 {
@@ -123,7 +123,8 @@
             ],
             "styles": [
               "src/styles.scss"
-            ]
+            ],
+            "karmaConfig": "karma.conf.js"
           }
         }
       }

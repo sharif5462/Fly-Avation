@@ -33,7 +33,10 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       fullName: 'Jordan Blake',
       email: 'jordan.blake@aviation-erp.test',
       jobTitle: 'ERP Administrator',
-      roles: ['Admin'],
+      // MasterData/Workflow/Integration are governance-flavored, IT-adjacent
+      // roles that naturally cluster under the ERP admin rather than a
+      // dedicated business user.
+      roles: ['Admin', 'MasterData', 'Workflow', 'Integration'],
       avatarColor: '#7c3aed',
       initials: 'JB'
     }
@@ -127,6 +130,37 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       roles: ['Security', 'Compliance'],
       avatarColor: '#334155',
       initials: 'ML'
+    }
+  },
+  {
+    password: 'comm123',
+    user: {
+      id: 'usr-010',
+      username: 'commercial.mgr',
+      fullName: 'Layla Haddad',
+      email: 'layla.haddad@aviation-erp.test',
+      jobTitle: 'Commercial & Supply Chain Manager',
+      roles: ['Supplier', 'Sales', 'Charter', 'RevenueAccounting', 'RevenueManagement'],
+      avatarColor: '#0d9488',
+      initials: 'LH'
+    }
+  },
+  {
+    password: 'ops2-123',
+    user: {
+      id: 'usr-011',
+      username: 'pax.services.mgr',
+      fullName: 'Henry Osei',
+      email: 'henry.osei@aviation-erp.test',
+      jobTitle: 'Passenger Services & IRROPS Manager',
+      roles: ['Irrops', 'Catering', 'GroundHandling', 'Travel', 'Training', 'Sustainability'],
+      avatarColor: '#9333ea',
+      initials: 'HO',
+      // Demonstrates row-level access scoping (EntityConfig.scopeField): this
+      // user only sees JFK/LHR rows on station-scoped entities (ground
+      // handling, catering, hotel/HOTAC) — every other demo user is
+      // unscoped and sees every station, same as before this feature.
+      stationScope: ['JFK', 'LHR']
     }
   }
 ];

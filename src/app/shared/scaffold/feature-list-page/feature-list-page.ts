@@ -16,7 +16,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
 
 import { getEntityConfig } from '../../../core/data/entity-configs';
-import { EntityConfig, EntityField, TagSeverity } from '../../../core/models/entity-config.model';
+import { EntityConfig, EntityField, FieldOption, FileFieldValue, TagSeverity } from '../../../core/models/entity-config.model';
 import { ApiService } from '../../../core/services/api.service';
 import { PageHeader } from '../../components/page-header/page-header';
 
@@ -70,6 +70,9 @@ export class FeatureListPage implements OnInit {
   saving = signal(false);
   form: FormGroup = this.fb.group({});
 
+  /** Per-field resolved options for 'lookup' fields — see loadLookups(). Keyed by field key, not lookupEntity, so two fields can reference the same entity independently. */
+  private readonly lookupOptions = signal<Record<string, FieldOption[]>>({});
+
   // Every manifest item routes here through its own distinct route config
   // (see app.routes.ts), so Angular's default RouteReuseStrategy destroys
   // and recreates this component on every navigation between sibling
@@ -82,6 +85,54 @@ export class FeatureListPage implements OnInit {
     // control with name" the instant the page loads.
     this.buildForm();
     this.load();
+    this.loadLookups();
+  }
+
+  /** Populates lookupOptions for every 'lookup' field by fetching its referenced entity's live rows. */
+  private loadLookups(): void {
+    const cfg = this.config();
+    if (!cfg) return;
+
+    for (const field of cfg.fields) {
+      if (field.type !== 'lookup' || !field.lookupEntity) continue;
+      const labelField = field.lookupLabelField;
+      this.api.list<Row>(field.lookupEntity).subscribe({
+        next: (res) => {
+          const options: FieldOption[] = res.data.map((r) => ({
+            label: String((labelField ? r[labelField] : undefined) ?? r['id']),
+            value: r['id']
+          }));
+          this.lookupOptions.update((cur) => ({ ...cur, [field.key]: options }));
+        },
+        error: () => this.lookupOptions.update((cur) => ({ ...cur, [field.key]: [] }))
+      });
+    }
+  }
+
+  /** Options for a select-like field: static `options` when present, otherwise the resolved lookup list. */
+  optionsFor(field: EntityField): FieldOption[] {
+    return field.options ?? this.lookupOptions()[field.key] ?? [];
+  }
+
+  onFileSelected(event: Event, key: string): void {
+    const input = event.target as HTMLInputElement;
+    const selected = input.files?.[0];
+    if (!selected) return;
+    const value: FileFieldValue = {
+      name: selected.name,
+      sizeKb: Math.max(1, Math.round(selected.size / 1024)),
+      uploadedAt: new Date().toISOString()
+    };
+    this.form.get(key)?.setValue(value);
+    input.value = '';
+  }
+
+  clearFile(key: string): void {
+    this.form.get(key)?.setValue(null);
+  }
+
+  fileValue(key: string): FileFieldValue | null {
+    return (this.form.get(key)?.value as FileFieldValue | null) ?? null;
   }
 
   private load(): void {
@@ -128,6 +179,12 @@ export class FeatureListPage implements OnInit {
             : numeric.toLocaleString();
         return `${field.prefix ?? ''}${formatted}${field.suffix ? ' ' + field.suffix : ''}`;
       }
+      case 'lookup': {
+        const match = this.lookupOptions()[field.key]?.find((opt) => opt.value === raw);
+        return match ? match.label : String(raw);
+      }
+      case 'file':
+        return (raw as FileFieldValue).name ?? '—';
       default:
         return String(raw);
     }
@@ -217,6 +274,7 @@ export class FeatureListPage implements OnInit {
   private defaultValueFor(field: EntityField): unknown {
     if (field.type === 'boolean') return false;
     if (field.type === 'number') return null;
+    if (field.type === 'file') return null;
     return '';
   }
 

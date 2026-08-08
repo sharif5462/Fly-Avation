@@ -1,9 +1,11 @@
 import { HttpErrorResponse, HttpEvent, HttpInterceptorFn, HttpParams, HttpRequest, HttpResponse } from '@angular/common/http';
 import { Observable, delay, of, throwError } from 'rxjs';
 
+import { USER_STORAGE_KEY } from '../auth/storage-keys';
 import { environment } from '../../../environments/environment';
 import { ENTITY_CONFIGS } from '../data/entity-configs';
 import { ALL_ROLES } from '../models/role.model';
+import { User } from '../models/user.model';
 import { generateSeedRows } from './fake-data';
 import {
   seedAircraftRegistrations,
@@ -44,12 +46,69 @@ const FLAGSHIP_SEEDS: Record<string, () => Row[]> = {
 function seedResource(resource: string): Row[] {
   if (FLAGSHIP_SEEDS[resource]) return FLAGSHIP_SEEDS[resource]();
   const config = ENTITY_CONFIGS[resource];
-  if (config) return generateSeedRows(config) as Row[];
+  // Passing getCollection back in lets a 'lookup' field (e.g. Route
+  // Planning's Origin Airport) seed against real Airport Master rows,
+  // recursively seeding that referenced resource on first touch if it
+  // hasn't been seeded yet this session. Safe from cycles because every
+  // lookupEntity in the catalogue points at a Master Data entity, and none
+  // of those have lookup fields of their own.
+  if (config) return generateSeedRows(config, (lookupKey) => getCollection(lookupKey)) as Row[];
   return [];
 }
 
 function getCollection(resource: string): Row[] {
   return loadCollection<Row>(resource, () => seedResource(resource));
+}
+
+function currentUser(): User | null {
+  const raw = localStorage.getItem(USER_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as User;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A `scopeField` can itself be a 'lookup' (e.g. Ground Handler Registry's
+ * `station` field stores an Airport Master row id, not a bare "JFK"). This
+ * resolves the stored value to whatever code/label the field's
+ * `lookupLabelField` names, so scope comparison always happens against the
+ * same human-readable codes `User.stationScope` is configured with —
+ * regardless of whether the field is stored as free text or as a normalized
+ * foreign key.
+ */
+export function resolveScopeValue(resource: string, scopeField: string, row: Row): string | undefined {
+  const field = ENTITY_CONFIGS[resource]?.fields.find((fld) => fld.key === scopeField);
+  const raw = row[scopeField];
+  if (field?.type === 'lookup' && field.lookupEntity && raw != null) {
+    const refRow = getCollection(field.lookupEntity).find((r) => r['id'] === raw);
+    const labelField = field.lookupLabelField;
+    return refRow && labelField ? (refRow[labelField] as string) : undefined;
+  }
+  return raw as string | undefined;
+}
+
+/**
+ * Row-level access control stand-in: filters list results down to rows
+ * whose `scopeField` value is in the signed-in user's `stationScope`. Mirrors
+ * the SuperAdmin/Admin bypass already used for module-level role checks.
+ * The real .NET API must enforce the equivalent server-side — see README.md.
+ */
+export function applyScopeFilter(resource: string, rows: Row[]): Row[] {
+  const scopeField = ENTITY_CONFIGS[resource]?.scopeField;
+  if (!scopeField) return rows;
+
+  const user = currentUser();
+  const scope = user?.stationScope;
+  if (!scope || scope.length === 0) return rows;
+  if (user?.roles?.includes('SuperAdmin') || user?.roles?.includes('Admin')) return rows;
+
+  return rows.filter((r) => {
+    const value = resolveScopeValue(resource, scopeField, r);
+    return value != null && scope.includes(value);
+  });
 }
 
 function jsonResponse(req: HttpRequest<unknown>, body: unknown, status = 200): Observable<HttpEvent<unknown>> {
@@ -131,7 +190,7 @@ function handleResourceRequest(req: HttpRequest<unknown>, resource: string, id?:
         const row = rows.find((r) => r['id'] === id);
         return row ? jsonResponse(req, row) : errorResponse(req, 404, `${resource} '${id}' not found.`);
       }
-      return jsonResponse(req, buildListResult(rows, req.params));
+      return jsonResponse(req, buildListResult(applyScopeFilter(resource, rows), req.params));
     }
     case 'POST': {
       const body = (req.body ?? {}) as Record<string, unknown>;

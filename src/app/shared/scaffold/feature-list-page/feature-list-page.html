@@ -82,7 +82,19 @@
           <label [for]="field.key">{{ field.label }}</label>
           @switch (field.type) {
             @case ('select') {
-              <p-select [inputId]="field.key" [formControlName]="field.key" [options]="field.options" optionLabel="label" optionValue="value" [placeholder]="'Select ' + field.label" appendTo="body" />
+              <p-select [inputId]="field.key" [formControlName]="field.key" [options]="optionsFor(field)" optionLabel="label" optionValue="value" [placeholder]="'Select ' + field.label" appendTo="body" />
+            }
+            @case ('lookup') {
+              <p-select [inputId]="field.key" [formControlName]="field.key" [options]="optionsFor(field)" optionLabel="label" optionValue="value" [filter]="true" [placeholder]="'Select ' + field.label" appendTo="body" />
+            }
+            @case ('file') {
+              <input type="file" [id]="field.key" [accept]="field.acceptTypes ?? ''" (change)="onFileSelected($event, field.key)" />
+              @if (fileValue(field.key); as fileMeta) {
+                <small class="text-muted">
+                  Attached: {{ fileMeta.name }} ({{ fileMeta.sizeKb }} KB)
+                  <button type="button" class="p-button-text p-button-sm" (click)="clearFile(field.key)">Remove</button>
+                </small>
+              }
             }
             @case ('boolean') {
               <p-checkbox [inputId]="field.key" [formControlName]="field.key" [binary]="true" />
