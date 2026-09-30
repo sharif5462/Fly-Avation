@@ -1,11 +1,5 @@
 import { User } from '../models/user.model';
 
-/**
- * DEMO CREDENTIALS ONLY. The mock interceptor compares plaintext passwords
- * here — that is never acceptable once core/mock is deleted and requests
- * hit the real .NET Web API, which must hash/verify server-side (see the
- * Authentication contract in README.md).
- */
 export interface MockCredential {
   password: string;
   user: User;
@@ -21,6 +15,7 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       email: 'alex.morgan@aviation-erp.test',
       jobTitle: 'System Administrator',
       roles: ['SuperAdmin'],
+      status: 'Active',
       avatarColor: '#134bd1',
       initials: 'AM'
     }
@@ -33,10 +28,9 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       fullName: 'Jordan Blake',
       email: 'jordan.blake@aviation-erp.test',
       jobTitle: 'ERP Administrator',
-      // MasterData/Workflow/Integration are governance-flavored, IT-adjacent
-      // roles that naturally cluster under the ERP admin rather than a
-      // dedicated business user.
+
       roles: ['Admin', 'MasterData', 'Workflow', 'Integration'],
+      status: 'Active',
       avatarColor: '#7c3aed',
       initials: 'JB'
     }
@@ -50,6 +44,7 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       email: 'sam.whitfield@aviation-erp.test',
       jobTitle: 'Flight Operations Manager',
       roles: ['FlightOps', 'Fleet'],
+      status: 'Active',
       avatarColor: '#0891b2',
       initials: 'SW'
     }
@@ -63,6 +58,7 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       email: 'priya.nandy@aviation-erp.test',
       jobTitle: 'MRO Lead Engineer',
       roles: ['Maintenance', 'Fleet'],
+      status: 'Active',
       avatarColor: '#c2410c',
       initials: 'PN'
     }
@@ -76,6 +72,7 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       email: 'morgan.reyes@aviation-erp.test',
       jobTitle: 'Crew Scheduling Officer',
       roles: ['Crew'],
+      status: 'Active',
       avatarColor: '#be185d',
       initials: 'MR'
     }
@@ -89,6 +86,7 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       email: 'diego.salas@aviation-erp.test',
       jobTitle: 'Warehouse & Procurement Manager',
       roles: ['Inventory', 'Procurement'],
+      status: 'Active',
       avatarColor: '#15803d',
       initials: 'DS'
     }
@@ -102,6 +100,7 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       email: 'elena.cross@aviation-erp.test',
       jobTitle: 'Finance Controller',
       roles: ['Finance'],
+      status: 'Active',
       avatarColor: '#a16207',
       initials: 'EC'
     }
@@ -115,6 +114,7 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       email: 'nadia.hussain@aviation-erp.test',
       jobTitle: 'HR Manager',
       roles: ['HR'],
+      status: 'Active',
       avatarColor: '#4338ca',
       initials: 'NH'
     }
@@ -128,6 +128,7 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       email: 'marcus.lee@aviation-erp.test',
       jobTitle: 'Security & Compliance Officer',
       roles: ['Security', 'Compliance'],
+      status: 'Active',
       avatarColor: '#334155',
       initials: 'ML'
     }
@@ -141,6 +142,7 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       email: 'layla.haddad@aviation-erp.test',
       jobTitle: 'Commercial & Supply Chain Manager',
       roles: ['Supplier', 'Sales', 'Charter', 'RevenueAccounting', 'RevenueManagement'],
+      status: 'Active',
       avatarColor: '#0d9488',
       initials: 'LH'
     }
@@ -154,12 +156,10 @@ export const MOCK_CREDENTIALS: MockCredential[] = [
       email: 'henry.osei@aviation-erp.test',
       jobTitle: 'Passenger Services & IRROPS Manager',
       roles: ['Irrops', 'Catering', 'GroundHandling', 'Travel', 'Training', 'Sustainability'],
+      status: 'Active',
       avatarColor: '#9333ea',
       initials: 'HO',
-      // Demonstrates row-level access scoping (EntityConfig.scopeField): this
-      // user only sees JFK/LHR rows on station-scoped entities (ground
-      // handling, catering, hotel/HOTAC) — every other demo user is
-      // unscoped and sees every station, same as before this feature.
+     
       stationScope: ['JFK', 'LHR']
     }
   }

@@ -87,7 +87,7 @@
   </div>
 </div>
 
-<p-dialog [(visible)]="dialogVisible" [modal]="true" [header]="editingFlight() ? 'Edit Flight' : 'New Flight'" [style]="{ width: '34rem' }" [draggable]="false" [dismissableMask]="true">
+<p-dialog [visible]="dialogVisible()" (visibleChange)="dialogVisible.set($event)" [modal]="true" [header]="editingFlight() ? 'Edit Flight' : 'New Flight'" [style]="{ width: '34rem' }" [draggable]="false" [dismissableMask]="true">
   <form [formGroup]="form" class="entity-form">
     <div class="entity-form__field">
       <label for="flightNo">Flight No.</label>

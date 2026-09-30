@@ -229,7 +229,7 @@ export class FlightSchedulingPage implements OnInit {
 
   openEdit(flight: Flight): void {
     this.editingFlight.set(flight);
-    this.form.setValue({
+    this.form.reset({
       flightNo: flight.flightNo,
       airline: flight.airline,
       flightType: flight.flightType,

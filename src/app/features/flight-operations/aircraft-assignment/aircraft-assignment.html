@@ -1,0 +1,116 @@
+<div class="page-container">
+  <app-page-header icon="pi-link" title="Aircraft Assignment" description="Assign aircraft tail numbers to scheduled flights and manage assignment status.">
+    <p-button label="New Assignment" icon="pi pi-plus" (onClick)="openNew()" />
+  </app-page-header>
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-link" [value]="stats().total" label="Total Assignments" />
+    <app-stat-card icon="pi-check-circle" [value]="stats().confirmed" label="Confirmed" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+    <app-stat-card icon="pi-clock" [value]="stats().tentative" label="Tentative" iconBg="color-mix(in srgb, var(--p-amber-500) 15%, transparent)" iconColor="var(--p-amber-500)" />
+    <app-stat-card icon="pi-ban" [value]="stats().cancelled" label="Cancelled" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+  </div>
+
+  <div class="surface-card filter-bar">
+    <div class="filter-bar__field">
+      <label>Flight No.</label>
+      <input pInputText [ngModel]="filterFlightNo()" (ngModelChange)="filterFlightNo.set($event)" placeholder="e.g. AV123" />
+    </div>
+    <div class="filter-bar__field">
+      <label>Aircraft Reg.</label>
+      <input pInputText [ngModel]="filterAircraftReg()" (ngModelChange)="filterAircraftReg.set($event)" placeholder="e.g. N101AV" />
+    </div>
+    <div class="filter-bar__field">
+      <label>Assigned By</label>
+      <input pInputText [ngModel]="filterAssignedBy()" (ngModelChange)="filterAssignedBy.set($event)" placeholder="e.g. Operations" />
+    </div>
+    <div class="filter-bar__field">
+      <label>Status</label>
+      <p-select [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)" [options]="statuses" placeholder="All Statuses" appendTo="body" />
+    </div>
+    <div class="filter-bar__field filter-bar__field--search">
+      <label>Search</label>
+      <input pInputText [ngModel]="filterSearch()" (ngModelChange)="filterSearch.set($event)" placeholder="Search assignments…" />
+    </div>
+    <div class="filter-bar__actions">
+      <p-button label="Clear Filters" icon="pi pi-filter-slash" severity="secondary" [outlined]="true" [disabled]="!hasActiveFilters()" (onClick)="clearFilters()" />
+    </div>
+  </div>
+
+  <div class="surface-card">
+    <p-table #dt [value]="filteredAssignments()" [loading]="loading()" [paginator]="true" [rows]="10" dataKey="id" [rowHover]="true" [stripedRows]="true" responsiveLayout="scroll" class="assignment-table">
+      <ng-template #caption>
+        <div class="table-toolbar">
+          <p-iconfield iconPosition="left" class="table-toolbar__search">
+            <p-inputicon class="pi pi-search" />
+            <input pInputText type="text" placeholder="Search assignments…" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+          </p-iconfield>
+          <span class="text-muted table-toolbar__count">{{ filteredAssignments().length }} of {{ assignments().length }} assignment{{ assignments().length === 1 ? '' : 's' }}</span>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="flightNo">Flight No. <p-sortIcon field="flightNo" /></th>
+          <th pSortableColumn="aircraftReg">Aircraft Reg. <p-sortIcon field="aircraftReg" /></th>
+          <th pSortableColumn="assignedDate">Assigned Date <p-sortIcon field="assignedDate" /></th>
+          <th pSortableColumn="assignedBy">Assigned By <p-sortIcon field="assignedBy" /></th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status" /></th>
+          <th style="width: 6.5rem">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-assignment>
+        <tr>
+          <td>
+            <div class="assignment-flight">
+              <span class="pi pi-send assignment-flight__icon"></span>
+              <strong>{{ assignment.flightNo }}</strong>
+            </div>
+          </td>
+          <td>
+            <span class="assignment-reg">{{ assignment.aircraftReg }}</span>
+          </td>
+          <td>{{ assignment.assignedDate | date: 'MMM d, y' }}</td>
+          <td>{{ assignment.assignedBy }}</td>
+          <td><p-tag [value]="assignment.status" [severity]="severity(assignment.status)" /></td>
+          <td>
+            <div class="row-actions">
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(assignment)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(assignment)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="6" class="table-empty">No assignments match the current filters.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [visible]="dialogVisible()" (visibleChange)="dialogVisible.set($event)" [modal]="true" [header]="editingAssignment() ? 'Edit Assignment' : 'New Assignment'" [style]="{ width: '32rem' }" [draggable]="false" [dismissableMask]="true">
+  <form [formGroup]="form" class="entity-form">
+    <div class="entity-form__field">
+      <label for="flightNo">Flight No. <span class="required">*</span></label>
+      <input pInputText id="flightNo" formControlName="flightNo" placeholder="e.g. AV123" />
+    </div>
+    <div class="entity-form__field">
+      <label for="aircraftReg">Aircraft Reg. <span class="required">*</span></label>
+      <input pInputText id="aircraftReg" formControlName="aircraftReg" placeholder="e.g. N101AV" />
+    </div>
+    <div class="entity-form__field">
+      <label for="assignedDate">Assigned Date <span class="required">*</span></label>
+      <p-datepicker inputId="assignedDate" formControlName="assignedDate" [showIcon]="true" dateFormat="M d, yy" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="assignedBy">Assigned By <span class="required">*</span></label>
+      <input pInputText id="assignedBy" formControlName="assignedBy" placeholder="e.g. Operations Team" />
+    </div>
+    <div class="entity-form__field">
+      <label for="status">Status <span class="required">*</span></label>
+      <p-select inputId="status" formControlName="status" [options]="statuses" appendTo="body" />
+    </div>
+  </form>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button [label]="editingAssignment() ? 'Save Changes' : 'Create'" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
+  </ng-template>
+</p-dialog>

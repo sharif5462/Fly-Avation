@@ -21,10 +21,10 @@ export const MODULES: ModuleDef[] = [
     role: 'FlightOps',
     items: [
       { key: 'flight-scheduling', label: 'Flight Scheduling', icon: 'pi-calendar', flagship: true },
-      { key: 'route-planning', label: 'Route Planning', icon: 'pi-map' },
-      { key: 'flight-dispatch', label: 'Flight Dispatch', icon: 'pi-directions' },
-      { key: 'aircraft-assignment', label: 'Aircraft Assignment', icon: 'pi-link' },
-      { key: 'crew-assignment', label: 'Crew Assignment', icon: 'pi-users' },
+      { key: 'route-planning', label: 'Route Planning', icon: 'pi-map', flagship: true },
+      { key: 'flight-dispatch', label: 'Flight Dispatch', icon: 'pi-directions', flagship: true },
+      { key: 'aircraft-assignment', label: 'Aircraft Assignment', icon: 'pi-link', flagship: true },
+      { key: 'crew-assignment', label: 'Crew Assignment', icon: 'pi-users', flagship: true },
       { key: 'flight-tracking', label: 'Flight Tracking', icon: 'pi-map-marker' },
       { key: 'delay-management', label: 'Delay Management', icon: 'pi-clock' },
       { key: 'fuel-planning', label: 'Fuel Planning', icon: 'pi-bolt' }

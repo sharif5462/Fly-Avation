@@ -1,0 +1,143 @@
+<div class="page-container">
+  <app-page-header icon="pi-directions" title="Flight Dispatch" description="Release, hold and track dispatch records for every scheduled departure.">
+    <p-button label="New Dispatch" icon="pi pi-plus" (onClick)="openNew()" />
+  </app-page-header>
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-send" [value]="stats().total" label="Total Dispatches" />
+    <app-stat-card icon="pi-check-circle" [value]="stats().released" label="Released" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+    <app-stat-card icon="pi-clock" [value]="stats().pending" label="Pending" iconBg="color-mix(in srgb, var(--p-blue-500) 15%, transparent)" iconColor="var(--p-blue-500)" />
+    <app-stat-card icon="pi-ban" [value]="stats().held" label="Held" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+  </div>
+
+  <div class="surface-card filter-bar">
+    <div class="filter-bar__field">
+      <label>Flight No.</label>
+      <input pInputText [ngModel]="filterFlightNo()" (ngModelChange)="filterFlightNo.set($event)" placeholder="e.g. AV123" />
+    </div>
+    <div class="filter-bar__field">
+      <label>Status</label>
+      <p-select [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)" [options]="statuses" placeholder="All Statuses" appendTo="body" />
+    </div>
+    <div class="filter-bar__field">
+      <label>Dispatcher</label>
+      <p-select [ngModel]="filterDispatcher()" (ngModelChange)="filterDispatcher.set($event)" [options]="dispatchers" placeholder="All Dispatchers" appendTo="body" />
+    </div>
+    <div class="filter-bar__field filter-bar__field--search">
+      <label>Search</label>
+      <input pInputText [ngModel]="filterSearch()" (ngModelChange)="filterSearch.set($event)" placeholder="Dispatch no, reg, route…" />
+    </div>
+    <div class="filter-bar__actions">
+      <p-button label="Clear Filters" icon="pi pi-filter-slash" severity="secondary" [outlined]="true" [disabled]="!hasActiveFilters()" (onClick)="clearFilters()" />
+    </div>
+  </div>
+
+  <div class="surface-card">
+    <p-table #dt [value]="filteredDispatches()" [loading]="loading()" [paginator]="true" [rows]="10" dataKey="id" [rowHover]="true" [stripedRows]="true" responsiveLayout="scroll">
+      <ng-template #caption>
+        <div class="table-toolbar">
+          <p-iconfield iconPosition="left" class="table-toolbar__search">
+          <p-inputicon class="pi pi-search" />
+          <input pInputText type="text" placeholder="Search dispatches…" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+          </p-iconfield>
+          <span class="text-muted table-toolbar__count">{{ filteredDispatches().length }} of {{ dispatches().length }} dispatch{{ dispatches().length === 1 ? '' : 'es' }}</span>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="dispatchNo">Dispatch No. <p-sortIcon field="dispatchNo" /></th>
+          <th pSortableColumn="flightNo">Flight No. <p-sortIcon field="flightNo" /></th>
+          <th>Route</th>
+          <th pSortableColumn="aircraftReg">Aircraft <p-sortIcon field="aircraftReg" /></th>
+          <th pSortableColumn="dispatcher">Dispatcher <p-sortIcon field="dispatcher" /></th>
+          <th pSortableColumn="releaseTime">Release Time <p-sortIcon field="releaseTime" /></th>
+          <th pSortableColumn="gate">Gate <p-sortIcon field="gate" /></th>
+          <th pSortableColumn="fuelLoad">Fuel <p-sortIcon field="fuelLoad" /></th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status" /></th>
+          <th style="width: 6.5rem">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-dispatch>
+        <tr>
+          <td><strong>{{ dispatch.dispatchNo }}</strong></td>
+          <td>{{ dispatch.flightNo }}</td>
+          <td>
+            <div class="dispatch-route">
+              <span class="dispatch-route__code">{{ dispatch.origin }}</span>
+              <span class="pi pi-arrow-right dispatch-route__arrow"></span>
+              <span class="dispatch-route__code">{{ dispatch.destination }}</span>
+            </div>
+          </td>
+          <td>{{ dispatch.aircraftReg }}</td>
+          <td>{{ dispatch.dispatcher }}</td>
+          <td>{{ dispatch.releaseTime | date: 'MMM d, HH:mm' }}</td>
+          <td>{{ dispatch.gate }}</td>
+          <td>{{ dispatch.fuelLoad }} kg</td>
+          <td><p-tag [value]="dispatch.status" [severity]="severity(dispatch.status)" /></td>
+          <td>
+            <div class="row-actions">
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(dispatch)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(dispatch)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="10" class="table-empty">No dispatches match the current filters.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [visible]="dialogVisible()" (visibleChange)="dialogVisible.set($event)" [modal]="true" [header]="editingDispatch() ? 'Edit Dispatch' : 'New Dispatch'" [style]="{ width: '36rem' }" [draggable]="false" [dismissableMask]="true">
+  <form [formGroup]="form" class="entity-form">
+    <div class="entity-form__field">
+      <label for="dispatchNo">Dispatch No.</label>
+      <input pInputText id="dispatchNo" formControlName="dispatchNo" placeholder="DP-240001" />
+    </div>
+    <div class="entity-form__field">
+      <label for="flightNo">Flight No.</label>
+      <input pInputText id="flightNo" formControlName="flightNo" placeholder="AV123" />
+    </div>
+    <div class="entity-form__field">
+      <label for="aircraftReg">Aircraft Reg.</label>
+      <input pInputText id="aircraftReg" formControlName="aircraftReg" placeholder="N101AV" />
+    </div>
+    <div class="entity-form__field">
+      <label for="dispatcher">Dispatcher</label>
+      <p-select inputId="dispatcher" formControlName="dispatcher" [options]="dispatchers" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="releaseTime">Release Time</label>
+      <p-datepicker inputId="releaseTime" formControlName="releaseTime" [showTime]="true" dateFormat="M d, yy" [showIcon]="true" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="status">Status</label>
+      <p-select inputId="status" formControlName="status" [options]="statuses" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="origin">Origin</label>
+      <input pInputText id="origin" formControlName="origin" placeholder="JFK" maxlength="3" />
+    </div>
+    <div class="entity-form__field">
+      <label for="destination">Destination</label>
+      <input pInputText id="destination" formControlName="destination" placeholder="LHR" maxlength="3" />
+    </div>
+    <div class="entity-form__field">
+      <label for="gate">Gate</label>
+      <input pInputText id="gate" formControlName="gate" placeholder="A12" />
+    </div>
+    <div class="entity-form__field">
+      <label for="fuelLoad">Fuel Load (kg)</label>
+      <input pInputText id="fuelLoad" formControlName="fuelLoad" type="number" />
+    </div>
+    <div class="entity-form__field entity-form__field--full">
+      <label for="notes">Notes</label>
+      <textarea pTextarea id="notes" formControlName="notes" rows="2"></textarea>
+    </div>
+  </form>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button [label]="editingDispatch() ? 'Save Changes' : 'Create'" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
+  </ng-template>
+</p-dialog>

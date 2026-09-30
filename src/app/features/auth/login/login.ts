@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -12,9 +12,9 @@ import { MOCK_CREDENTIALS } from '../../../core/mock/mock-users';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, PasswordModule, MessageModule, DialogModule],
+  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, PasswordModule, MessageModule, DialogModule],
   templateUrl: './login.html',
-  styleUrl: './login.scss'
+  styleUrl: '../auth-page.scss'
 })
 export class LoginPage {
   private readonly fb = inject(FormBuilder);
@@ -91,9 +91,6 @@ export class LoginPage {
         this.forgotSubmitted.set(true);
       },
       error: () => {
-        // Even on a network/server error we don't want to reveal anything
-        // about the account, so this still lands on the same generic
-        // confirmation state rather than an error message.
         this.forgotSubmitting.set(false);
         this.forgotSubmitted.set(true);
       }

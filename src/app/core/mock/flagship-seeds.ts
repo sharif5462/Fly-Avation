@@ -156,6 +156,93 @@ export function seedAircraftRegistrations() {
   });
 }
 
+export function seedRoutePlanning() {
+  const routes: Array<[string, string, number, string, string, string]> = [
+    ['JFK', 'LHR', 3454, '6h 45m', 'Boeing 777-300ER', 'Daily'],
+    ['LHR', 'JFK', 3454, '7h 55m', 'Boeing 777-300ER', 'Daily'],
+    ['DXB', 'SIN', 3640, '7h 15m', 'Airbus A350-900', 'Daily'],
+    ['SIN', 'DXB', 3640, '7h 05m', 'Airbus A350-900', 'Daily'],
+    ['ORD', 'DFW', 802, '2h 35m', 'Boeing 737-800', 'Daily'],
+    ['DFW', 'ORD', 802, '2h 25m', 'Boeing 737-800', 'Daily'],
+    ['CDG', 'FRA', 466, '1h 25m', 'Airbus A320neo', 'Daily'],
+    ['FRA', 'CDG', 466, '1h 20m', 'Airbus A320neo', 'Daily'],
+    ['HND', 'ICN', 756, '2h 05m', 'Boeing 737-800', 'Weekdays'],
+    ['ICN', 'HND', 756, '2h 00m', 'Boeing 737-800', 'Weekdays'],
+    ['SYD', 'AKL', 1343, '3h 05m', 'Airbus A320neo', 'Daily'],
+    ['AKL', 'SYD', 1343, '3h 00m', 'Airbus A320neo', 'Daily']
+  ];
+  const statuses: Array<'Active' | 'Under Review' | 'Suspended'> = ['Active', 'Active', 'Active', 'Active', 'Active', 'Active', 'Active', 'Active', 'Under Review', 'Under Review', 'Active', 'Suspended'];
+  const iso = (daysFromNow: number) => new Date(Date.now() + daysFromNow * 86400000).toISOString();
+  return routes.map(([origin, destination, distanceNm, estFlightTime, aircraftType, frequency], i) => ({
+    id: `rp-${String(i + 1).padStart(4, '0')}`,
+    routeCode: `${origin}-${destination}-${String(i + 1).padStart(2, '0')}`,
+    origin,
+    destination,
+    distanceNm,
+    estFlightTime,
+    status: statuses[i],
+    aircraftType,
+    frequency,
+    effectiveFrom: iso(-90 - i * 10),
+    effectiveTo: i === 11 ? iso(30) : undefined
+  }));
+}
+
+export function seedAircraftAssignments() {
+  const assigners = ['Ops Control', 'Duty Manager', 'Flight Ops', 'Crew Control', 'Dispatch Desk', 'Maintenance Control'];
+  const statuses: Array<'Confirmed' | 'Tentative' | 'Cancelled'> = ['Confirmed', 'Confirmed', 'Confirmed', 'Tentative', 'Confirmed', 'Cancelled', 'Tentative'];
+  const iso = (daysFromNow: number) => new Date(Date.now() + daysFromNow * 86400000).toISOString().slice(0, 10);
+  return AIRPORT_PAIRS.slice(0, assigners.length).map(([origin, destination], i) => ({
+    id: `aa-${String(i + 1).padStart(4, '0')}`,
+    flightNo: `AV${100 + i * 7}`,
+    aircraftReg: AIRCRAFT_REGS[i % AIRCRAFT_REGS.length],
+    assignedDate: iso(i - 5),
+    assignedBy: assigners[i % assigners.length],
+    status: statuses[i % statuses.length]
+  }));
+}
+
+export function seedCrewAssignments() {
+  const crewMembers = [
+    { name: 'Capt. James Mitchell', role: 'Captain' },
+    { name: 'F/O Sarah Chen', role: 'First Officer' },
+    { name: 'Purser Olivia Grant', role: 'Purser' },
+    { name: 'F/A Daniel Brooks', role: 'Flight Attendant' },
+    { name: 'Capt. Marcus Johnson', role: 'Captain' },
+    { name: 'F/A Emily Watson', role: 'Flight Attendant' }
+  ] as const;
+  const statuses: Array<'Confirmed' | 'Pending' | 'Swapped'> = ['Confirmed', 'Confirmed', 'Pending', 'Confirmed', 'Swapped', 'Pending', 'Confirmed'];
+  const iso = (daysFromNow: number) => new Date(Date.now() + daysFromNow * 86400000).toISOString().slice(0, 10);
+  return crewMembers.map((crew, i) => ({
+    id: `ca-${String(i + 1).padStart(4, '0')}`,
+    flightNo: `AV${200 + i * 13}`,
+    crewMember: crew.name,
+    role: crew.role,
+    assignedDate: iso(i - 3),
+    status: statuses[i % statuses.length]
+  }));
+}
+
+export function seedFlightDispatch() {
+  const dispatchers = ['Capt. Rahman', 'F. Abdullah', 'N. Hossain', 'S. Karim', 'M. Chowdhury', 'P. Bose'];
+  const statuses: Array<'Released' | 'Pending' | 'Held'> = ['Released', 'Released', 'Pending', 'Released', 'Held', 'Pending', 'Released'];
+  const iso = (daysFromNow: number) => new Date(Date.now() + daysFromNow * 86400000).toISOString();
+  return AIRPORT_PAIRS.slice(0, 7).map(([origin, destination], i) => ({
+    id: `fd-${String(i + 1).padStart(4, '0')}`,
+    dispatchNo: `DP-${240000 + i}`,
+    flightNo: `AV${100 + i * 7}`,
+    aircraftReg: AIRCRAFT_REGS[i % AIRCRAFT_REGS.length],
+    dispatcher: dispatchers[i % dispatchers.length],
+    releaseTime: iso(i - 3),
+    status: statuses[i % statuses.length],
+    origin,
+    destination,
+    gate: `${String.fromCharCode(65 + (i % 6))}${(i % 20) + 1}`,
+    fuelLoad: 12000 + i * 850,
+    notes: i === 4 ? 'Awaiting final load sheet' : ''
+  }));
+}
+
 export function seedWorkOrders() {
   const types = ['Scheduled', 'Unscheduled', 'AOG', 'Line Maintenance', 'Base Maintenance'];
   const priorities = ['Low', 'Medium', 'High', 'Critical'];

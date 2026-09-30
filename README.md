@@ -247,6 +247,18 @@ set `flagship: true` on that item in `module-manifest.ts`.
   signals, persisted to `localStorage`. `login()` posts to
   `POST /auth/login`; the response `{ token, expiresAt, user }` is stored
   and the token is attached to every subsequent request.
+- **Sign up → Pending → Admin approval → Login.** `/signup`
+  (`features/auth/signup/`) posts to `POST /auth/register` and creates the
+  account with `status: 'Pending'` and no roles — no token is issued, so
+  signing up never logs anyone in. `POST /auth/login` rejects Pending and
+  Rejected accounts with a 401 and a status-specific message. An Admin (or
+  SuperAdmin) reviews pending requests on Security Management → **User
+  Roles** — filter to Pending, then **Approve** (opens the same Add/Edit
+  dialog; assigning at least one role is required and flips the account to
+  `Active`) or **Reject** (`status: 'Rejected'`, account kept for audit,
+  still can't log in). Only Admin/SuperAdmin see the Approve/Reject actions
+  (`AuthService.hasRole('Admin')`); a `Security`-role viewer can still reach
+  the User Roles page but not approve anyone.
 - **authGuard** blocks unauthenticated access to the whole app shell and
   remembers the target URL as `?returnUrl=` for after login.
 - **roleGuard**, applied once per module (not per page) in `app.routes.ts`,
@@ -283,7 +295,13 @@ in-memory store backed by `localStorage`, when `environment.useMockApi` is
 `true`. It implements the same REST contract documented below, so this is a
 drop-in stand-in, not a parallel code path components need to know about.
 
-- `core/mock/mock-users.ts` — the 11 demo accounts and `/auth/login` logic.
+- `core/mock/mock-users.ts` — the 11 demo (always-Active) accounts and the
+  `findCredential` lookup `/auth/login` checks first.
+  `core/mock/mock-api.interceptor.ts` handles `/auth/register` and the rest
+  of `/auth/login` for self-registered users: their `User` row lives in the
+  normal `users` collection, and their password lives in a separate,
+  route-less `auth-credentials` collection so it never leaks into the Users
+  table UI.
 - `core/mock/flagship-seeds.ts` — hand-written realistic seed data for the
   11 flagship resources that own a dataset. (The eight dashboards don't —
   they read the other resources; User Roles and Access Control are backed
@@ -318,7 +336,15 @@ them:
 
 ```
 POST   {apiUrl}/auth/login          { username, password }
-                                     → 200 { token, expiresAt, user } | 401
+                                     → 200 { token, expiresAt, user }
+                                     | 401 (bad credentials, or a Pending/
+                                       Rejected account — message says which)
+
+POST   {apiUrl}/auth/register       { fullName, username, email, jobTitle, password }
+                                     → 201 { success: true } — account created
+                                       with status: 'Pending', roles: []
+                                     | 400 (missing field) | 409 (username/
+                                       email already in use)
 
 GET    {apiUrl}/<resource>          → 200 { data: T[], total: number }
                                        optional query: search, sortField,
@@ -336,7 +362,7 @@ DELETE {apiUrl}/<resource>/{id}     → 200 { success: true } | 404
 `User` shape (`core/models/user.model.ts`):
 
 ```ts
-{ id, username, fullName, email, jobTitle, roles: Role[], avatarColor, initials }
+{ id, username, fullName, email, jobTitle, roles: Role[], status: 'Pending' | 'Active' | 'Rejected', avatarColor, initials }
 ```
 
 `Role` is one string per module (`FlightOps`, `Maintenance`, `Fleet`, …,
