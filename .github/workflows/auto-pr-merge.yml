@@ -21,7 +21,7 @@ jobs:
             --title "Auto PR from Dev_Sharif_Shuvo" \
             --body "Automated pull request" || true
 
-      - name: Enable auto-merge
+      - name: Merge PR
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh pr merge Dev_Sharif_Shuvo --merge --auto
+        run: gh pr merge Dev_Sharif_Shuvo --merge
