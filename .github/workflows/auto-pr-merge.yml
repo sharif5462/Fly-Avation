@@ -1,0 +1,27 @@
+name: Auto PR and merge
+on:
+  push:
+    branches: [Dev_Sharif_Shuvo]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create PR if none exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr create --base main --head Dev_Sharif_Shuvo \
+            --title "Auto PR from Dev_Sharif_Shuvo" \
+            --body "Automated pull request" || true
+
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr merge Dev_Sharif_Shuvo --merge --auto

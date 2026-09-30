@@ -5,18 +5,22 @@ import { USER_STORAGE_KEY } from '../auth/storage-keys';
 import { environment } from '../../../environments/environment';
 import { ENTITY_CONFIGS } from '../data/entity-configs';
 import { ALL_ROLES } from '../models/role.model';
-import { User } from '../models/user.model';
+import { SignupRequest, User, UserStatus } from '../models/user.model';
 import { generateSeedRows } from './fake-data';
 import {
+  seedAircraftAssignments,
   seedAircraftRegistrations,
   seedAssetMaster,
   seedBaggageHandling,
   seedComponentTracking,
+  seedCrewAssignments,
+  seedFlightDispatch,
   seedFlights,
   seedHazardReports,
   seedItemMaster,
   seedPilots,
   seedPurchaseOrders,
+  seedRoutePlanning,
   seedSpareParts,
   seedWorkOrders
 } from './flagship-seeds';
@@ -26,9 +30,12 @@ import { MOCK_CREDENTIALS, findCredential } from './mock-users';
 
 type Row = Record<string, unknown> & { id: string };
 
-/** Seed functions for resources that back a hand-built (flagship) page. */
 const FLAGSHIP_SEEDS: Record<string, () => Row[]> = {
   'flight-scheduling': seedFlights as () => Row[],
+  'route-planning': seedRoutePlanning as () => Row[],
+  'flight-dispatch': seedFlightDispatch as () => Row[],
+  'aircraft-assignment': seedAircraftAssignments as () => Row[],
+  'crew-assignment': seedCrewAssignments as () => Row[],
   'aircraft-registration': seedAircraftRegistrations as () => Row[],
   'work-orders': seedWorkOrders as () => Row[],
   'component-tracking': seedComponentTracking as () => Row[],
@@ -46,12 +53,6 @@ const FLAGSHIP_SEEDS: Record<string, () => Row[]> = {
 function seedResource(resource: string): Row[] {
   if (FLAGSHIP_SEEDS[resource]) return FLAGSHIP_SEEDS[resource]();
   const config = ENTITY_CONFIGS[resource];
-  // Passing getCollection back in lets a 'lookup' field (e.g. Route
-  // Planning's Origin Airport) seed against real Airport Master rows,
-  // recursively seeding that referenced resource on first touch if it
-  // hasn't been seeded yet this session. Safe from cycles because every
-  // lookupEntity in the catalogue points at a Master Data entity, and none
-  // of those have lookup fields of their own.
   if (config) return generateSeedRows(config, (lookupKey) => getCollection(lookupKey)) as Row[];
   return [];
 }
@@ -70,15 +71,6 @@ function currentUser(): User | null {
   }
 }
 
-/**
- * A `scopeField` can itself be a 'lookup' (e.g. Ground Handler Registry's
- * `station` field stores an Airport Master row id, not a bare "JFK"). This
- * resolves the stored value to whatever code/label the field's
- * `lookupLabelField` names, so scope comparison always happens against the
- * same human-readable codes `User.stationScope` is configured with —
- * regardless of whether the field is stored as free text or as a normalized
- * foreign key.
- */
 export function resolveScopeValue(resource: string, scopeField: string, row: Row): string | undefined {
   const field = ENTITY_CONFIGS[resource]?.fields.find((fld) => fld.key === scopeField);
   const raw = row[scopeField];
@@ -90,12 +82,6 @@ export function resolveScopeValue(resource: string, scopeField: string, row: Row
   return raw as string | undefined;
 }
 
-/**
- * Row-level access control stand-in: filters list results down to rows
- * whose `scopeField` value is in the signed-in user's `stationScope`. Mirrors
- * the SuperAdmin/Admin bypass already used for module-level role checks.
- * The real .NET API must enforce the equivalent server-side — see README.md.
- */
 export function applyScopeFilter(resource: string, rows: Row[]): Row[] {
   const scopeField = ENTITY_CONFIGS[resource]?.scopeField;
   if (!scopeField) return rows;
@@ -157,17 +143,106 @@ function buildListResult(rows: Row[], params: HttpParams): { data: Row[]; total:
   return { data: result, total };
 }
 
+const CREDENTIALS_RESOURCE = 'auth-credentials';
+const SIGNUP_AVATAR_COLORS = ['#134bd1', '#7c3aed', '#0891b2', '#c2410c', '#be185d', '#15803d', '#a16207', '#4338ca', '#334155', '#0d9488'];
+
+function initialsOf(fullName: string): string {
+  const initials = fullName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]!.toUpperCase())
+    .join('');
+  return initials || '?';
+}
+
+function findUserRowByUsername(username: string): Row | undefined {
+  return getCollection('users').find((r) => String(r['username']).toLowerCase() === username.trim().toLowerCase());
+}
+
+function findCredentialRow(username: string): Row | undefined {
+  return getCollection(CREDENTIALS_RESOURCE).find(
+    (r) => String(r['username']).toLowerCase() === username.trim().toLowerCase()
+  );
+}
+
 function handleLogin(req: HttpRequest<unknown>): Observable<HttpEvent<unknown>> {
   const { username, password } = (req.body ?? {}) as { username?: string; password?: string };
   if (!username || !password) {
     return errorResponse(req, 400, 'Username and password are required.');
   }
-  const credential = findCredential(username, password);
-  if (!credential) {
+
+  const demoCredential = findCredential(username, password);
+  if (demoCredential) {
+    const { token, expiresAt } = createMockJwt(demoCredential.user);
+    return jsonResponse(req, { token, expiresAt, user: demoCredential.user });
+  }
+
+  const userRow = findUserRowByUsername(username);
+  const credentialRow = findCredentialRow(username);
+  if (!userRow || !credentialRow || credentialRow['password'] !== password) {
     return errorResponse(req, 401, 'Invalid username or password.');
   }
-  const { token, expiresAt } = createMockJwt(credential.user);
-  return jsonResponse(req, { token, expiresAt, user: credential.user });
+
+  const status = userRow['status'] as UserStatus;
+  if (status === 'Pending') {
+    return errorResponse(
+      req,
+      401,
+      'Your account is awaiting admin approval. You will be able to sign in once an administrator approves your request.'
+    );
+  }
+  if (status === 'Rejected') {
+    return errorResponse(req, 401, 'Your sign-up request was not approved. Please contact your administrator.');
+  }
+
+  const user = userRow as unknown as User;
+  const { token, expiresAt } = createMockJwt(user);
+  return jsonResponse(req, { token, expiresAt, user });
+}
+
+function handleRegister(req: HttpRequest<unknown>): Observable<HttpEvent<unknown>> {
+  const body = (req.body ?? {}) as Partial<SignupRequest>;
+  const fullName = body.fullName?.trim();
+  const username = body.username?.trim();
+  const email = body.email?.trim();
+  const jobTitle = body.jobTitle?.trim();
+  const password = body.password;
+
+  if (!fullName || !username || !email || !jobTitle || !password) {
+    return errorResponse(req, 400, 'Full name, username, email, job title and password are all required.');
+  }
+
+  const usernameTaken =
+    MOCK_CREDENTIALS.some((c) => c.user.username.toLowerCase() === username.toLowerCase()) || !!findUserRowByUsername(username);
+  if (usernameTaken) {
+    return errorResponse(req, 409, 'That username is already taken.');
+  }
+
+  const emailLower = email.toLowerCase();
+  const emailTaken =
+    MOCK_CREDENTIALS.some((c) => c.user.email.toLowerCase() === emailLower) ||
+    getCollection('users').some((r) => String(r['email']).toLowerCase() === emailLower);
+  if (emailTaken) {
+    return errorResponse(req, 409, 'An account with that email already exists.');
+  }
+
+  const newUser: Row = {
+    id: `usr-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`,
+    username,
+    fullName,
+    email,
+    jobTitle,
+    roles: [],
+    status: 'Pending' satisfies UserStatus,
+    avatarColor: SIGNUP_AVATAR_COLORS[Math.floor(Math.random() * SIGNUP_AVATAR_COLORS.length)],
+    initials: initialsOf(fullName),
+    createdAt: new Date().toISOString()
+  };
+  saveCollection('users', [newUser, ...getCollection('users')]);
+  saveCollection(CREDENTIALS_RESOURCE, [{ id: username, username, password }, ...getCollection(CREDENTIALS_RESOURCE)]);
+
+  return jsonResponse(req, { success: true }, 201);
 }
 
 function handleForgotPassword(req: HttpRequest<unknown>): Observable<HttpEvent<unknown>> {
@@ -175,9 +250,7 @@ function handleForgotPassword(req: HttpRequest<unknown>): Observable<HttpEvent<u
   if (!email) {
     return errorResponse(req, 400, 'Email is required.');
   }
-  // Deliberately always succeeds, whether or not the email matches an
-  // account on file — a real API should do the same to avoid leaking which
-  // emails are registered. See AuthService.forgotPassword() / README.md.
+
   return jsonResponse(req, { success: true });
 }
 
@@ -227,13 +300,6 @@ function handleResourceRequest(req: HttpRequest<unknown>, resource: string, id?:
   }
 }
 
-/**
- * Stands in for the .NET Web API while it doesn't exist yet. Every request
- * under environment.apiUrl is served here instead of hitting the network —
- * see README.md for the exact REST contract this mirrors, so swapping to
- * the real Oracle-backed API later is a one-line flag flip
- * (environment.useMockApi = false), not a rewrite.
- */
 export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
   if (!environment.useMockApi || !req.url.startsWith(environment.apiUrl)) {
     return next(req);
@@ -244,6 +310,10 @@ export const mockApiInterceptor: HttpInterceptorFn = (req, next) => {
 
   if (segments[0] === 'auth' && segments[1] === 'login' && req.method === 'POST') {
     return handleLogin(req);
+  }
+
+  if (segments[0] === 'auth' && segments[1] === 'register' && req.method === 'POST') {
+    return handleRegister(req);
   }
 
   if (segments[0] === 'auth' && segments[1] === 'forgot-password' && req.method === 'POST') {

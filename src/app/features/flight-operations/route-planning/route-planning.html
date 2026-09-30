@@ -1,0 +1,143 @@
+<div class="page-container">
+  <app-page-header icon="pi-map" title="Route Planning" description="Design, review and manage airport-pair routes across the network.">
+    <p-button label="New Route" icon="pi pi-plus" (onClick)="openNew()" />
+  </app-page-header>
+
+  <div class="stats-row">
+    <app-stat-card icon="pi-map" [value]="stats().total" label="Total Routes" />
+    <app-stat-card icon="pi-check-circle" [value]="stats().active" label="Active" iconBg="color-mix(in srgb, var(--p-green-500) 15%, transparent)" iconColor="var(--p-green-500)" />
+    <app-stat-card icon="pi-eye" [value]="stats().review" label="Under Review" iconBg="color-mix(in srgb, var(--p-orange-500) 15%, transparent)" iconColor="var(--p-orange-500)" />
+    <app-stat-card icon="pi-ban" [value]="stats().suspended" label="Suspended" iconBg="color-mix(in srgb, var(--p-red-500) 15%, transparent)" iconColor="var(--p-red-500)" />
+  </div>
+
+  <div class="surface-card filter-bar">
+    <div class="filter-bar__field">
+      <label>Origin</label>
+      <input pInputText [ngModel]="filterOrigin()" (ngModelChange)="filterOrigin.set($event)" placeholder="e.g. JFK" maxlength="3" />
+    </div>
+    <div class="filter-bar__field">
+      <label>Destination</label>
+      <input pInputText [ngModel]="filterDestination()" (ngModelChange)="filterDestination.set($event)" placeholder="e.g. LHR" maxlength="3" />
+    </div>
+    <div class="filter-bar__field">
+      <label>Status</label>
+      <p-select [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)" [options]="statuses" placeholder="All Statuses" appendTo="body" />
+    </div>
+    <div class="filter-bar__field">
+      <label>Aircraft Type</label>
+      <p-select [ngModel]="filterAircraftType()" (ngModelChange)="filterAircraftType.set($event)" [options]="aircraftTypes" placeholder="All Types" [filter]="true" appendTo="body" />
+    </div>
+    <div class="filter-bar__field filter-bar__field--search">
+      <label>Search</label>
+      <input pInputText [ngModel]="filterSearch()" (ngModelChange)="filterSearch.set($event)" placeholder="Route code, airport, frequency…" />
+    </div>
+    <div class="filter-bar__actions">
+      <p-button label="Clear Filters" icon="pi pi-filter-slash" severity="secondary" [outlined]="true" [disabled]="!hasActiveFilters()" (onClick)="clearFilters()" />
+    </div>
+  </div>
+
+  <div class="surface-card">
+    <p-table #dt [value]="filteredRoutes()" [loading]="loading()" [paginator]="true" [rows]="10" dataKey="id" [rowHover]="true" [stripedRows]="true" responsiveLayout="scroll">
+      <ng-template #caption>
+        <div class="table-toolbar">
+          <p-iconfield iconPosition="left" class="table-toolbar__search">
+          <p-inputicon class="pi pi-search" />
+          <input pInputText type="text" placeholder="Search routes…" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+          </p-iconfield>
+          <span class="text-muted table-toolbar__count">{{ filteredRoutes().length }} of {{ routes().length }} route{{ routes().length === 1 ? '' : 's' }}</span>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="routeCode">Route Code <p-sortIcon field="routeCode" /></th>
+          <th>Route</th>
+          <th pSortableColumn="aircraftType">Aircraft <p-sortIcon field="aircraftType" /></th>
+          <th pSortableColumn="frequency">Frequency <p-sortIcon field="frequency" /></th>
+          <th pSortableColumn="distanceNm">Distance <p-sortIcon field="distanceNm" /></th>
+          <th pSortableColumn="estFlightTime">Flight Time <p-sortIcon field="estFlightTime" /></th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status" /></th>
+          <th>Effective</th>
+          <th style="width: 6.5rem">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-route>
+        <tr>
+          <td><strong>{{ route.routeCode }}</strong></td>
+          <td>
+            <div class="route-path">
+              <span class="route-path__code">{{ route.origin }}</span>
+              <span class="route-path__line">
+                <span class="route-path__plane pi pi-send"></span>
+              </span>
+              <span class="route-path__code">{{ route.destination }}</span>
+            </div>
+          </td>
+          <td>{{ route.aircraftType }}</td>
+          <td>{{ route.frequency }}</td>
+          <td>{{ route.distanceNm | number }} NM</td>
+          <td>{{ route.estFlightTime }}</td>
+          <td><p-tag [value]="route.status" [severity]="severity(route.status)" /></td>
+          <td>{{ route.effectiveFrom | date: 'MMM d, y' }}{{ route.effectiveTo ? ' – ' + (route.effectiveTo | date: 'MMM d, y') : '' }}</td>
+          <td>
+            <div class="row-actions">
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="openEdit(route)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(route)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="9" class="table-empty">No routes match the current filters.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [visible]="dialogVisible()" (visibleChange)="dialogVisible.set($event)" [modal]="true" [header]="editingRoute() ? 'Edit Route' : 'New Route'" [style]="{ width: '36rem' }" [draggable]="false" [dismissableMask]="true">
+  <form [formGroup]="form" class="entity-form">
+    <div class="entity-form__field">
+      <label for="routeCode">Route Code</label>
+      <input pInputText id="routeCode" formControlName="routeCode" placeholder="JFK-LHR-01" />
+    </div>
+    <div class="entity-form__field">
+      <label for="aircraftType">Aircraft Type</label>
+      <p-select inputId="aircraftType" formControlName="aircraftType" [options]="aircraftTypes" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="origin">Origin</label>
+      <input pInputText id="origin" formControlName="origin" placeholder="JFK" maxlength="3" />
+    </div>
+    <div class="entity-form__field">
+      <label for="destination">Destination</label>
+      <input pInputText id="destination" formControlName="destination" placeholder="LHR" maxlength="3" />
+    </div>
+    <div class="entity-form__field">
+      <label for="distanceNm">Distance (NM)</label>
+      <p-inputnumber id="distanceNm" formControlName="distanceNm" [min]="1" [useGrouping]="false" />
+    </div>
+    <div class="entity-form__field">
+      <label for="estFlightTime">Est. Flight Time</label>
+      <input pInputText id="estFlightTime" formControlName="estFlightTime" placeholder="e.g. 6h 45m" />
+    </div>
+    <div class="entity-form__field">
+      <label for="frequency">Frequency</label>
+      <p-select inputId="frequency" formControlName="frequency" [options]="frequencies" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="status">Status</label>
+      <p-select inputId="status" formControlName="status" [options]="statuses" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="effectiveFrom">Effective From</label>
+      <p-datepicker inputId="effectiveFrom" formControlName="effectiveFrom" [showIcon]="true" dateFormat="M d, yy" appendTo="body" />
+    </div>
+    <div class="entity-form__field">
+      <label for="effectiveTo">Effective To (optional)</label>
+      <p-datepicker inputId="effectiveTo" formControlName="effectiveTo" [showIcon]="true" dateFormat="M d, yy" appendTo="body" />
+    </div>
+  </form>
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button [label]="editingRoute() ? 'Save Changes' : 'Create'" icon="pi pi-check" [loading]="saving()" (onClick)="save()" />
+  </ng-template>
+</p-dialog>

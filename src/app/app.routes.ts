@@ -18,6 +18,14 @@ import { Shell } from './layout/shell/shell';
 const FLAGSHIP_LOADERS: Record<string, Route['loadComponent']> = {
   'flight-scheduling': () =>
     import('./features/flight-operations/flight-scheduling/flight-scheduling').then((m) => m.FlightSchedulingPage),
+  'route-planning': () =>
+    import('./features/flight-operations/route-planning/route-planning').then((m) => m.RoutePlanningPage),
+  'flight-dispatch': () =>
+    import('./features/flight-operations/flight-dispatch/flight-dispatch').then((m) => m.FlightDispatchPage),
+  'aircraft-assignment': () =>
+    import('./features/flight-operations/aircraft-assignment/aircraft-assignment').then((m) => m.AircraftAssignmentPage),
+  'crew-assignment': () =>
+    import('./features/flight-operations/crew-assignment/crew-assignment').then((m) => m.CrewAssignmentPage),
   'aircraft-registration': () =>
     import('./features/fleet-management/aircraft-registration/aircraft-registration').then((m) => m.AircraftRegistrationPage),
   'work-orders': () => import('./features/aircraft-maintenance/work-orders/work-orders').then((m) => m.WorkOrdersPage),
@@ -78,6 +86,11 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.LoginPage),
+    canActivate: [guestGuard]
+  },
+  {
+    path: 'signup',
+    loadComponent: () => import('./features/auth/signup/signup').then((m) => m.SignupPage),
     canActivate: [guestGuard]
   },
   {
